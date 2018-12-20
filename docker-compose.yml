@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  mongo:
+    hostname: mongo
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - './mongo_data:/data'
+    logging:
+      driver: "none"
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+    logging:
+      driver: "none"
+
+  rabbit:
+    hostname: rabbit
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+    volumes:
+      - "./rabbit_data:/var/lib/rabbitmq/mnesia/rabbit@rabbit"
+    ports:
+        - "5672:5672"
+        - "15672:15672"
+    logging:
+      driver: "none"
+  worker:
+    build: .
+    environment:
+      - MONGO_USER_NAME=root
+      - MONGO_PASSWORD=example
+      - C_FORCE_ROOT=1
+    command: celery -A celery_worker worker --concurrency=20 --loglevel=warning
+    volumes:
+        - .:/app
+    depends_on:
+      - mongo
+      - rabbit
+
+  flower:
+    build: .
+    command: celery -A celery_worker flower --port=5555
+    volumes:
+      - .:/app
+    ports:
+      - "5555:5555"
+    depends_on:
+      - rabbit
+    logging:
+      driver: "none"
