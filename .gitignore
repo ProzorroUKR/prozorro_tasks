@@ -61,3 +61,4 @@ output.html
 
 mongo_data/
 rabbit_data/
+.idea/

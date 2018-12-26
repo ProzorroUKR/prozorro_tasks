@@ -2,9 +2,8 @@
 from celery_worker.celery import app
 
 # import all task we want ot use
-import celery_worker.tasks
 import crawler.tasks
-import crawler.handlers.cbd_copy
+import edr_bot.tasks
 
 
 if __name__ == '__main__':

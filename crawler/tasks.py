@@ -1,9 +1,8 @@
 from celery.utils.log import get_task_logger
 from celery_worker.celery import app
-from crawler.settings import PUBLIC_API_HOST, API_VERSION, CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS
-from crawler.handlers.cbd_copy import save_tender_handler
-from crawler.handlers.auctions import auction_planning_handler
-from crawler.handlers.auctions_bids import auction_bids_handler
+from crawler.settings import CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS
+from environment_settings import PUBLIC_API_HOST, API_VERSION
+from edr_bot.handlers import edr_bot_tender_handler
 import requests
 
 
@@ -16,9 +15,7 @@ logger = get_task_logger(__name__)
 # example: if(item["status"] == "awarding"){ attach_edr_yaml.delay(item["id"]) }
 
 ITEM_HANDLERS = [
-    save_tender_handler,
-    auction_planning_handler,
-    # auction_bids_handler,
+    edr_bot_tender_handler,
 ]
 
 
