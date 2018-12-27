@@ -64,6 +64,55 @@ def process_tender(self, tender_id):
                     process_qualification(response, tender_data, qualification)
 
 
+def process_award_supplier(response, tender, award, supplier):
+    if not is_valid_identifier(supplier['identifier']):
+        logger.warning('Tender {} award {} identifier {} is not valid.'.format(
+            tender['id'], award["id"], supplier['identifier']
+        ))
+    elif not check_related_lot_status(tender, award):
+        logger.warning("Tender {} bid {} award {} related lot has been cancelled".format(
+            tender['id'], award['bid_id'], award['id']
+        ))
+    else:
+        get_edr_data.delay(
+            code=str(supplier['identifier']['id']),
+            request_id=response.headers['X-Request-ID'],
+            tender_id=tender['id'],
+            item_name="award",
+            item_id=award['id']
+        )
+
+
+def process_qualification(response, tender, qualification):
+    appropriate_bids = [b for b in tender.get("bids", [])
+                        if b['id'] == qualification['bidID']]
+    if not appropriate_bids:
+        logger.warning('Tender {} bid {} is missed.'.format(
+            tender['id'], qualification['bidID']
+        ))
+        return
+
+    tenderers = appropriate_bids[0].get('tenderers')
+    if not tenderers:
+        logger.warning('Tender {} bid {} tenderers are missed.'.format(
+            tender['id'], appropriate_bids[0]['id']
+        ))
+        return
+
+    if not is_valid_identifier(tenderers[0]['identifier']):
+        logger.warning('Tender {} qualification {} identifier {} is not valid.'.format(
+            tender['id'], qualification["id"], tenderers[0]['identifier']
+        ))
+    else:
+        get_edr_data.delay(
+            code=str(tenderers[0]['identifier']['id']),
+            request_id=response.headers['X-Request-ID'],
+            tender_id=tender['id'],
+            item_name="qualification",
+            item_id=qualification['id']
+        )
+
+
 def should_process_item(item):
     return (item['status'] == 'pending' and
             not any(document.get('documentType') == DOC_TYPE
@@ -74,42 +123,17 @@ def check_related_lot_status(tender, award):
     """Check if related lot not in status cancelled"""
     lot_id = award.get('lotID')
     if lot_id:
-        if [l['status'] for l in tender.get('lots', []) if l['id'] == lot_id][0] != 'active':
-            return False
+        lot_statuses = [
+            l['status']
+            for l in tender.get('lots', [])
+            if l['id'] == lot_id
+        ]
+        return lot_statuses and 'active' in lot_statuses
     return True
 
 
-def process_award_supplier(response, tender, award, supplier):
-    code = str(supplier['identifier']['id'])
-    if not code.isdigit():
-        logger.warning('Tender {} award {} identifier {} is not digit.'.format(
-            tender['id'], award["id"], code
-        ))
-    elif supplier['identifier']['scheme'] != IDENTIFICATION_SCHEME:
-        logger.warning("Tender {} bid {} award {} identifier schema isn't UA-EDR".format(
-            tender['id'], award['bid_id'], award['id']
-        ))
-    elif not check_related_lot_status(tender, award):
-        logger.warning("Tender {} bid {} award {} related lot has been cancelled".format(
-            tender['id'], award['bid_id'], award['id']
-        ))
-    else:
-        get_edr_data.delay(code, response.headers['X-Request-ID'], tender['id'], "award", award['id'])
-
-
-def process_qualification(response, tender, qualification):
-    appropriate_bid = [b for b in tender['bids'] if b['id'] == qualification['bidID']][0]
-    code = str(appropriate_bid['tenderers'][0]['identifier']['id'])
-    if not code.isdigit():
-        logger.warning('Tender {} qualification {} identifier {} is not digit.'.format(
-            tender['id'], qualification["id"], code
-        ))
-    elif appropriate_bid['tenderers'][0]['identifier']['scheme'] != IDENTIFICATION_SCHEME:
-        logger.warning("Tender {} bid {} award {} identifier schema isn't UA-EDR".format(
-            tender['id'], qualification['bidID'], qualification['id']
-        ))
-    else:
-        get_edr_data.delay(code, response.headers['X-Request-ID'], tender['id'], "qualification", qualification['id'])
+def is_valid_identifier(identifier):
+    return str(identifier["id"]).isdigit() and identifier['scheme'] == IDENTIFICATION_SCHEME
 
 
 # ------- GET EDR DATA
@@ -186,12 +210,9 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
 @app.task(bind=True)
 def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
-    temporary_file = io.BytesIO()
+    contents = yaml.safe_dump(data, allow_unicode=True, default_flow_style=False)
+    temporary_file = io.StringIO(contents)
     temporary_file.name = FILE_NAME
-    temporary_file.write(
-        yaml.safe_dump(data, allow_unicode=True, default_flow_style=False)
-    )
-    temporary_file.seek(0)
 
     files = {'file': (FILE_NAME, temporary_file, 'application/yaml')}
 
@@ -213,7 +234,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
         response_json = response.json()
         response_json['meta'] = {'id': data['meta']['id']}
-        attach_doc_to_tender.delay(response_json, tender_id, item_name, item_id)
+        attach_doc_to_tender.delay(data=response_json, tender_id=tender_id, item_name=item_name, item_id=item_id)
 
 
 # ---------- ATTACH DOCUMENT TO ITS TENDER
@@ -268,7 +289,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     data['meta']['id'], tender_id
                 ))
 
-            elif response.status_code != 200:
+            elif response.status_code != 201:
                 logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
                     data['meta']['id'], tender_id
                 ))
