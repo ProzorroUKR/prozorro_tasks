@@ -1,8 +1,7 @@
-from edr_bot.settings import DEFAULT_RETRY_AFTER, CONNECT_TIMEOUT, READ_TIMEOUT
+from edr_bot.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from environment_settings import API_TOKEN, API_VERSION, API_HOST
 from edr_bot.tasks import attach_doc_to_tender
-from uuid import uuid4
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock
 from celery.exceptions import Retry
 import unittest
 import requests

@@ -1,6 +1,7 @@
 [run]
 omit =
     *tests*
+    run_tasks.py
 
 [report]
 exclude_lines =

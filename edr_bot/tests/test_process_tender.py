@@ -190,6 +190,40 @@ class TestHandlerCase(unittest.TestCase):
         get_edr_data.delay.assert_not_called()
 
     @patch("edr_bot.tasks.get_edr_data")
+    def test_handle_200_response_award_invalid_identifier(self, get_edr_data):
+        code = "hello"
+        response_id = uuid4().hex
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
+
+        with patch("edr_bot.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={
+                    'data': {
+                        'id': tender_id,
+                        'awards': [
+                            {
+                                "id": item_id,
+                                "status": "pending",
+                                "suppliers": [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-EDR",
+                                            "id": code,
+                                        },
+                                    }
+                                ],
+                            },
+                        ]
+                    },
+                }),
+                headers={'X-Request-ID': response_id}
+            )
+            process_tender(tender_id)
+
+        get_edr_data.delay.assert_not_called()
+
+    @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_qualification(self, get_edr_data):
         code_1 = "758234578270346"
         code_2 = "758234578270347"
@@ -308,6 +342,47 @@ class TestHandlerCase(unittest.TestCase):
                             {
                                 "id": item_id,
                                 "bidID": bid_id,
+                                "status": "pending",
+                            },
+                        ]
+                    },
+                }),
+                headers={'X-Request-ID': response_id}
+            )
+
+            process_tender(tender_id)
+
+        get_edr_data.delay.assert_not_called()
+
+    @patch("edr_bot.tasks.get_edr_data")
+    def test_handle_200_response_qualification_invalid_identification(self, get_edr_data):
+        code = "758234578270346"
+        response_id = uuid4().hex
+        tender_id, item_name, item_id = "f" * 32, "qualification", "a" * 32
+
+        with patch("edr_bot.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={
+                    'data': {
+                        'id': tender_id,
+                        'bids': [
+                            {
+                                'id': 'qwerty',
+                                'tenderers': [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-TEST",
+                                            "id": code,
+                                        },
+                                    }
+                                ]
+                            }
+                        ],
+                        'qualifications': [
+                            {
+                                "id": item_id,
+                                "bidID": "qwerty",
                                 "status": "pending",
                             },
                         ]

@@ -1,6 +1,9 @@
 from celery.utils.log import get_task_logger
 from celery_worker.celery import app
-from crawler.settings import CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS
+from crawler.settings import (
+    CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS,
+    DEFAULT_RETRY_AFTER, FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
+)
 from environment_settings import PUBLIC_API_HOST, API_VERSION
 from edr_bot.handlers import edr_bot_tender_handler
 import requests
@@ -18,6 +21,11 @@ ITEM_HANDLERS = [
     edr_bot_tender_handler,
 ]
 
+RETRY_REQUESTS_EXCEPTIONS = (
+    requests.exceptions.Timeout,
+    requests.exceptions.ConnectionError,
+)
+
 
 @app.task(bind=True, acks_late=True)
 def process_feed(self, resource="tenders", offset="", descending="", cookies=None):
@@ -25,8 +33,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
     if not offset:  # initialization
         descending = "1"
 
-    url = "{host}/api/{version}/{resource}?feed=changes&" \
-          "descending={descending}&offset={offset}&limit={limit}&opt_fields={opt_fields}".format(
+    url = FEED_URL_TEMPLATE.format(
             host=PUBLIC_API_HOST,
             version=API_VERSION,
             resource=resource,
@@ -40,48 +47,51 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
         response = requests.get(
             url,
             cookies=requests.utils.cookiejar_from_dict(cookies or {}),
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT)
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc)
         raise self.retry(exc=exc)
     else:
-        response_json = response.json()
-        for item in response_json["data"]:
-            for handler in ITEM_HANDLERS:
-                try:
-                    handler(item)
-                except Exception as e:
-                    logger.exception(e)
+        if response.status_code == 200:
+            response_json = response.json()
+            for item in response_json["data"]:
+                for handler in ITEM_HANDLERS:
+                    try:
+                        handler(item)
+                    except Exception as e:
+                        logger.exception(e)
 
-        # handle cookies
-        if response.cookies:
-            cookies = requests.utils.dict_from_cookiejar(response.cookies)
+            # handle cookies
+            if response.cookies:
+                cookies = requests.utils.dict_from_cookiejar(response.cookies)
 
-        # schedule getting the next page
-        if len(response_json["data"]) < API_LIMIT:
-            if not descending:
-                process_feed.apply_async(
-                    kwargs=dict(
-                        offset=response_json["next_page"]["offset"],
-                        descending=descending,
-                        cookies=cookies
-                    ),
-                    countdown=60,
-                )
-        else:
-            process_feed.delay(
+            # schedule getting the next page
+            next_page_kwargs = dict(
                 offset=response_json["next_page"]["offset"],
                 descending=descending,
                 cookies=cookies
             )
+            if len(response_json["data"]) < API_LIMIT:
+                if descending:
+                    logger.info("Stopping backward crawling")
+                else:
+                    process_feed.apply_async(
+                        kwargs=next_page_kwargs,
+                        countdown=WAIT_MORE_RESULTS_COUNTDOWN,
+                    )
+            else:
+                process_feed.apply_async(kwargs=next_page_kwargs)
 
-        if not offset:  # if it's initialization
-            process_feed.apply_async(
-                kwargs=dict(
-                    offset=response_json["prev_page"]["offset"],
-                    cookies=cookies
-                ),
-                countdown=60,
-            )
+            if not offset:  # if it's initialization
+                process_feed.apply_async(
+                    kwargs=dict(
+                        offset=response_json["prev_page"]["offset"],
+                        cookies=cookies
+                    ),
+                    countdown=WAIT_MORE_RESULTS_COUNTDOWN,
+                )
+        else:
+            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
         return response.status_code
