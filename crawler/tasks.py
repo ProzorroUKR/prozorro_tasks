@@ -83,7 +83,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
             else:
                 process_feed.apply_async(kwargs=next_page_kwargs)
 
-            if not offset:  # if it's initialization
+            if not offset:  # if it's initialization, add forward crawling task
                 process_feed.apply_async(
                     kwargs=dict(
                         offset=response_json["prev_page"]["offset"],
@@ -91,6 +91,21 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                     ),
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
+        elif response.status_code == 412:  # Precondition failed
+            logger.warning("Precondition failed with cookies {}".format(cookies))
+            retry_kwargs = dict(**self.request.kwargs)
+            retry_kwargs["cookies"] = requests.utils.dict_from_cookiejar(response.cookies)
+            raise self.retry(kwargs=retry_kwargs)
+
+        elif response.status_code == 404:  # "Offset expired/invalid"
+            logger.warning("Offset {} failed with cookies {}".format(offset, cookies))
+
+            if not descending:  # for forward process only
+                logger.info("Feed process reinitialization")
+                retry_kwargs = {k: v for k, v in self.request.kwargs.items()
+                                if k != "offset"}
+                raise self.retry(kwargs=retry_kwargs)
+
         else:
             raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 

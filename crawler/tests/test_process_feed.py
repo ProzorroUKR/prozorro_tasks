@@ -333,3 +333,41 @@ class ProcessTestCase(unittest.TestCase):
             )
 
         process_feed.apply_async.assert_not_called()
+
+    def test_handle_server_cookie_error(self):
+
+        with patch("crawler.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=412,
+                cookies=requests.utils.cookiejar_from_dict({"SERVER_ID": "f" * 32})
+            )
+            requests_mock.utils.dict_from_cookiejar = requests.utils.dict_from_cookiejar
+
+            process_feed.retry = Mock(side_effect=Retry)
+            with self.assertRaises(Retry):
+                process_feed(cookies={"SERVER_ID": "1" * 32})
+
+            process_feed.retry.assert_called_once_with(kwargs=dict(cookies={"SERVER_ID": "f" * 32}))
+
+    def test_handle_feed_offset_error(self):
+
+        with patch("crawler.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=404,
+                json=Mock(return_value={
+                    "status": "error",
+                    "errors": [
+                        {
+                            "location": "params",
+                            "name": "offset",
+                            "description": "Offset expired/invalid"
+                        }
+                    ]
+                }),
+            )
+
+            process_feed.retry = Mock(side_effect=Retry)
+            with self.assertRaises(Retry):
+                process_feed(offset="1" * 32, cookies={"SERVER_ID": "2" * 32})
+
+            process_feed.retry.assert_called_once_with(kwargs=dict(cookies={"SERVER_ID": "2" * 32}))
