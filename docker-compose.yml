@@ -43,7 +43,7 @@ services:
       - MONGO_USER_NAME=root
       - MONGO_PASSWORD=example
       - C_FORCE_ROOT=1
-    command: celery -A celery_worker worker --concurrency=20 --loglevel=warning
+    command: celery -A celery_worker worker --concurrency=20 --pool eventlet --loglevel=warning
     volumes:
         - .:/app
     depends_on:

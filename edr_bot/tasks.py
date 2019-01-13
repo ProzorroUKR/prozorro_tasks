@@ -6,6 +6,11 @@ from edr_bot.settings import (
     CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
     FILE_NAME, ID_PASSPORT_LEN,
 )
+from edr_bot.results_db import (
+    get_upload_results,
+    save_upload_results,
+    set_upload_results_attached
+)
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
     EDR_API_HOST, EDR_API_PORT, EDR_API_VERSION, EDR_API_USER, EDR_API_PASSWORD,
@@ -210,39 +215,71 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
 @app.task(bind=True)
 def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
-    contents = yaml.safe_dump(data, allow_unicode=True, default_flow_style=False)
-    temporary_file = io.StringIO(contents)
-    temporary_file.name = FILE_NAME
+    # check if the file has been already uploaded
+    # will retry the task until mongodb returns either doc or None
+    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
 
-    files = {'file': (FILE_NAME, temporary_file, 'application/yaml')}
+    if upload_results is None:
+        # generate file data
+        contents = yaml.safe_dump(data, allow_unicode=True, default_flow_style=False)
+        temporary_file = io.StringIO(contents)
+        temporary_file.name = FILE_NAME
 
-    try:
-        response = requests.post(
-            '{host}:{port}/upload'.format(host=DS_HOST, port=DS_PORT),
-            auth=(DS_USER, DS_PASSWORD),
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            files=files,
-            headers={'X-Client-Request-ID': data['meta']['id']}
-        )
-    except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc)
-        raise self.retry(exc=exc)
+        files = {'file': (FILE_NAME, temporary_file, 'application/yaml')}
+
+        try:
+            response = requests.post(
+                '{host}:{port}/upload'.format(host=DS_HOST, port=DS_PORT),
+                auth=(DS_USER, DS_PASSWORD),
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                files=files,
+                headers={'X-Client-Request-ID': data['meta']['id']}
+            )
+        except RETRY_REQUESTS_EXCEPTIONS as exc:
+            logger.exception(exc)
+            raise self.retry(exc=exc)
+        else:
+            if response.status_code != 200:
+                logger.error("Incorrect upload status for doc {}".format(data['meta']['id']))
+                raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+
+            response_json = response.json()
+            response_json['meta'] = {'id': data['meta']['id']}
+        # save response to mongodb, so that the file won't be uploaded again
+        # fail silently: if mongodb isn't available, the task will neither fail nor retry
+        # in worst case there might be a duplicate attached to the tender
+        uid = save_upload_results(response_json, data, tender_id, item_name, item_id)
+        logger.info("Saved document with uid {} for {} {} {}".format(
+            uid, tender_id, item_name, item_id))
     else:
-        if response.status_code != 200:
-            logger.error("Incorrect upload status for doc {}".format(data['meta']['id']))
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+        # we don't need to pass the response since it's saved to mongodb doc
+        response_json = None
 
-        response_json = response.json()
-        response_json['meta'] = {'id': data['meta']['id']}
-        attach_doc_to_tender.delay(data=response_json, tender_id=tender_id, item_name=item_name, item_id=item_id)
+    attach_doc_to_tender.delay(file_data=response_json,
+                               data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
 
 
 # ---------- ATTACH DOCUMENT TO ITS TENDER
 @app.task(bind=True)
-def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
-    document_data = data['data']
-    document_data["documentType"] = DOC_TYPE
+def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
 
+    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
+
+    if file_data is None:
+        if upload_results is None:
+            fall_msg = "Saved results are not found for {} {} {}".format(tender_id, item_name, item_id)
+            logger.critical(fall_msg)
+            raise AssertionError(fall_msg)
+        else:
+            file_data = upload_results["file_data"]
+
+    if upload_results and upload_results.get("attached"):
+        logger.info("Uploaded file has been already attached to the tender: {} {} {}".format(
+            tender_id, item_name, item_id))
+        return
+
+    document_data = file_data['data']
+    document_data["documentType"] = DOC_TYPE
     url = "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
         host=API_HOST,
         version=API_VERSION,
@@ -251,6 +288,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
         tender_id=tender_id,
     )
 
+    meta_id = file_data['meta']['id']
     # get SERVER_ID cookie
     try:
         head_response = requests.head(
@@ -258,7 +296,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
-                'X-Client-Request-ID': data['meta']['id'],
+                'X-Client-Request-ID': meta_id,
             }
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -274,7 +312,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 headers={
                     'Authorization': 'Bearer {}'.format(API_TOKEN),
-                    'X-Client-Request-ID': data['meta']['id'],
+                    'X-Client-Request-ID': meta_id,
                 },
                 cookies=head_response.cookies,
             )
@@ -286,11 +324,16 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
             # handle response code
             if response.status_code == 422:
                 logger.error("Incorrect document data while attaching doc {} to tender {}".format(
-                    data['meta']['id'], tender_id
+                    meta_id, tender_id
                 ))
 
             elif response.status_code != 201:
                 logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
-                    data['meta']['id'], tender_id
+                    meta_id, tender_id
                 ))
                 raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            else:
+                # won't raise anything
+                uid = set_upload_results_attached(data, tender_id, item_name, item_id)
+                logger.info("Set attached document with uid {} for {} {} {}".format(
+                    uid, tender_id, item_name, item_id))

@@ -3,6 +3,9 @@ import os
 
 TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
+MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://root:example@mongo:27017")
+
 PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openprocurement.org")
 API_HOST = os.environ.get("API_HOST", "https://lb.api.openprocurement.org")
 API_VERSION = os.environ.get("API_VERSION", "2.4")

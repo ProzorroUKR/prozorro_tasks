@@ -1,10 +1,11 @@
 from __future__ import absolute_import
+from environment_settings import CELERY_BROKER_URL
 from celery import Celery
 import celeryconfig
 
 app = Celery(
     'celery_worker',
-    broker='amqp://admin:mypass@rabbit:5672',
+    broker=CELERY_BROKER_URL,
     include=[
         'crawler.tasks',
         'edr_bot.tasks'

@@ -1,3 +1,28 @@
 
 task_acks_late = True
+# Default: Disabled.
+# Late ack means the task messages will be acknowledged after the task has been executed,
+# not just before (the default behavior).
+
+task_reject_on_worker_lost = True
+# Default: Disabled.
+# Even if task_acks_late is enabled, the worker will acknowledge tasks
+# when the worker process executing them abruptly exits or is signaled (e.g., KILL/INT, etc).
+# Setting this to true allows the message to be re-queued instead,
+# so that the task will execute again by the same worker, or another worker.
+
+broker_connection_max_retries = None
+# Default: 100.
+# Maximum number of retries before we give up re-establishing a connection to the AMQP broker.
+# If this is set to 0 or None, we’ll retry forever.
+
+# Celery will automatically retry sending messages in the event of connection failure,
+# and retry behavior can be configured – like how often to retry,
+# or a maximum number of retries – or disabled all together.
+retry_policy = {
+    'max_retries': None,
+    'interval_start': 0,
+    'interval_step': 0.2,
+    'interval_max': 0.2,
+}
 

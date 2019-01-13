@@ -9,32 +9,45 @@ import requests
 
 class AttachDocTestCase(unittest.TestCase):
 
-    def test_handle_head_connection_error(self):
-        data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {}}, "f" * 32, "award", "a" * 32
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_head_connection_error(self, get_upload_results):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
             requests_mock.head.side_effect = requests.exceptions.ConnectionError()
 
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
             with self.assertRaises(Retry):
-                attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+                attach_doc_to_tender(file_data=file_data, data=data, tender_id=tender_id,
+                                     item_name=item_name, item_id=item_id)
 
-            attach_doc_to_tender.retry.assert_called_once_with(exc=requests_mock.head.side_effect)
+        attach_doc_to_tender.retry.assert_called_once_with(exc=requests_mock.head.side_effect)
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
 
-    def test_handle_post_connection_error(self):
-        data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {}}, "f" * 32, "award", "a" * 32
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_post_connection_error(self, get_upload_results):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
             requests_mock.post.side_effect = requests.exceptions.ConnectionError()
 
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
             with self.assertRaises(Retry):
-                attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+                attach_doc_to_tender(file_data=file_data, data=data, tender_id=tender_id,
+                                     item_name=item_name, item_id=item_id)
 
-            attach_doc_to_tender.retry.assert_called_once_with(exc=requests_mock.post.side_effect)
+        attach_doc_to_tender.retry.assert_called_once_with(exc=requests_mock.post.side_effect)
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
 
-    def test_handle_head_429_response(self):
-        data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {'test': 3}}, "f" * 32, "award", "a" * 32
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_head_429_response(self, get_upload_results):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         ret_aft, server_id = 13, "e" * 32
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -46,28 +59,33 @@ class AttachDocTestCase(unittest.TestCase):
             requests_mock.post.return_value = Mock(status_code=201)
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
 
-            attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+            attach_doc_to_tender(file_data=file_data, data=data,
+                                 tender_id=tender_id, item_name=item_name, item_id=item_id)
 
-            requests_mock.post.assert_called_once_with(
-                "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
-                    host=API_HOST,
-                    version=API_VERSION,
-                    item_name=item_name,
-                    item_id=item_id,
-                    tender_id=tender_id,
-                ),
-                json={'data': data['data']},
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                headers={
-                    'Authorization': 'Bearer {}'.format(API_TOKEN),
-                    'X-Client-Request-ID': data['meta']['id'],
-                },
-                cookies={'SERVER_ID': server_id},
-            )
-            attach_doc_to_tender.retry.assert_not_called()
+        requests_mock.post.assert_called_once_with(
+            "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
+                host=API_HOST,
+                version=API_VERSION,
+                item_name=item_name,
+                item_id=item_id,
+                tender_id=tender_id,
+            ),
+            json={'data': file_data['data']},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'X-Client-Request-ID': file_data['meta']['id'],
+            },
+            cookies={'SERVER_ID': server_id},
+        )
+        attach_doc_to_tender.retry.assert_not_called()
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
 
-    def test_handle_post_429_response(self):
-        data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {'test': 3}}, "f" * 32, "award", "a" * 32
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_post_429_response(self, get_upload_results):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         ret_aft, server_id = 13, "e" * 32
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -79,27 +97,32 @@ class AttachDocTestCase(unittest.TestCase):
 
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
             with self.assertRaises(Retry):
-                attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+                attach_doc_to_tender(file_data=file_data, data=data,
+                                     tender_id=tender_id, item_name=item_name, item_id=item_id)
 
-            requests_mock.post.assert_called_once_with(
-                "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
-                    host=API_HOST,
-                    version=API_VERSION,
-                    item_name=item_name,
-                    item_id=item_id,
-                    tender_id=tender_id,
-                ),
-                json={'data': data['data']},
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                headers={
-                    'Authorization': 'Bearer {}'.format(API_TOKEN),
-                    'X-Client-Request-ID': data['meta']['id'],
-                },
-                cookies={'SERVER_ID': server_id},
-            )
+        requests_mock.post.assert_called_once_with(
+            "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
+                host=API_HOST,
+                version=API_VERSION,
+                item_name=item_name,
+                item_id=item_id,
+                tender_id=tender_id,
+            ),
+            json={'data': file_data['data']},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'X-Client-Request-ID': file_data['meta']['id'],
+            },
+            cookies={'SERVER_ID': server_id},
+        )
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
 
-    def test_handle_post_422_response(self):
-        data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {'test': 3}}, "f" * 32, "award", "a" * 32
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_post_422_response(self, get_upload_results):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         ret_aft, server_id = 13, "e" * 32
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -110,23 +133,62 @@ class AttachDocTestCase(unittest.TestCase):
             requests_mock.head.return_value = Mock(cookies={'SERVER_ID': server_id})
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
 
-            attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+            attach_doc_to_tender(file_data=file_data, data=data,
+                                 tender_id=tender_id, item_name=item_name, item_id=item_id)
 
-            requests_mock.post.assert_called_once_with(
-                "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
-                    host=API_HOST,
-                    version=API_VERSION,
-                    item_name=item_name,
-                    item_id=item_id,
-                    tender_id=tender_id,
-                ),
-                json={'data': data['data']},
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                headers={
-                    'Authorization': 'Bearer {}'.format(API_TOKEN),
-                    'X-Client-Request-ID': data['meta']['id'],
-                },
-                cookies={'SERVER_ID': server_id},
-            )
-            attach_doc_to_tender.retry.assert_not_called()
+        requests_mock.post.assert_called_once_with(
+            "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
+                host=API_HOST,
+                version=API_VERSION,
+                item_name=item_name,
+                item_id=item_id,
+                tender_id=tender_id,
+            ),
+            json={'data': file_data['data']},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'X-Client-Request-ID': file_data['meta']['id'],
+            },
+            cookies={'SERVER_ID': server_id},
+        )
+        attach_doc_to_tender.retry.assert_not_called()
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
+
+    @patch("edr_bot.tasks.set_upload_results_attached")
+    @patch("edr_bot.tasks.get_upload_results")
+    def test_handle_success_post(self, get_upload_results, set_upload_results_attached):
+        get_upload_results.return_value = None
+        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
+
+        ret_aft, server_id = 13, "e" * 32
+        with patch("edr_bot.tasks.requests") as requests_mock:
+            requests_mock.post.return_value = Mock(status_code=201)
+            requests_mock.head.return_value = Mock(cookies={'SERVER_ID': server_id})
+            attach_doc_to_tender.retry = Mock(side_effect=Retry)
+
+            attach_doc_to_tender(file_data=file_data, data=data,
+                                 tender_id=tender_id, item_name=item_name, item_id=item_id)
+
+        requests_mock.post.assert_called_once_with(
+            "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
+                host=API_HOST,
+                version=API_VERSION,
+                item_name=item_name,
+                item_id=item_id,
+                tender_id=tender_id,
+            ),
+            json={'data': file_data['data']},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'X-Client-Request-ID': file_data['meta']['id'],
+            },
+            cookies={'SERVER_ID': server_id},
+        )
+
+        attach_doc_to_tender.retry.assert_not_called()
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
+        set_upload_results_attached.assert_called_once_with(data, tender_id, item_name, item_id)
 

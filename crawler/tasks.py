@@ -27,6 +27,23 @@ RETRY_REQUESTS_EXCEPTIONS = (
 )
 
 
+@app.task(bind=True)
+def echo_task(self, v=0):  # pragma: no cover
+    """
+    DEBUG Task
+    :param self:
+    :param v:
+    :return:
+    """
+    from time import sleep
+    for i in reversed(range(10)):
+        print((v, i))
+        sleep(3)
+    print("Add new task")
+    echo_task.delay(v+1)
+    print("#$" * 10)
+
+
 @app.task(bind=True, acks_late=True)
 def process_feed(self, resource="tenders", offset="", descending="", cookies=None):
 
