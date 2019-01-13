@@ -267,7 +267,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
 
     if file_data is None:
         if upload_results is None:
-            fall_msg = "Saved results are not found for {} {} {}".format(tender_id, item_name, item_id)
+            fall_msg = "Saved results are missed for {} {} {}".format(tender_id, item_name, item_id)
             logger.critical(fall_msg)
             raise AssertionError(fall_msg)
         else:

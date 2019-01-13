@@ -5,6 +5,11 @@ from edr_bot.results_db import (
     get_mongodb_collection, hash_string_to_uid, MONGODB_UID_LENGTH, args_to_uid,
     get_upload_results, save_upload_results, set_upload_results_attached
 )
+from edr_bot.settings import (
+    MONGODB_SERVER_SELECTION_TIMEOUT,
+    MONGODB_CONNECT_TIMEOUT,
+    MONGODB_SOCKET_TIMEOUT
+)
 from environment_settings import MONGODB_URL
 import unittest
 
@@ -19,7 +24,13 @@ class ResultsDBTestCase(unittest.TestCase):
 
         return_value = get_mongodb_collection()
 
-        mongodb_client.assert_called_once_with(MONGODB_URL)
+        mongodb_client.assert_called_once_with(
+            MONGODB_URL,
+            serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
+            connectTimeoutMS=MONGODB_CONNECT_TIMEOUT * 1000,
+            socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
+            retryWrites=True
+        )
         self.assertEqual(return_value, 13)
 
     def test_hash_string_to_uid(self):
@@ -127,7 +138,7 @@ class ResultsDBTestCase(unittest.TestCase):
     @patch("edr_bot.results_db.get_mongodb_collection")
     def test_save_upload_results_raise_exc(self, get_collection):
         collection = MagicMock()
-        collection.insert.side_effect = Exception("What?")
+        collection.insert.side_effect = NetworkTimeout()
         get_collection.return_value = collection
 
         file_data = {"data": 1, "meta": "hello"}
@@ -157,14 +168,14 @@ class ResultsDBTestCase(unittest.TestCase):
 
         collection.update_one.assert_called_once_with(
             {'_id': args_to_uid(args)},
-            {'attached': True}
+            {"$set": {'attached': True}}
         )
         self.assertEqual(result, args_to_uid(args))
 
     @patch("edr_bot.results_db.get_mongodb_collection")
     def test_set_upload_results_attached_raise_exc(self, get_collection):
         collection = MagicMock()
-        collection.update_one.side_effect = Exception()
+        collection.update_one.side_effect = NetworkTimeout()
         get_collection.return_value = collection
 
         args = ("one", 2, {3: 4, 5: 6})
@@ -173,10 +184,6 @@ class ResultsDBTestCase(unittest.TestCase):
 
         collection.update_one.assert_called_once_with(
             {'_id': args_to_uid(args)},
-            {'attached': True}
+            {"$set": {'attached': True}}
         )
         self.assertIs(result, None)
-
-
-
-
