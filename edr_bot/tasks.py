@@ -18,6 +18,7 @@ from environment_settings import (
 )
 from uuid import uuid4
 import requests
+import json
 import yaml
 import io
 
@@ -169,7 +170,14 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
         logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_DATA_EXCEPTION"})
         raise self.retry(exc=exc)
     else:
-        resp_json = response.json()
+        meta['sourceRequests'].append(response.headers.get('X-Request-ID', ''))
+
+        try:
+            resp_json = response.json()
+        except json.decoder.JSONDecodeError as exc:
+            logger.exception(exc, extra={"MESSAGE_ID": "EDR_JSON_DECODE_EXCEPTION"})
+            raise self.retry(exc=exc, countdown=DEFAULT_RETRY_AFTER)
+
         data_list = []
 
         if (response.status_code == 404 and isinstance(resp_json, dict)

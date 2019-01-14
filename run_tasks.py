@@ -17,5 +17,5 @@ if __name__ == '__main__':
                 if task_name in key:
                     confirm = input("Do you want to run {} with args {}?(y/N):".format(key, task_args))
                     if confirm.lower() in ("y", "yes"):
-                        app.tasks[key].delay()
+                        app.tasks[key].delay(*task_args)
                         break

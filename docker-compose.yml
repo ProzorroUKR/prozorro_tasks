@@ -43,7 +43,13 @@ services:
       - MONGO_USER_NAME=root
       - MONGO_PASSWORD=example
       - C_FORCE_ROOT=1
-    command: celery -A celery_worker worker --concurrency=20 --pool eventlet --loglevel=info
+      - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      - EDR_API_HOST=https://edr-dev.prozorro.gov.ua
+      - EDR_API_PORT=443
+      - EDR_API_VERSION=1
+      - EDR_API_USER=robot
+      - EDR_API_PASSWORD=91b3233be66e418683247cbbea7b7b4f
+    command: celery -A celery_worker worker --concurrency=20 --loglevel=info
     volumes:
         - .:/app
     depends_on:

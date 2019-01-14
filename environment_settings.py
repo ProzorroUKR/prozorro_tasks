@@ -16,7 +16,7 @@ DS_PORT = os.environ.get("DS_PORT", "80")
 DS_USER = os.environ.get("DS_USER", "robot")
 DS_PASSWORD = os.environ.get("DS_PASSWORD", "robot")
 
-EDR_API_HOST = os.environ.get("EDR_API_HOST", "http://127.0.0.1")
+EDR_API_HOST = os.environ.get("EDR_API_HOST", "http://127.0.0.1")  # should NOT end with "/"
 EDR_API_PORT = os.environ.get("EDR_API_PORT", "80")
 EDR_API_VERSION = os.environ.get("EDR_API_VERSION", "1.0")
 EDR_API_USER = os.environ.get("EDR_API_USER", "robot")
