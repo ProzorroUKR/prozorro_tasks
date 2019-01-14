@@ -32,7 +32,7 @@ if "unittest" not in sys.argv[0]:   # pragma: no cover
             expireAfterSeconds=30 * 3600  # delete index when you've changed this
         )
     except PyMongoError as e:
-        logger.exception(e)
+        logger.exception(e, extra={"MESSAGE_ID": "EDR_PUT_INDEX_EXCEPTION"})
 
 
 def hash_string_to_uid(input_string):
@@ -55,7 +55,7 @@ def get_upload_results(self, *args):
             {'_id': uid}
         )
     except PyMongoError as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_RESULTS_MONGODB_EXCEPTION"})
         raise self.retry()
     else:
         return doc
@@ -71,7 +71,7 @@ def save_upload_results(response_json, *args):
             'createdAt': datetime.utcnow(),
         })
     except PyMongoError as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_POST_RESULTS_MONGODB_EXCEPTION"})
     else:
         return uid
 
@@ -85,6 +85,6 @@ def set_upload_results_attached(*args):
             {"$set": {'attached': True}}
         )
     except PyMongoError as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_UPDATE_RESULTS_MONGODB_EXCEPTION"})
     else:
         return uid

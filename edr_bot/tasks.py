@@ -45,13 +45,14 @@ def process_tender(self, tender_id):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_TENDER_EXCEPTION"})
         raise self.retry(exc=exc)
     else:
         if response.status_code != 200:
             logger.error("Unexpected status code {} while getting tender {}".format(
                 response.status_code, tender_id
-            ))
+            ), extra={"MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
+                      "STATUS_CODE": response.status_code})
             raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
         tender_data = response.json()["data"]
@@ -73,11 +74,11 @@ def process_award_supplier(response, tender, award, supplier):
     if not is_valid_identifier(supplier['identifier']):
         logger.warning('Tender {} award {} identifier {} is not valid.'.format(
             tender['id'], award["id"], supplier['identifier']
-        ))
+        ), extra={"MESSAGE_ID": "EDR_INVALID_IDENTIFIER"})
     elif not check_related_lot_status(tender, award):
         logger.warning("Tender {} bid {} award {} related lot has been cancelled".format(
             tender['id'], award['bid_id'], award['id']
-        ))
+        ), extra={"MESSAGE_ID": "EDR_CANCELLED_LOT"})
     else:
         get_edr_data.delay(
             code=str(supplier['identifier']['id']),
@@ -94,20 +95,20 @@ def process_qualification(response, tender, qualification):
     if not appropriate_bids:
         logger.warning('Tender {} bid {} is missed.'.format(
             tender['id'], qualification['bidID']
-        ))
+        ), extra={"MESSAGE_ID": "EDR_BID_ID_INVALID"})
         return
 
     tenderers = appropriate_bids[0].get('tenderers')
     if not tenderers:
         logger.warning('Tender {} bid {} tenderers are missed.'.format(
             tender['id'], appropriate_bids[0]['id']
-        ))
+        ), extra={"MESSAGE_ID": "EDR_TENDERER_KEY_MISSED"})
         return
 
     if not is_valid_identifier(tenderers[0]['identifier']):
         logger.warning('Tender {} qualification {} identifier {} is not valid.'.format(
             tender['id'], qualification["id"], tenderers[0]['identifier']
-        ))
+        ), extra={"MESSAGE_ID": "EDR_INVALID_IDENTIFIER"})
     else:
         get_edr_data.delay(
             code=str(tenderers[0]['identifier']['id']),
@@ -165,7 +166,7 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
             headers={"X-Client-Request-ID": meta["id"]}
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_DATA_EXCEPTION"})
         raise self.retry(exc=exc)
     else:
         resp_json = response.json()
@@ -174,7 +175,8 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
         if (response.status_code == 404 and isinstance(resp_json, dict)
            and len(resp_json.get('errors', "")) > 0 and len(resp_json.get('errors')[0].get('description', '')) > 0
            and resp_json.get('errors')[0].get('description')[0].get('error', {}).get('code', '') == u"notFound"):
-            logger.warning('Empty response for {} code {}={}.'.format(tender_id, param, code))
+            logger.warning('Empty response for {} code {}={}.'.format(tender_id, param, code),
+                           extra={"MESSAGE_ID": "EDR_GET_DATA_EMPTY_RESPONSE"})
 
             file_content = resp_json.get('errors')[0].get('description')[0]
             file_content['meta'].update(meta)
@@ -236,11 +238,13 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
                 headers={'X-Client-Request-ID': data['meta']['id']}
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
-            logger.exception(exc)
+            logger.exception(exc, extra={"MESSAGE_ID": "EDR_POST_DOC_EXCEPTION"})
             raise self.retry(exc=exc)
         else:
             if response.status_code != 200:
-                logger.error("Incorrect upload status for doc {}".format(data['meta']['id']))
+                logger.error("Incorrect upload status for doc {}".format(data['meta']['id']),
+                             extra={"MESSAGE_ID": "EDR_POST_DOC_ERROR",
+                                    "STATUS_CODE": response.status_code})
                 raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
             response_json = response.json()
@@ -250,7 +254,9 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
         # in worst case there might be a duplicate attached to the tender
         uid = save_upload_results(response_json, data, tender_id, item_name, item_id)
         logger.info("Saved document with uid {} for {} {} {}".format(
-            uid, tender_id, item_name, item_id))
+            uid, tender_id, item_name, item_id),
+            extra={"MESSAGE_ID": "EDR_POST_UPLOAD_RESULTS_SUCCESS"}
+        )
     else:
         # we don't need to pass the response since it's saved to mongodb doc
         response_json = None
@@ -268,14 +274,14 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
     if file_data is None:
         if upload_results is None:
             fall_msg = "Saved results are missed for {} {} {}".format(tender_id, item_name, item_id)
-            logger.critical(fall_msg)
+            logger.critical(fall_msg, extra={"MESSAGE_ID": "EDR_SAVED_RESULTS_MISSED"})
             raise AssertionError(fall_msg)
         else:
             file_data = upload_results["file_data"]
 
     if upload_results and upload_results.get("attached"):
         logger.info("Uploaded file has been already attached to the tender: {} {} {}".format(
-            tender_id, item_name, item_id))
+            tender_id, item_name, item_id), extra={"MESSAGE_ID": "EDR_FILE_ALREADY_ATTACHED"})
         return
 
     document_data = file_data['data']
@@ -300,7 +306,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
             }
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "EDR_ATTACH_DOC_HEAD_EXCEPTION"})
         raise self.retry(exc=exc)
     else:
 
@@ -317,23 +323,24 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 cookies=head_response.cookies,
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
-            logger.exception(exc)
+            logger.exception(exc, extra={"MESSAGE_ID": "EDR_ATTACH_DOC_POST_EXCEPTION"})
             raise self.retry(exc=exc)
         else:
-
             # handle response code
             if response.status_code == 422:
                 logger.error("Incorrect document data while attaching doc {} to tender {}".format(
                     meta_id, tender_id
-                ))
+                ), extra={"MESSAGE_ID": "EDR_ATTACH_DATA_ERROR"})
 
             elif response.status_code != 201:
                 logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
-                ))
+                ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
                 raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
             else:
                 # won't raise anything
                 uid = set_upload_results_attached(data, tender_id, item_name, item_id)
                 logger.info("Set attached document with uid {} for {} {} {}".format(
-                    uid, tender_id, item_name, item_id))
+                    uid, tender_id, item_name, item_id),
+                    extra={"MESSAGE_ID": "EDR_SET_ATTACHED_RESULTS"}
+                )

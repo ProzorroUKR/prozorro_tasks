@@ -37,11 +37,11 @@ def echo_task(self, v=0):  # pragma: no cover
     """
     from time import sleep
     for i in reversed(range(10)):
-        print((v, i))
+        logger.info((v, i), extra={"MESSAGE_ID": "COUNTDOWN"})
         sleep(3)
-    print("Add new task")
+    logger.info("Add new task",  extra={"MESSAGE_ID": "Hi"})
     echo_task.delay(v+1)
-    print("#$" * 10)
+    logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
 
 
 @app.task(bind=True, acks_late=True)
@@ -67,7 +67,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT)
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc)
+        logger.exception(exc, extra={"MESSAGE_ID": "FEED_RETRY_EXCEPTION"})
         raise self.retry(exc=exc)
     else:
         if response.status_code == 200:
@@ -77,7 +77,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                     try:
                         handler(item)
                     except Exception as e:
-                        logger.exception(e)
+                        logger.exception(e, extra={"MESSAGE_ID": "FEED_HANDLER_EXCEPTION"})
 
             # handle cookies
             if response.cookies:
@@ -91,7 +91,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
             )
             if len(response_json["data"]) < API_LIMIT:
                 if descending:
-                    logger.info("Stopping backward crawling")
+                    logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
                     process_feed.apply_async(
                         kwargs=next_page_kwargs,
@@ -109,16 +109,19 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
         elif response.status_code == 412:  # Precondition failed
-            logger.warning("Precondition failed with cookies {}".format(cookies))
+            logger.warning("Precondition failed with cookies {}".format(cookies),
+                           extra={"MESSAGE_ID": "FEED_PRECONDITION_FAILED"})
             retry_kwargs = dict(**self.request.kwargs)
             retry_kwargs["cookies"] = requests.utils.dict_from_cookiejar(response.cookies)
             raise self.retry(kwargs=retry_kwargs)
 
         elif response.status_code == 404:  # "Offset expired/invalid"
-            logger.warning("Offset {} failed with cookies {}".format(offset, cookies))
+            logger.warning("Offset {} failed with cookies {}".format(offset, cookies),
+                           extra={"MESSAGE_ID": "FEED_OFFSET_FAILED"})
 
             if not descending:  # for forward process only
-                logger.info("Feed process reinitialization")
+                logger.info("Feed process reinitialization",
+                            extra={"MESSAGE_ID": "FEED_REINITIALIZATION"})
                 retry_kwargs = {k: v for k, v in self.request.kwargs.items()
                                 if k != "offset"}
                 raise self.retry(kwargs=retry_kwargs)
