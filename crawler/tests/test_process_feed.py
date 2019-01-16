@@ -1,5 +1,4 @@
 from environment_settings import PUBLIC_API_HOST, API_VERSION
-from crawler.tasks import process_feed
 from crawler.settings import (
     API_LIMIT, API_OPT_FIELDS, CONNECT_TIMEOUT, READ_TIMEOUT,
     FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
@@ -8,6 +7,8 @@ from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
 import unittest
 import requests
+with patch('celery_worker.locks.unique_task_decorator', lambda x: x):
+    from crawler.tasks import process_feed
 
 
 class ProcessTestCase(unittest.TestCase):

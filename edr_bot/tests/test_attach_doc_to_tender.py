@@ -43,8 +43,9 @@ class AttachDocTestCase(unittest.TestCase):
         attach_doc_to_tender.retry.assert_called_once_with(exc=requests_mock.post.side_effect)
         get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
 
+    @patch("edr_bot.tasks.set_upload_results_attached")
     @patch("edr_bot.tasks.get_upload_results")
-    def test_handle_head_429_response(self, get_upload_results):
+    def test_handle_head_429_response(self, get_upload_results, set_upload_results_attached):
         get_upload_results.return_value = None
         file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
@@ -80,6 +81,7 @@ class AttachDocTestCase(unittest.TestCase):
         )
         attach_doc_to_tender.retry.assert_not_called()
         get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
+        set_upload_results_attached.assert_called_once_with(data, tender_id, item_name, item_id)
 
     @patch("edr_bot.tasks.get_upload_results")
     def test_handle_post_429_response(self, get_upload_results):

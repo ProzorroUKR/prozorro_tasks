@@ -87,7 +87,7 @@ class TestHandlerCase(unittest.TestCase):
                     'detailsSourceDate': source_date,
                     'id': "b" * 32,
                     'author': 'IdentificationBot',
-                    'sourceRequests': [request_id],
+                    'sourceRequests': [request_id, resp_id],
                     'version': '2.0.0'
                  }
             },
@@ -126,7 +126,7 @@ class TestHandlerCase(unittest.TestCase):
                             'sourceDate': source_date[0],
                             'id': "b" * 32,
                             'author': DOC_AUTHOR,
-                            'sourceRequests': [request_id],
+                            'sourceRequests': [request_id, response_id],
                             'version': VERSION
                         },
                         'data': {'test': 1}
@@ -168,7 +168,7 @@ class TestHandlerCase(unittest.TestCase):
                             'sourceDate': source_date[0],
                             'id': '{}.2.1'.format("b" * 32),
                             'author': DOC_AUTHOR,
-                            'sourceRequests': [request_id],
+                            'sourceRequests': [request_id, response_id],
                             'version': VERSION
                         },
                         'data': {'test': 1}
@@ -183,7 +183,7 @@ class TestHandlerCase(unittest.TestCase):
                             'sourceDate': None,
                             'id': '{}.2.2'.format("b" * 32),
                             'author': DOC_AUTHOR,
-                            'sourceRequests': [request_id],
+                            'sourceRequests': [request_id, response_id],
                             'version': VERSION
                         },
                         'data': {'test': 2}

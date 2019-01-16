@@ -278,7 +278,6 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
 
     upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
-
     if file_data is None:
         if upload_results is None:
             fall_msg = "Saved results are missed for {} {} {}".format(tender_id, item_name, item_id)
