@@ -1,0 +1,36 @@
+image: python:3.6
+
+stages:
+- build
+- test
+- deploy
+
+build:
+  stage: build
+  script:
+    - pip install -r requirements.txt
+    - pip install coverage
+    - pip install coveralls
+
+
+test:
+  script:
+    - coverage run --source=. -m unittest discover
+    - coverage report
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+  artifacts:
+    paths:
+      - htmlcov/
+
+
+pages:
+  stage: deploy
+  dependencies:
+    - test
+  script:
+    - coverage html
+    - mv htmlcov/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
