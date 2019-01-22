@@ -1,35 +1,19 @@
+stages:
+  - test
+  - deploy
+
 image: python:3.6
 
-stages:
-- build
-- test
-- deploy
-
-build:
-  stage: build
+test:
   script:
     - pip install -r requirements.txt
     - pip install coverage
     - pip install coveralls
-
-
-test:
-  script:
     - coverage run --source=. -m unittest discover
-    - coverage report
-  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
-  artifacts:
-    paths:
-      - htmlcov/
-
-
-pages:
-  stage: deploy
-  dependencies:
-    - test
-  script:
     - coverage html
     - mv htmlcov/ public/
+    - coverage report
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
   artifacts:
     paths:
       - public
