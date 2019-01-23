@@ -1,10 +1,9 @@
 stages:
   - test
-  - deploy
-
-image: python:3.6
+  - push image
 
 test:
+  image: python:3.6
   script:
     - pip install -r requirements.txt
     - pip install coverage
@@ -18,3 +17,14 @@ test:
     paths:
       - public
     expire_in: 30 days
+
+docker build:
+  image: docker:latest
+  stage: push image
+  only:
+    - master
+  script:
+    - docker info
+    - docker build -t prozorro/prozorro_tasks .
+    - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
+    - docker push prozorro/prozorro_tasks
