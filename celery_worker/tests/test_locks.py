@@ -10,7 +10,7 @@ from celery_worker.locks import (
     unique_task_decorator,
 )
 from environment_settings import (
-    MONGODB_URL,
+    MONGODB_URL, MONGODB_DATABASE,
     MONGODB_SERVER_SELECTION_TIMEOUT,
     MONGODB_CONNECT_TIMEOUT,
     MONGODB_SOCKET_TIMEOUT
@@ -23,7 +23,7 @@ class LocksTestCase(unittest.TestCase):
     @patch("celery_worker.locks.MongoClient")
     def test_get_mongodb_collection(self, mongodb_client):
         client = MagicMock()
-        client.celery_worker.locks = 13
+        getattr(client, MONGODB_DATABASE).celery_worker_locks = 13
         mongodb_client.return_value = client
 
         return_value = get_mongodb_collection()

@@ -6,6 +6,7 @@ TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
 
 MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://root:example@mongo:27017")
+MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "tasks")
 MONGODB_SERVER_SELECTION_TIMEOUT = int(os.environ.get("MONGODB_SERVER_SELECTION_TIMEOUT", 5))
 MONGODB_CONNECT_TIMEOUT = int(os.environ.get("MONGODB_CONNECT_TIMEOUT", 5))
 MONGODB_SOCKET_TIMEOUT = int(os.environ.get("MONGODB_SOCKET_TIMEOUT", 5))

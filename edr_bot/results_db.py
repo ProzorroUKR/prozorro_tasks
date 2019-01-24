@@ -9,8 +9,7 @@ logger = get_task_logger(__name__)
 
 get_mongodb_collection = partial(
     base_get_mongodb_collection,
-    db_name="erd_bot",
-    collection_name="upload_results"
+    collection_name="erd_bot_upload_results"
 )
 
 

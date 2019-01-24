@@ -5,7 +5,7 @@ from celery.app.task import Task
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure, PyMongoError
 from environment_settings import (
-    MONGODB_URL,
+    MONGODB_URL, MONGODB_DATABASE,
     MONGODB_SERVER_SELECTION_TIMEOUT,
     MONGODB_CONNECT_TIMEOUT,
     MONGODB_SOCKET_TIMEOUT
@@ -17,7 +17,7 @@ logger = get_task_logger(__name__)
 MONGODB_UID_LENGTH = 24
 
 
-def get_mongodb_collection(db_name="celery_worker", collection_name="locks"):
+def get_mongodb_collection(collection_name="celery_worker_locks"):
     client = MongoClient(
         MONGODB_URL,
         serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
@@ -25,7 +25,7 @@ def get_mongodb_collection(db_name="celery_worker", collection_name="locks"):
         socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
         retryWrites=True
     )
-    db = getattr(client, db_name)
+    db = getattr(client, MONGODB_DATABASE)
     collection = getattr(db, collection_name)
     return collection
 
