@@ -38,6 +38,8 @@ services:
     logging:
       driver: "none"
   worker:
+#    hostname: worker
+#    image: prozorro/prozorro_tasks:latest
     build: .
     environment:
       - MONGO_USER_NAME=root
@@ -49,7 +51,7 @@ services:
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
       - EDR_API_PASSWORD=91b3233be66e418683247cbbea7b7b4f
-    command: celery -A celery_worker worker --concurrency=20 --loglevel=info
+    command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
     volumes:
         - .:/app
     depends_on:
