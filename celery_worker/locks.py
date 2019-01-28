@@ -42,9 +42,11 @@ def init_lock_index(self):
         )
     except OperationFailure as e:
         logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
+        return "exists"
     except PyMongoError as e:
         logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
         raise self.retry()
+    return "success"
 
 
 if "test" not in sys.argv[0]:  # pragma: no cover

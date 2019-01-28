@@ -85,7 +85,8 @@ class ProcessTestCase(unittest.TestCase):
                     countdown=60,
                     kwargs={
                         'offset': 1,
-                        'cookies': {'SERVER_ID': server_id}
+                        'cookies': {'SERVER_ID': server_id},
+                        'try_info': (1, 0)
                     }
                 ),
             ],
@@ -145,7 +146,8 @@ class ProcessTestCase(unittest.TestCase):
                     countdown=60,
                     kwargs={
                         'offset': 1,
-                        'cookies': {'SERVER_ID': server_id}
+                        'cookies': {'SERVER_ID': server_id},
+                        'try_info': (1, 0)
                     }
                 ),
             ],
@@ -199,10 +201,7 @@ class ProcessTestCase(unittest.TestCase):
             }
         )
 
-    @patch("crawler.tasks.datetime")
-    def test_proceed_forward_crawler_few_results(self, datetime_mock):
-        now = '2019-01-28T09:15:04.476981+02:00'
-        datetime_mock.now.return_value.isoformat.return_value = now
+    def test_proceed_forward_crawler_few_results(self):
         server_id = "a" * 32
         with patch("crawler.tasks.requests") as requests_mock:
             requests_mock.utils.cookiejar_from_dict = lambda d: d
@@ -246,7 +245,7 @@ class ProcessTestCase(unittest.TestCase):
                 'offset': 2,
                 'descending': '',
                 'cookies': {'SERVER_ID': server_id},
-                'timestamp': now
+                'try_info': (2, 0)
             },
             countdown=WAIT_MORE_RESULTS_COUNTDOWN
         )

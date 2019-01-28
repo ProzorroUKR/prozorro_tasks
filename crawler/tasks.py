@@ -47,9 +47,21 @@ def echo_task(self, v=0):  # pragma: no cover
     logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
 
 
+def get_try_info_arg(try_info, offset):
+    # unique_task_decorator stops forward crawler, if offset is the same (empty or not)
+    # so I have to add counter to distinct real duplicates from just waiting for new changes
+    # new task won't be stopped, cos kwargs are different
+    # though if there are any real duplicates, they still will be captured
+    if try_info and try_info[0] == offset:
+        try_info[1] += 1
+    else:
+        try_info = offset, 0
+    return try_info
+
+
 @app.task(bind=True, acks_late=True)
 @unique_task_decorator
-def process_feed(self, resource="tenders", offset="", descending="", cookies=None, **kw):
+def process_feed(self, resource="tenders", offset="", descending="", cookies=None, try_info=None):
 
     if not offset:  # initialization
         descending = "1"
@@ -97,7 +109,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                 if descending:
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
-                    next_page_kwargs["timestamp"] = datetime.now(tz=TIMEZONE).isoformat()
+                    next_page_kwargs["try_info"] = get_try_info_arg(try_info, next_page_kwargs["offset"])
                     process_feed.apply_async(
                         kwargs=next_page_kwargs,
                         countdown=WAIT_MORE_RESULTS_COUNTDOWN,
@@ -109,7 +121,8 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                 process_feed.apply_async(
                     kwargs=dict(
                         offset=response_json["prev_page"]["offset"],
-                        cookies=cookies
+                        cookies=cookies,
+                        try_info=get_try_info_arg(try_info, response_json["prev_page"]["offset"])
                     ),
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
