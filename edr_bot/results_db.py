@@ -1,8 +1,10 @@
 from datetime import datetime
+from celery_worker.celery import app
 from celery.utils.log import get_task_logger
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
+from celery.signals import celeryd_init
 from functools import partial
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, OperationFailure
 import sys
 
 logger = get_task_logger(__name__)
@@ -13,16 +15,26 @@ get_mongodb_collection = partial(
 )
 
 
-# https://docs.mongodb.com/manual/tutorial/expire-data/
-# TODO: move this somewhere. init?
-if "test" not in sys.argv[0]:   # pragma: no cover
+@app.task(bind=True)
+def init_db_index(self):
+    # https://docs.mongodb.com/manual/tutorial/expire-data/
     try:
         get_mongodb_collection().create_index(
             "createdAt",
             expireAfterSeconds=30 * 3600  # delete index when you've changed this
         )
+    except OperationFailure as e:
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
     except PyMongoError as e:
-        logger.exception(e, extra={"MESSAGE_ID": "EDR_PUT_INDEX_EXCEPTION"})
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
+        raise self.retry()
+
+
+if "test" not in sys.argv[0]:  # pragma: no cover
+
+    @celeryd_init.connect
+    def task_sent_handler(*args, **kwargs):
+        init_db_index.delay()
 
 
 def get_upload_results(self, *args):

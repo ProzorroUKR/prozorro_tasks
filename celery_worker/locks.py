@@ -1,6 +1,8 @@
 from functools import wraps
 from datetime import datetime
+from celery_worker.celery import app
 from celery.utils.log import get_task_logger
+from celery.signals import celeryd_init
 from celery.app.task import Task
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure, PyMongoError
@@ -30,15 +32,26 @@ def get_mongodb_collection(collection_name="celery_worker_locks"):
     return collection
 
 
-# https://docs.mongodb.com/manual/tutorial/expire-data/
-if "test" not in sys.argv[0]:   # pragma: no cover
+@app.task(bind=True)
+def init_lock_index(self):
+    # https://docs.mongodb.com/manual/tutorial/expire-data/
     try:
         get_mongodb_collection().create_index(
             "createdAt",
             expireAfterSeconds=30 * 60  # delete index if you've changed this
         )
     except OperationFailure as e:
-        logger.exception(e)
+        logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
+    except PyMongoError as e:
+        logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
+        raise self.retry()
+
+
+if "test" not in sys.argv[0]:  # pragma: no cover
+
+    @celeryd_init.connect
+    def task_sent_handler(*args, **kwargs):
+        init_lock_index.delay()
 
 
 def hash_string_to_uid(input_string):
