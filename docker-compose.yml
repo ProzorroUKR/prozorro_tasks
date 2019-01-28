@@ -45,6 +45,7 @@ services:
       - MONGO_USER_NAME=root
       - MONGO_PASSWORD=example
       - C_FORCE_ROOT=1
+      - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
       - EDR_API_HOST=https://edr-dev.prozorro.gov.ua
       - EDR_API_PORT=443
@@ -61,6 +62,7 @@ services:
   flower:
     build: .
     command: celery -A celery_worker flower --port=5555
+    # --broker=amqp://user:bitnami@127.0.0.1:5672/edr-bot
     volumes:
       - .:/app
     ports:

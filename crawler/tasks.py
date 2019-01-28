@@ -5,8 +5,9 @@ from crawler.settings import (
     CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS,
     DEFAULT_RETRY_AFTER, FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
 )
-from environment_settings import PUBLIC_API_HOST, API_VERSION
+from environment_settings import PUBLIC_API_HOST, API_VERSION, TIMEZONE
 from edr_bot.handlers import edr_bot_tender_handler
+from datetime import datetime
 import requests
 
 
@@ -48,7 +49,7 @@ def echo_task(self, v=0):  # pragma: no cover
 
 @app.task(bind=True, acks_late=True)
 @unique_task_decorator
-def process_feed(self, resource="tenders", offset="", descending="", cookies=None):
+def process_feed(self, resource="tenders", offset="", descending="", cookies=None, **kw):
 
     if not offset:  # initialization
         descending = "1"
@@ -96,6 +97,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
                 if descending:
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
+                    next_page_kwargs["timestamp"] = datetime.now(tz=TIMEZONE).isoformat()
                     process_feed.apply_async(
                         kwargs=next_page_kwargs,
                         countdown=WAIT_MORE_RESULTS_COUNTDOWN,
