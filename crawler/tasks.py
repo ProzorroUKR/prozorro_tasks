@@ -61,7 +61,7 @@ def get_try_info_arg(try_info, offset):
 
 @app.task(bind=True, acks_late=True)
 @unique_task_decorator
-def process_feed(self, resource="tenders", offset="", descending="", cookies=None, try_info=None):
+def process_feed(self, resource="tenders", offset="", descending="", mode="", cookies=None, try_info=None):
 
     if not offset:  # initialization
         descending = "1"
@@ -73,7 +73,8 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
             descending=descending,
             offset=offset,
             limit=API_LIMIT,
-            opt_fields="%2C".join(API_OPT_FIELDS)
+            opt_fields="%2C".join(API_OPT_FIELDS),
+            mode=mode,
           )
 
     try:
@@ -101,6 +102,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
 
             # schedule getting the next page
             next_page_kwargs = dict(
+                mode=mode,
                 offset=response_json["next_page"]["offset"],
                 descending=descending,
                 cookies=cookies
@@ -120,6 +122,7 @@ def process_feed(self, resource="tenders", offset="", descending="", cookies=Non
             if not offset:  # if it's initialization, add forward crawling task
                 process_feed.apply_async(
                     kwargs=dict(
+                        mode=mode,
                         offset=response_json["prev_page"]["offset"],
                         cookies=cookies,
                         try_info=get_try_info_arg(try_info, response_json["prev_page"]["offset"])

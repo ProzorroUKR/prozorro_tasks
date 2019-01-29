@@ -72,7 +72,8 @@ class ProcessTestCase(unittest.TestCase):
                     opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
                     descending="1",
-                    offset=""
+                    offset="",
+                    mode=""
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -84,6 +85,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'mode': '',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
                         'try_info': (1, 0)
@@ -126,7 +128,8 @@ class ProcessTestCase(unittest.TestCase):
                     opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
                     descending="1",
-                    offset=""
+                    offset="",
+                    mode="",
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -137,6 +140,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
+                        'mode': '',
                         'offset': -1,
                         'descending': '1',
                         'cookies': {'SERVER_ID': server_id}
@@ -145,6 +149,71 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'mode': '',
+                        'offset': 1,
+                        'cookies': {'SERVER_ID': server_id},
+                        'try_info': (1, 0)
+                    }
+                ),
+            ],
+            msg="Only forward crawling since len(data) < API_LIMIT"
+        )
+
+    def test_start_test_crawler(self):
+        server_id = "a" * 32
+        with patch("crawler.tasks.requests") as requests_mock:
+            requests_mock.utils.dict_from_cookiejar = requests_mock.utils.cookiejar_from_dict = lambda d: d
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies={'SERVER_ID': server_id},
+                json=Mock(return_value={
+                    'data': [
+                        {
+                            "id": uid
+                        }
+                        for uid in range(API_LIMIT)
+                    ],
+                    'next_page': {
+                        'offset': -1
+                    },
+                    'prev_page': {
+                        'offset': 1
+                    },
+                }),
+            )
+            process_feed.apply_async = Mock()
+            process_feed(mode="test")
+
+            requests_mock.get.assert_called_once_with(
+                FEED_URL_TEMPLATE.format(
+                    host=PUBLIC_API_HOST,
+                    version=API_VERSION,
+                    limit=API_LIMIT,
+                    opt_fields="%2C".join(API_OPT_FIELDS),
+                    resource="tenders",
+                    descending="1",
+                    offset="",
+                    mode="test",
+                ),
+                cookies={},
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            )
+
+        self.assertEqual(
+            process_feed.apply_async.call_args_list,
+            [
+                call(
+                    kwargs={
+                        'mode': 'test',
+                        'offset': -1,
+                        'descending': '1',
+                        'cookies': {'SERVER_ID': server_id}
+                    }
+                ),
+                call(
+                    countdown=60,
+                    kwargs={
+                        'mode': 'test',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
                         'try_info': (1, 0)
@@ -186,6 +255,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="",
                     offset=1,
+                    mode="",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -195,6 +265,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'mode': '',
                 'offset': 2,
                 'descending': '',
                 'cookies': {'SERVER_ID': server_id}
@@ -233,6 +304,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="",
                     offset=1,
+                    mode="",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -242,6 +314,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'mode': '',
                 'offset': 2,
                 'descending': '',
                 'cookies': {'SERVER_ID': server_id},
@@ -282,6 +355,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending=1,
                     offset=-1,
+                    mode="",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -291,6 +365,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'mode': '',
                 'offset': -2,
                 'descending': 1,
                 'cookies': {'SERVER_ID': server_id}
@@ -329,6 +404,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending=1,
                     offset=-1,
+                    mode="",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
