@@ -156,7 +156,7 @@ class ProcessTestCase(unittest.TestCase):
                     }
                 ),
             ],
-            msg="Only forward crawling since len(data) < API_LIMIT"
+            msg="Both forward and backward crawling"
         )
 
     def test_start_test_crawler(self):
@@ -220,7 +220,54 @@ class ProcessTestCase(unittest.TestCase):
                     }
                 ),
             ],
-            msg="Only forward crawling since len(data) < API_LIMIT"
+            msg="Both forward and backward crawling"
+        )
+
+    def test_start_crawler_on_empty_feed(self):
+        server_id = "a" * 32
+        with patch("crawler.tasks.requests") as requests_mock:
+            requests_mock.utils.dict_from_cookiejar = requests_mock.utils.cookiejar_from_dict = lambda d: d
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies={'SERVER_ID': server_id},
+                json=Mock(return_value={
+                    'data': [],
+                    'next_page': {
+                        'offset': ""
+                    }
+                }),
+            )
+            process_feed.apply_async = Mock()
+            process_feed()
+
+            requests_mock.get.assert_called_once_with(
+                FEED_URL_TEMPLATE.format(
+                    host=PUBLIC_API_HOST,
+                    version=API_VERSION,
+                    limit=API_LIMIT,
+                    opt_fields="%2C".join(API_OPT_FIELDS),
+                    resource="tenders",
+                    descending="1",
+                    offset="",
+                    mode="",
+                ),
+                cookies={},
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            )
+        self.assertEqual(
+            process_feed.apply_async.call_args_list,
+            [
+                call(
+                    countdown=60,
+                    kwargs={
+                        'mode': '',
+                        'offset': '',
+                        'cookies': {'SERVER_ID': server_id},
+                        'try_info': ('', 0)
+                    }
+                ),
+            ],
+            msg="Only forward crawling after initialization on empty feed response"
         )
 
     def test_proceed_forward_crawler(self):

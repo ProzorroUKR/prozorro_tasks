@@ -119,13 +119,19 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="", co
             else:
                 process_feed.apply_async(kwargs=next_page_kwargs)
 
-            if not offset:  # if it's initialization, add forward crawling task
+            # if it's initialization, add forward crawling task
+            if not offset:
+                if response_json.get("prev_page", {}).get("offset"):
+                    next_offset = response_json["prev_page"]["offset"]
+                else:
+                    logger.info("Initialization on an empty feed result", extra={"MESSAGE_ID": "FEED_INIT_EMPTY"})
+                    next_offset = ''
                 process_feed.apply_async(
                     kwargs=dict(
                         mode=mode,
-                        offset=response_json["prev_page"]["offset"],
+                        offset=next_offset,
                         cookies=cookies,
-                        try_info=get_try_info_arg(try_info, response_json["prev_page"]["offset"])
+                        try_info=get_try_info_arg(try_info, next_offset)
                     ),
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
