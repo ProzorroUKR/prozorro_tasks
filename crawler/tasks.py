@@ -47,21 +47,9 @@ def echo_task(self, v=0):  # pragma: no cover
     logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
 
 
-def get_try_info_arg(try_info, offset):
-    # unique_task_decorator stops forward crawler, if offset is the same (empty or not)
-    # so I have to add counter to distinct real duplicates from just waiting for new changes
-    # new task won't be stopped, cos kwargs are different
-    # though if there are any real duplicates, they still will be captured
-    if try_info and try_info[0] == offset:
-        try_info[1] += 1
-    else:
-        try_info = offset, 0
-    return try_info
-
-
 @app.task(bind=True, acks_late=True)
 @unique_task_decorator
-def process_feed(self, resource="tenders", offset="", descending="", mode="", cookies=None, try_info=None):
+def process_feed(self, resource="tenders", offset="", descending="", mode="", cookies=None, try_count=0):
 
     if not offset:  # initialization
         descending = "1"
@@ -111,7 +99,8 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="", co
                 if descending:
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
-                    next_page_kwargs["try_info"] = get_try_info_arg(try_info, next_page_kwargs["offset"])
+                    if offset == next_page_kwargs["offset"]:
+                        next_page_kwargs["try_count"] = try_count + 1
                     process_feed.apply_async(
                         kwargs=next_page_kwargs,
                         countdown=WAIT_MORE_RESULTS_COUNTDOWN,
@@ -121,18 +110,19 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="", co
 
             # if it's initialization, add forward crawling task
             if not offset:
+                process_kwargs = dict(
+                    mode=mode,
+                    cookies=cookies,
+                )
                 if response_json.get("prev_page", {}).get("offset"):
-                    next_offset = response_json["prev_page"]["offset"]
+                    process_kwargs["offset"] = response_json["prev_page"]["offset"]
                 else:
-                    logger.info("Initialization on an empty feed result", extra={"MESSAGE_ID": "FEED_INIT_EMPTY"})
-                    next_offset = ''
+                    logger.debug("Initialization on an empty feed result", extra={"MESSAGE_ID": "FEED_INIT_EMPTY"})
+                    process_kwargs["offset"] = ""
+                    process_kwargs["try_count"] = try_count + 1
+
                 process_feed.apply_async(
-                    kwargs=dict(
-                        mode=mode,
-                        offset=next_offset,
-                        cookies=cookies,
-                        try_info=get_try_info_arg(try_info, next_offset)
-                    ),
+                    kwargs=process_kwargs,
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
         elif response.status_code == 412:  # Precondition failed
