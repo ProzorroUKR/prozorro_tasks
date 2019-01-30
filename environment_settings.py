@@ -11,15 +11,15 @@ MONGODB_SERVER_SELECTION_TIMEOUT = int(os.environ.get("MONGODB_SERVER_SELECTION_
 MONGODB_CONNECT_TIMEOUT = int(os.environ.get("MONGODB_CONNECT_TIMEOUT", 5))
 MONGODB_SOCKET_TIMEOUT = int(os.environ.get("MONGODB_SOCKET_TIMEOUT", 5))
 
-PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openprocurement.org")
+PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openprocurement.gov.ua")
 API_HOST = os.environ.get("API_HOST", "https://lb.api.openprocurement.org")
 API_VERSION = os.environ.get("API_VERSION", "2.4")
 API_TOKEN = os.environ.get("API_TOKEN", "robot")
 
-DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.org")
-DS_PORT = os.environ.get("DS_PORT", "80")
-DS_USER = os.environ.get("DS_USER", "robot")
-DS_PASSWORD = os.environ.get("DS_PASSWORD", "robot")
+DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.gov.ua")
+DS_PORT = os.environ.get("DS_PORT", "443")
+DS_USER = os.environ.get("DS_USER", "bot")
+DS_PASSWORD = os.environ.get("DS_PASSWORD", "bot")
 
 EDR_API_HOST = os.environ.get("EDR_API_HOST", "http://127.0.0.1")  # should NOT end with "/"
 EDR_API_PORT = os.environ.get("EDR_API_PORT", "80")

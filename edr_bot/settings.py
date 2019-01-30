@@ -9,6 +9,7 @@ pre_qualification_procedures = (
     'competitiveDialogueUA',
     'competitiveDialogueEU',
     'esco',
+    'closeFrameworkAgreementUA',
 )
 qualification_procedures = (
     'aboveThresholdUA',
@@ -17,6 +18,7 @@ qualification_procedures = (
     'competitiveDialogueUA.stage2',
     'competitiveDialogueEU.stage2',
     'esco',
+    'closeFrameworkAgreementUA',
 )
 ID_PASSPORT_LEN = 9
 
