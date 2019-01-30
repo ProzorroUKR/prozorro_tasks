@@ -335,8 +335,8 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
         else:
             # handle response code
             if response.status_code == 422:
-                logger.error("Incorrect document data while attaching doc {} to tender {}".format(
-                    meta_id, tender_id
+                logger.error("Incorrect document data while attaching doc {} to tender {}: {}".format(
+                    meta_id, tender_id, response.text
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_DATA_ERROR"})
 
             elif response.status_code != 201:

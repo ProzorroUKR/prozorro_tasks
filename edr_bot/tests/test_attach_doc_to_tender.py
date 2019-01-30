@@ -130,13 +130,14 @@ class AttachDocTestCase(unittest.TestCase):
         with patch("edr_bot.tasks.requests") as requests_mock:
             requests_mock.post.return_value = Mock(
                 status_code=422,
-                headers={'Retry-After': ret_aft},
+                text='{"errors": {"url": ["Document url expired."]}}'
             )
             requests_mock.head.return_value = Mock(cookies={'SERVER_ID': server_id})
             attach_doc_to_tender.retry = Mock(side_effect=Retry)
 
-            attach_doc_to_tender(file_data=file_data, data=data,
-                                 tender_id=tender_id, item_name=item_name, item_id=item_id)
+            with patch("edr_bot.tasks.logger") as logger_mock:
+                attach_doc_to_tender(file_data=file_data, data=data,
+                                     tender_id=tender_id, item_name=item_name, item_id=item_id)
 
         requests_mock.post.assert_called_once_with(
             "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
@@ -156,6 +157,11 @@ class AttachDocTestCase(unittest.TestCase):
         )
         attach_doc_to_tender.retry.assert_not_called()
         get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
+        logger_mock.error.assert_called_once_with(
+            'Incorrect document data while attaching doc 1 to tender ffffffffffffffffffffffffffffffff: '
+            '{"errors": {"url": ["Document url expired."]}}',
+            extra={'MESSAGE_ID': 'EDR_ATTACH_DATA_ERROR'}
+        )
 
     @patch("edr_bot.tasks.set_upload_results_attached")
     @patch("edr_bot.tasks.get_upload_results")
