@@ -14,7 +14,7 @@ from edr_bot.results_db import (
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
     EDR_API_HOST, EDR_API_PORT, EDR_API_VERSION, EDR_API_USER, EDR_API_PASSWORD,
-    DS_HOST, DS_PORT, DS_USER, DS_PASSWORD,
+    DS_HOST, DS_USER, DS_PASSWORD,
 )
 from uuid import uuid4
 import requests
@@ -239,7 +239,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
         try:
             response = requests.post(
-                '{host}:{port}/upload'.format(host=DS_HOST, port=DS_PORT),
+                '{host}/upload'.format(host=DS_HOST),
                 auth=(DS_USER, DS_PASSWORD),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 files=files,

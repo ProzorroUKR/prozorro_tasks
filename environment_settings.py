@@ -17,7 +17,6 @@ API_VERSION = os.environ.get("API_VERSION", "2.4")
 API_TOKEN = os.environ.get("API_TOKEN", "robot")
 
 DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.gov.ua")
-DS_PORT = os.environ.get("DS_PORT", "443")
 DS_USER = os.environ.get("DS_USER", "bot")
 DS_PASSWORD = os.environ.get("DS_PASSWORD", "bot")
 

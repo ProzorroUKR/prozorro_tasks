@@ -50,7 +50,6 @@ services:
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
       - API_TOKEN=ef7269f17acd462f9fc560e0a0ba26d3
       - DS_HOST=https://upload-docs-sandbox.prozorro.gov.ua
-      - DS_PORT=443
       - DS_USER=edrbot
       - DS_PASSWORD=28223af397704c9dbd942ff9b0b81100
       - EDR_API_HOST=https://edr-dev-gc.prozorro.gov.ua
