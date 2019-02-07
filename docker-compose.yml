@@ -60,13 +60,32 @@ services:
     hostname: rabbit
     image: rabbitmq:3-management
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=mypass
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: mypass
+      RABBITMQ_ERLANG_COOKIE: whatever
     ports:
         - "5672:5672"
         - "15672:15672"
     logging:
       driver: "none"
+
+  hare:
+    hostname: hare
+    image: rabbitmq:3-management
+    ports:
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: mypass
+      RABBITMQ_ERLANG_COOKIE: whatever
+    logging:
+      driver: "none"
+  #to set syncing the nodes:
+  #docker-compose exec hare bash
+  #rabbitmqctl stop_app
+  #rabbitmqctl join_cluster rabbit@rabbit
+  #rabbitmqctl start_app
+  #rabbitmqctl set_policy ha-all "" '{"ha-mode":"all","ha-sync-mode":"automatic"}'
 
   worker:
 #    hostname: worker
@@ -74,6 +93,7 @@ services:
     build: .
     environment:
       - MONGODB_URL=mongodb://root:example@mongo:27017,mongo-secondary:27017,mongodb-arbiter:27017/?replicaSet=rs0
+      - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//;amqp://admin:mypass@hare:5672//
       - C_FORCE_ROOT=1
       - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
@@ -93,7 +113,7 @@ services:
     depends_on:
       - mongo
       - rabbit
-
+      - hare
   flower:
     build: .
     command: celery -A celery_worker flower --port=5555
