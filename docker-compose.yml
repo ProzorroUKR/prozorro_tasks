@@ -3,24 +3,56 @@ version: '3'
 services:
   mongo:
     hostname: mongo
-    image: mongo:latest
-    ports:
-      - "27017:27017"
+    image: 'bitnami/mongodb:latest'
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - './mongo_data:/data'
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_REPLICA_SET_KEY: replicaSetKey
+      MONGODB_ROOT_PASSWORD: example
     logging:
       driver: "none"
+
+  mongo-secondary:
+    hostname: mongo-secondary
+    image: 'bitnami/mongodb:latest'
+    depends_on:
+      - mongo
+    environment:
+      MONGODB_REPLICA_SET_MODE: secondary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PRIMARY_HOST: mongo
+      MONGODB_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_REPLICA_SET_KEY: replicaSetKey
+      MONGODB_PRIMARY_ROOT_PASSWORD: example
+    logging:
+      driver: "none"
+
+  mongodb-arbiter:
+    hostname: mongo-arbiter
+    image: 'bitnami/mongodb:latest'
+    depends_on:
+      - mongo
+    environment:
+      MONGODB_REPLICA_SET_MODE: arbiter
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PRIMARY_HOST: mongo
+      MONGODB_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_REPLICA_SET_KEY: replicaSetKey
+      MONGODB_PRIMARY_ROOT_PASSWORD: example
+    logging:
+      driver: "none"
+
   mongo-express:
     image: mongo-express
     restart: always
+    depends_on:
+      - mongo
     ports:
       - 8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_SERVER: mongo,mongo-secondary,mongodb-arbiter
     logging:
       driver: "none"
 
@@ -30,20 +62,18 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=mypass
-    volumes:
-      - "./rabbit_data:/var/lib/rabbitmq/mnesia/rabbit@rabbit"
     ports:
         - "5672:5672"
         - "15672:15672"
     logging:
       driver: "none"
+
   worker:
 #    hostname: worker
 #    image: prozorro/prozorro_tasks:latest
     build: .
     environment:
-      - MONGO_USER_NAME=root
-      - MONGO_PASSWORD=example
+      - MONGODB_URL=mongodb://root:example@mongo:27017,mongo-secondary:27017,mongodb-arbiter:27017/?replicaSet=rs0
       - C_FORCE_ROOT=1
       - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
