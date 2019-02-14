@@ -12,3 +12,12 @@ Distributed task manager
 *One Ring to rule them all*
 
 
+Feed process start
+------------------
+
+kubectl exec -it <pod-name>  -- /bin/bash
+
+# python
+>>> from crawler.tasks import process_feed
+>>> process_feed.delay(mode="_all_")
+
