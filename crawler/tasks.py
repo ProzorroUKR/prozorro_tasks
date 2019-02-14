@@ -47,7 +47,7 @@ def echo_task(self, v=0):  # pragma: no cover
     logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
 
 
-@app.task(bind=True, acks_late=True)
+@app.task(bind=True, acks_late=True, max_retries=None)
 @unique_task_decorator
 def process_feed(self, resource="tenders", offset="", descending="", mode="", cookies=None, try_count=0):
 
