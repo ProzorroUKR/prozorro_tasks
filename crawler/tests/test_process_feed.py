@@ -73,7 +73,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="1",
                     offset="",
-                    mode=""
+                    mode="_all_"
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -85,7 +85,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
                     }
@@ -128,7 +128,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="1",
                     offset="",
-                    mode="",
+                    mode="_all_",
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -139,7 +139,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': -1,
                         'descending': '1',
                         'cookies': {'SERVER_ID': server_id}
@@ -148,7 +148,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
                     }
@@ -246,7 +246,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="1",
                     offset="",
-                    mode="",
+                    mode="_all_",
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -257,7 +257,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': '',
                         'cookies': {'SERVER_ID': server_id},
                         'try_count': 1,
@@ -291,7 +291,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="1",
                     offset="",
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -302,7 +302,7 @@ class ProcessTestCase(unittest.TestCase):
         process_feed.apply_async.assert_called_once_with(
             countdown=60,
             kwargs={
-                'mode': '',
+                'mode': '_all_',
                 'offset': '',
                 'cookies': {'SERVER_ID': server_id},
                 'try_count': 2,
@@ -341,7 +341,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="1",
                     offset="",
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -354,7 +354,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': -1,
                         'descending': '1',
                         'cookies': {'SERVER_ID': server_id}
@@ -363,7 +363,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
-                        'mode': '',
+                        'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
                     }
@@ -404,7 +404,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="",
                     offset=1,
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -414,7 +414,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
-                'mode': '',
+                'mode': '_all_',
                 'offset': 2,
                 'descending': '',
                 'cookies': {'SERVER_ID': server_id}
@@ -453,7 +453,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending="",
                     offset=1,
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -463,7 +463,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
-                'mode': '',
+                'mode': '_all_',
                 'offset': 2,
                 'descending': '',
                 'cookies': {'SERVER_ID': server_id}
@@ -503,7 +503,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending=1,
                     offset=-1,
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
@@ -513,7 +513,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
-                'mode': '',
+                'mode': '_all_',
                 'offset': -2,
                 'descending': 1,
                 'cookies': {'SERVER_ID': server_id}
@@ -552,7 +552,7 @@ class ProcessTestCase(unittest.TestCase):
                     resource="tenders",
                     descending=1,
                     offset=-1,
-                    mode="",
+                    mode="_all_",
                     limit=API_LIMIT,
                     opt_fields="%2C".join(API_OPT_FIELDS)
                 ),
