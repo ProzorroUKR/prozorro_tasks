@@ -3,12 +3,12 @@ from celery_worker.celery import app
 from celery_worker.locks import unique_task_decorator
 from crawler.settings import (
     CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS,
-    DEFAULT_RETRY_AFTER, FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
+    FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
 )
-from environment_settings import PUBLIC_API_HOST, API_VERSION, TIMEZONE
+from environment_settings import PUBLIC_API_HOST, API_VERSION
 from edr_bot.handlers import edr_bot_tender_handler
 from edr_bot.utils import get_request_retry_countdown
-from datetime import datetime
+from fiscal_bot.handlers import fiscal_bot_tender_handler
 import requests
 
 
@@ -22,6 +22,7 @@ logger = get_task_logger(__name__)
 
 ITEM_HANDLERS = [
     edr_bot_tender_handler,
+    fiscal_bot_tender_handler,
 ]
 
 RETRY_REQUESTS_EXCEPTIONS = (

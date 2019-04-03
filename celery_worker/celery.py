@@ -10,7 +10,9 @@ app = Celery(
     broker=CELERY_BROKER_URL,
     include=[
         'crawler.tasks',
-        'edr_bot.tasks'
+        'edr_bot.tasks',
+        'fiscal_bot.tasks',
+        'tasks_utils.tasks',
     ],
 )
 app.config_from_object(celeryconfig)
