@@ -144,6 +144,8 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                 raise self.retry(kwargs=retry_kwargs)
 
         else:
+            logger.warning("Unexpected status code {}: {}".format(response.status_code, response.text),
+                           extra={"MESSAGE_ID": "FEED_UNEXPECTED_STATUS"})
             raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
         return response.status_code
