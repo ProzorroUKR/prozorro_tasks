@@ -23,7 +23,7 @@ def upload_to_doc_service(self, name, content, doc_type,
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
     task_args = name, content, doc_type, tender_id, item_name, item_id
-    result = get_task_result(self, *task_args)
+    result = get_task_result(self, task_args)
     if result is None:
         try:
             response = requests.post(
@@ -49,7 +49,7 @@ def upload_to_doc_service(self, name, content, doc_type,
             # save response to mongodb, so that the file won't be uploaded again
             # fail silently: if mongodb isn't available, the task will neither fail nor retry
             # in worst case there might be a duplicate attached to the tender
-            uid = save_task_result(result, *task_args)
+            uid = save_task_result(self, result, task_args)
             logger.info("Saved document with uid {} for {} {} {}".format(
                 uid, tender_id, item_name, item_id),
                 extra={"MESSAGE_ID": "POST_UPLOAD_DOC_RESULTS_SUCCESS"}
@@ -67,7 +67,7 @@ def upload_to_doc_service(self, name, content, doc_type,
 def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
 
     task_args = data, tender_id, item_name, item_id
-    result = get_task_result(self, *task_args)
+    result = get_task_result(self, task_args)
     if result:
         logger.info("File has been already attached to the tender: {} {} {}".format(
             tender_id, item_name, item_id), extra={"MESSAGE_ID": "DOC_ALREADY_ATTACHED"})
@@ -120,7 +120,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     ), extra={"MESSAGE_ID": "ATTACH_DOC_STATUS_ERROR", "STATUS_CODE": response.status_code})
                     raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
                 else:
-                    uid = save_task_result(True, *task_args)
+                    uid = save_task_result(self, True, task_args)
                     logger.info(
                         "File attached uid={} for {} {} {}".format(uid, tender_id, item_name, item_id),
                         extra={"MESSAGE_ID": "SUCCESSFUL_DOC_ATTACHED"}

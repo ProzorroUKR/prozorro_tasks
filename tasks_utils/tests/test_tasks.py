@@ -187,8 +187,14 @@ class AttachToTenderTestCase(unittest.TestCase):
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
             }
         )
+        get_task_result_mock.assert_called_once_with(
+            attach_doc_to_tender,
+            (data, tender_id, item_name, item_id)
+        )
         save_task_result_mock.assert_called_once_with(
-            True, data, tender_id, item_name, item_id
+            attach_doc_to_tender,
+            True,
+            (data, tender_id, item_name, item_id)
         )
 
     @patch("tasks_utils.tasks.save_task_result")
@@ -327,6 +333,7 @@ class DSUploadTestCase(unittest.TestCase):
         tender_id = "a" * 32
         item_name = "award"
         item_id = "f" * 32
+        doc_type = "useless_bytes"
         data = "aGk="
         name = "26591010101017J1603101100000000111220172659.KVT"
 
@@ -346,7 +353,7 @@ class DSUploadTestCase(unittest.TestCase):
             )
 
             upload_to_doc_service(
-                name=name, content=data, doc_type="",
+                name=name, content=data, doc_type=doc_type,
                 tender_id=tender_id, item_name=item_name, item_id=item_id
             )
 
@@ -362,6 +369,12 @@ class DSUploadTestCase(unittest.TestCase):
             data=file_data,
             tender_id='a' * 32
         )
+        get_task_result_mock.assert_called_once_with(
+            upload_to_doc_service,
+            (name, data, doc_type, tender_id, item_name, item_id)
+        )
         save_task_result_mock.assert_called_once_with(
-            file_data, name, data, "", tender_id, item_name, item_id
+            upload_to_doc_service,
+            file_data,
+            (name, data, doc_type, tender_id, item_name, item_id)
         )

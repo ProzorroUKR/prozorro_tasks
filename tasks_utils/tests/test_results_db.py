@@ -11,16 +11,17 @@ class ResultsDBTestCase(unittest.TestCase):
     @patch("tasks_utils.results_db.get_mongodb_collection")
     def test_get_upload_results(self, get_collection):
         task = MagicMock()
+        task.name = "bot.some_task"
 
         collection = MagicMock()
         collection.find_one.return_value = {"result": {"hello": "there"}}
         get_collection.return_value = collection
 
         args = (1, "two", 3)
-        result = get_task_result(task, *args)
+        result = get_task_result(task, args)
 
         self.assertEqual(result, {"hello": "there"})
-        collection.find_one.assert_called_once_with({'_id': args_to_uid(args)})
+        collection.find_one.assert_called_once_with({'_id': args_to_uid(("bot.some_task",) + args)})
 
     @patch("tasks_utils.results_db.get_mongodb_collection")
     def test_get_upload_results_raise_exc(self, get_collection):
@@ -29,6 +30,7 @@ class ResultsDBTestCase(unittest.TestCase):
             pass
 
         task = MagicMock()
+        task.name = "bot.some_task"
         task.retry = RetryException
 
         collection = MagicMock()
@@ -37,12 +39,15 @@ class ResultsDBTestCase(unittest.TestCase):
 
         args = (1, "two", 3)
         with self.assertRaises(RetryException):
-            get_task_result(task, *args)
+            get_task_result(task, args)
 
-        collection.find_one.assert_called_once_with({'_id': args_to_uid(args)})
+        collection.find_one.assert_called_once_with({'_id': args_to_uid(("bot.some_task",) + args)})
 
     @patch("tasks_utils.results_db.get_mongodb_collection")
     def test_save_upload_results(self, get_collection):
+        task = MagicMock()
+        task.name = "bot.some_task"
+
         collection = MagicMock()
         get_collection.return_value = collection
 
@@ -51,21 +56,24 @@ class ResultsDBTestCase(unittest.TestCase):
 
         with patch("tasks_utils.results_db.datetime") as datetime_mock:
             datetime_mock.utcnow.return_value = datetime.utcnow()
-            result = save_task_result(file_data, *args)
+            result = save_task_result(task, file_data, args)
 
-        collection.insert.assert_called_once_with(
+        collection.insert_one.assert_called_once_with(
             {
-                '_id': args_to_uid(args),
+                '_id': args_to_uid(("bot.some_task",) + args),
                 'result': file_data,
                 'createdAt': datetime_mock.utcnow.return_value
             }
         )
-        self.assertEqual(result, args_to_uid(args))
+        self.assertEqual(result, args_to_uid(("bot.some_task",) + args))
 
     @patch("tasks_utils.results_db.get_mongodb_collection")
     def test_save_upload_results_raise_exc(self, get_collection):
+        task = MagicMock()
+        task.name = "bot.some_task"
+
         collection = MagicMock()
-        collection.insert.side_effect = NetworkTimeout()
+        collection.insert_one.side_effect = NetworkTimeout()
         get_collection.return_value = collection
 
         file_data = {"data": 1, "meta": "hello"}
@@ -73,11 +81,11 @@ class ResultsDBTestCase(unittest.TestCase):
 
         with patch("tasks_utils.results_db.datetime") as datetime_mock:
             datetime_mock.utcnow.return_value = datetime.utcnow()
-            result = save_task_result(file_data, *args)
+            result = save_task_result(task, file_data, args)
 
-        collection.insert.assert_called_once_with(
+        collection.insert_one.assert_called_once_with(
             {
-                '_id': args_to_uid(args),
+                '_id': args_to_uid(("bot.some_task",) + args),
                 'result': file_data,
                 'createdAt': datetime_mock.utcnow.return_value
             }

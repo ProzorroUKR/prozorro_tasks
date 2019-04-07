@@ -39,7 +39,8 @@ if "test" not in sys.argv[0]:  # pragma: no cover
         init_db_index.delay()
 
 
-def get_task_result(self, *args):
+def get_task_result(self, args):
+    args = tuple((self.name, *args))
     uid = args_to_uid(args)
     collection = get_mongodb_collection()
     try:
@@ -53,11 +54,12 @@ def get_task_result(self, *args):
         return doc and doc["result"]
 
 
-def save_task_result(result, *args):
+def save_task_result(self, result, args):
+    args = tuple((self.name, *args))
     uid = args_to_uid(args)
     collection = get_mongodb_collection()
     try:
-        collection.insert({
+        collection.insert_one({
             '_id': uid,
             'result': result,
             'createdAt': datetime.utcnow(),
