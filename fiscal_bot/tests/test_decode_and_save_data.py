@@ -4,6 +4,7 @@ from fiscal_bot.settings import DOC_TYPE
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.exceptions import Retry
 from unittest.mock import patch, MagicMock
+import base64
 import unittest
 import requests
 
@@ -62,7 +63,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         retry_mock.assert_called_once_with(countdown=14)
 
     @patch("fiscal_bot.tasks.upload_to_doc_service")
-    def test_success(self, upload_to_doc_service_mock):
+    def test_unexpected_data(self, upload_to_doc_service_mock):
         tender_id = "a" * 32
         award_id = "f" * 32
         data = "aGk="
@@ -79,11 +80,31 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
+        upload_to_doc_service_mock.delay.assert_not_called()
+
+    @patch("fiscal_bot.tasks.upload_to_doc_service")
+    def test_success(self, upload_to_doc_service_mock):
+        tender_id = "a" * 32
+        award_id = "f" * 32
+        data = b"<?xml>Hello"
+        name = "26591010101017J1603101100000000111220172659.KVT"
+
+        with patch("fiscal_bot.tasks.requests") as requests_mock:
+            requests_mock.post.return_value = MagicMock(status_code=200, content=data)
+
+            decode_and_save_data(name, base64.b64encode(data), tender_id, award_id)
+
+        requests_mock.post.assert_called_once_with(
+            "{}/decrypt_fiscal/file".format(API_SIGN_HOST),
+            files={'file': (name, data)},
+            auth=(API_SIGN_USER, API_SIGN_PASSWORD),
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
 
         upload_to_doc_service_mock.delay.assert_called_once_with(
             item_name='award',
             item_id='f' * 32,
-            content="aGVsbG8=",
+            content=base64.b64encode(data).decode(),
             name=name,
             doc_type=DOC_TYPE,
             tender_id='a' * 32

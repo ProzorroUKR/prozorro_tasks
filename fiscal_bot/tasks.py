@@ -195,24 +195,31 @@ def decode_and_save_data(self, name, data, tender_id, award_id):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
-        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCODE_API_ERROR"})
+        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_REQUEST_API_ERROR"})
         raise self.retry(exc=e)
     else:
         if response.status_code != 200:
             logger.error(
-                "Signing has failed: {} {}".format(response.status_code, response.text)
+                "Signing has failed: {} {}".format(response.status_code, response.text),
+                extra={"MESSAGE_ID": "FISCAL_API_STATUS_ERROR"}
             )
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            upload_to_doc_service.delay(
-                name=name,
-                content=base64.b64encode(response.content).decode(),
-                doc_type=DOC_TYPE,
-                tender_id=tender_id,
-                item_name="award",
-                item_id=award_id
-            )
+            if response.content.startswith(b"<?xml"):
+                upload_to_doc_service.delay(
+                    name=name,
+                    content=base64.b64encode(response.content).decode(),
+                    doc_type=DOC_TYPE,
+                    tender_id=tender_id,
+                    item_name="award",
+                    item_id=award_id
+                )
+            else:
+                logger.error(
+                    "Unexpected fiscal data: {}".format(response.status_code, response.text),
+                    extra={"MESSAGE_ID": "FISCAL_API_DATA_ERROR"}
+                )
 
 
 @app.task(bind=True, max_retries=10)
