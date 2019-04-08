@@ -5,6 +5,8 @@ TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
 
+CRAWLER_TENDER_HANDLERS = set(i.strip() for i in os.environ.get("CRAWLER_TENDER_HANDLERS", "").split(",") if i.strip())
+
 MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://root:example@mongo:27017")
 MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "tasks")
 MONGODB_SERVER_SELECTION_TIMEOUT = int(os.environ.get("MONGODB_SERVER_SELECTION_TIMEOUT", 5))
