@@ -203,30 +203,3 @@ class TenderTestCase(unittest.TestCase):
                 },
             })
         )
-
-        with patch("fiscal_bot.tasks.FISCAL_TEST_MODE", True):
-            process_tender(tender_id)
-
-        self.assertEqual(
-            prepare_receipt_request.delay.call_args_list,
-            [
-                call(
-                    supplier=dict(
-                        identifier=FISCAL_TEST_IDENTIFIER,
-                        name=FISCAL_TEST_NAME,
-                        award_id=item_id,
-                        tender_id=tender_id,
-                        tenderID=tenderID,
-                    )
-                ),
-                call(
-                    supplier=dict(
-                        identifier=FISCAL_TEST_IDENTIFIER,
-                        name=FISCAL_TEST_NAME,
-                        award_id=item_id,
-                        tender_id=tender_id,
-                        tenderID=tenderID
-                    )
-                )
-            ]
-        )

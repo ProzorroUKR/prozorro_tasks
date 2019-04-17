@@ -64,14 +64,6 @@ def process_tender(self, tender_id):
                             else:
                                 name = supplier['name']
 
-                            if FISCAL_TEST_MODE:
-                                name = FISCAL_TEST_NAME
-                                identifier = FISCAL_TEST_IDENTIFIER
-                                logger.info(
-                                    "FISCAL_TEST_MODE is enabled: {} {}".format(name, identifier),
-                                    extra={"MESSAGE_ID": "FISCAL_TEST_MODE"}
-                                )
-
                             prepare_receipt_request.delay(
                                 supplier=dict(
                                     tender_id=tender['id'],

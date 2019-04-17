@@ -1,11 +1,14 @@
 from environment_settings import (
-    FISCAL_SENDER_NAME, FISCAL_SENDER_STI, FISCAL_SENDER_TIN
+    FISCAL_SENDER_NAME, FISCAL_SENDER_STI, FISCAL_SENDER_TIN,
+    FISCAL_TEST_MODE, FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER
 )
 from tasks_utils.datetime import get_now
-from fiscal_bot.utils import get_increment_id
+from celery.utils.log import get_task_logger
+from fiscal_bot.utils import get_daily_increment_id, get_monthly_increment_id
 import jinja2
 
 
+logger = get_task_logger(__name__)
 TEMPLATES = jinja2.Environment(
     loader=jinja2.PackageLoader('fiscal_bot', 'templates', encoding='windows-1251'),
 )
@@ -14,11 +17,23 @@ TEMPLATES = jinja2.Environment(
 def build_receipt_request(task, tenderID, identifier, name):
     now = get_now()
 
-    c_doc_count = get_increment_id(task, now.date())
+    sender_tin = FISCAL_SENDER_TIN
+    if FISCAL_TEST_MODE:
+        # we replace both object and subject identification.
+        name = FISCAL_TEST_NAME
+        identifier = FISCAL_TEST_IDENTIFIER
+        # Seems only identifier in file name is validated, so I don't replace the other fields
+        sender_tin = FISCAL_TEST_IDENTIFIER
+        logger.info(
+            "FISCAL_TEST_MODE is enabled: {} {}".format(FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER),
+            extra={"MESSAGE_ID": "FISCAL_TEST_MODE"}
+        )
+
+    c_doc_count = get_monthly_increment_id(task, now.date())
     filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver}{c_doc_stan}{c_doc_type}{c_doc_count:07d}" \
                "{period_type}{period_month:02d}{period_year}{authority}.xml".format(
                     authority="2659",
-                    identifier="0" * (10 - len(identifier)) + identifier,
+                    identifier="0" * (10 - len(sender_tin)) + sender_tin,
                     c_doc="J16",  # J17 for response
                     c_doc_sub="031",
                     c_doc_ver="01",
@@ -40,6 +55,7 @@ def build_receipt_request(task, tenderID, identifier, name):
         identifier=identifier,
         name=name,
         c_doc_count=c_doc_count,
+        h_num=get_daily_increment_id(task, now.date()),
         now=now,
         is_physical=len(identifier) == 8 and identifier[2:].isdigit() or len(identifier) == 10 and identifier.isdigit(),
     )

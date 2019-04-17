@@ -12,11 +12,11 @@ import base64
 class ReceiptTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.tasks.prepare_receipt_request.retry")
-    @patch("fiscal_bot.fiscal_api.get_increment_id")
+    @patch("fiscal_bot.tasks.build_receipt_request")
     @patch("fiscal_bot.tasks.requests")
-    def test_prepare_request_exception(self, requests_mock, get_increment_id_mock, retry_mock):
+    def test_prepare_request_exception(self, requests_mock, build_receipt_request_mock, retry_mock):
         retry_mock.side_effect = Retry
-        get_increment_id_mock.return_value = 1
+        build_receipt_request_mock.return_value = "file.xml", b"contents"
 
         supplier = dict(
             name="Python Monty Иванович",
@@ -27,10 +27,7 @@ class ReceiptTestCase(unittest.TestCase):
         )
 
         requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
-        with patch("fiscal_bot.fiscal_api.get_now") as get_now_mock:
-            get_now_mock.return_value = datetime(2017, 12, 31, 12, 0, 5)
-
-            with self.assertRaises(Retry):
+        with self.assertRaises(Retry):
                 prepare_receipt_request(supplier=supplier)
 
         retry_mock.assert_called_once_with(
@@ -38,11 +35,11 @@ class ReceiptTestCase(unittest.TestCase):
         )
 
     @patch("fiscal_bot.tasks.prepare_receipt_request.retry")
-    @patch("fiscal_bot.fiscal_api.get_increment_id")
+    @patch("fiscal_bot.tasks.build_receipt_request")
     @patch("fiscal_bot.tasks.requests")
-    def test_prepare_request_error(self, requests_mock, get_increment_id_mock, retry_mock):
+    def test_prepare_request_error(self, requests_mock, build_receipt_request_mock, retry_mock):
         retry_mock.side_effect = Retry
-        get_increment_id_mock.return_value = 1
+        build_receipt_request_mock.return_value = "file.xml", b"contents"
         requests_mock.post.return_value = Mock(
             status_code=502,
             text="Bad Gateway",
@@ -56,11 +53,8 @@ class ReceiptTestCase(unittest.TestCase):
             tenderID="UA-2019-01-31-000147-a",
         )
 
-        with patch("fiscal_bot.fiscal_api.get_now") as get_now_mock:
-            get_now_mock.return_value = datetime(2017, 12, 31, 12, 0, 5)
-
-            with self.assertRaises(Retry):
-                prepare_receipt_request(supplier=supplier)
+        with self.assertRaises(Retry):
+            prepare_receipt_request(supplier=supplier)
 
         retry_mock.assert_called_once_with(
             countdown=12
@@ -68,9 +62,7 @@ class ReceiptTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.tasks.send_request_receipt")
     @patch("fiscal_bot.tasks.build_receipt_request")
-    @patch("fiscal_bot.fiscal_api.get_increment_id")
-    def test_prepare_request_success(self, get_increment_id_mock, build_receipt_mock, send_request_receipt_mock):
-        get_increment_id_mock.return_value = 4
+    def test_prepare_request_success(self, build_receipt_mock, send_request_receipt_mock):
         build_receipt_mock.return_value = "hallo.xml", b"unencrypted contents"
 
         supplier = dict(

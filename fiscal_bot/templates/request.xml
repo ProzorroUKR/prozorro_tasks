@@ -19,7 +19,7 @@
         <SOFTWARE>IntegrationBot</SOFTWARE>
     </DECLARHEAD>
     <DECLARBODY>
-        <HNUM>{{ c_doc_count }}</HNUM>
+        <HNUM>{{ h_num }}</HNUM>
         <HNAME>{{ sender_name }}</HNAME>
         <HTIN>{{ sender_tin }}</HTIN>
         <HKSTI>2659</HKSTI>

@@ -53,8 +53,8 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_SERVER: mongo
-    logging:
-      driver: "none"
+#    logging:
+#      driver: "none"
 
   rabbit:
     hostname: rabbit
@@ -107,6 +107,7 @@ services:
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
       - EDR_API_PASSWORD=91b3233be66e418683247cbbea7b7b4f
+      - FISCAL_TEST_MODE=1
     command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
     volumes:
         - .:/app
