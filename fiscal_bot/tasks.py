@@ -4,7 +4,7 @@ from celery.utils.log import get_task_logger
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
-    FISCAL_API_HOST, FISCAL_TEST_MODE, FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER
+    FISCAL_API_HOST,
 )
 from fiscal_bot.settings import (
     IDENTIFICATION_SCHEME, DOC_TYPE,
@@ -209,7 +209,7 @@ def decode_and_save_data(self, name, data, tender_id, award_id):
                 )
             else:
                 logger.error(
-                    "Unexpected fiscal data: {}".format(response.status_code, response.text),
+                    "Unexpected fiscal data: {} {}".format(response.status_code, response.text),
                     extra={"MESSAGE_ID": "FISCAL_API_DATA_ERROR"}
                 )
 
