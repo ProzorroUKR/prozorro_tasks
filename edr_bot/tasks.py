@@ -5,7 +5,7 @@ from edr_bot.settings import (
     DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
     CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
-    FILE_NAME, ID_PASSPORT_LEN,
+    FILE_NAME, ID_PASSPORT_LEN, SPREAD_TENDER_TASKS_INTERVAL
 )
 from edr_bot.results_db import (
     get_upload_results,
@@ -60,19 +60,22 @@ def process_tender(self, tender_id):
         tender_data = response.json()["data"]
 
         # --------
+        i = 0  # spread in time tasks that belongs to a single tender CS-3854
         if 'awards' in tender_data:
             for award in tender_data['awards']:
                 if should_process_item(award):
                     for supplier in award['suppliers']:
-                        process_award_supplier(response, tender_data, award, supplier)
+                        process_award_supplier(response, tender_data, award, supplier, i)
+                        i += 1
 
         elif 'qualifications' in tender_data:
             for qualification in tender_data['qualifications']:
                 if should_process_item(qualification):
-                    process_qualification(response, tender_data, qualification)
+                    process_qualification(response, tender_data, qualification, i)
+                    i += 1
 
 
-def process_award_supplier(response, tender, award, supplier):
+def process_award_supplier(response, tender, award, supplier, item_number):
     if not is_valid_identifier(supplier['identifier']):
         logger.warning('Tender {} award {} identifier {} is not valid.'.format(
             tender['id'], award["id"], supplier['identifier']
@@ -82,16 +85,19 @@ def process_award_supplier(response, tender, award, supplier):
             tender['id'], award['bid_id'], award['id']
         ), extra={"MESSAGE_ID": "EDR_CANCELLED_LOT"})
     else:
-        get_edr_data.delay(
-            code=str(supplier['identifier']['id']),
-            request_id=response.headers['X-Request-ID'],
-            tender_id=tender['id'],
-            item_name="award",
-            item_id=award['id']
+        get_edr_data.apply_async(
+            countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
+            kwargs=dict(
+                code=str(supplier['identifier']['id']),
+                request_id=response.headers['X-Request-ID'],
+                tender_id=tender['id'],
+                item_name="award",
+                item_id=award['id']
+            )
         )
 
 
-def process_qualification(response, tender, qualification):
+def process_qualification(response, tender, qualification, item_number):
     appropriate_bids = [b for b in tender.get("bids", [])
                         if b['id'] == qualification['bidID']]
     if not appropriate_bids:
@@ -112,12 +118,15 @@ def process_qualification(response, tender, qualification):
             tender['id'], qualification["id"], tenderers[0]['identifier']
         ), extra={"MESSAGE_ID": "EDR_INVALID_IDENTIFIER"})
     else:
-        get_edr_data.delay(
-            code=str(tenderers[0]['identifier']['id']),
-            request_id=response.headers['X-Request-ID'],
-            tender_id=tender['id'],
-            item_name="qualification",
-            item_id=qualification['id']
+        get_edr_data.apply_async(
+            countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
+            kwargs=dict(
+                code=str(tenderers[0]['identifier']['id']),
+                request_id=response.headers['X-Request-ID'],
+                tender_id=tender['id'],
+                item_name="qualification",
+                item_id=qualification['id']
+            )
         )
 
 
