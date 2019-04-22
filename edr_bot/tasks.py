@@ -1,5 +1,6 @@
 from celery_worker.celery import app
 from celery.utils.log import get_task_logger
+from edr_bot.utils import get_request_retry_countdown
 from edr_bot.settings import (
     DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
@@ -54,7 +55,7 @@ def process_tender(self, tender_id):
                 response.status_code, tender_id
             ), extra={"MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
                       "STATUS_CODE": response.status_code})
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=get_request_retry_countdown(response))
 
         tender_data = response.json()["data"]
 
@@ -215,7 +216,7 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
                 file_content['meta']['id'] = meta_id
                 data_list.append(file_content)
         else:
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=get_request_retry_countdown(response))
 
         for data in data_list:
             upload_to_doc_service.delay(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
@@ -253,7 +254,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
                 logger.error("Incorrect upload status for doc {}".format(data['meta']['id']),
                              extra={"MESSAGE_ID": "EDR_POST_DOC_ERROR",
                                     "STATUS_CODE": response.status_code})
-                raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_request_retry_countdown(response))
 
             response_json = response.json()
             response_json['meta'] = {'id': data['meta']['id']}
@@ -343,7 +344,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
-                raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_request_retry_countdown(response))
             else:
                 # won't raise anything
                 uid = set_upload_results_attached(data, tender_id, item_name, item_id)

@@ -26,7 +26,7 @@ class ProcessTestCase(unittest.TestCase):
 
     def test_handle_429_response(self):
 
-        ret_aft = 13
+        ret_aft = "13.4"
         with patch("crawler.tasks.requests") as requests_mock:
             requests_mock.get.return_value = Mock(
                 status_code=429,
@@ -37,7 +37,7 @@ class ProcessTestCase(unittest.TestCase):
             with self.assertRaises(Retry):
                 process_feed()
 
-            process_feed.retry.assert_called_once_with(countdown=ret_aft)
+            process_feed.retry.assert_called_once_with(countdown=float(ret_aft))
 
     def test_start_crawler_few_results(self):
         server_id = "a" * 32

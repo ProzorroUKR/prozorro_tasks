@@ -7,6 +7,7 @@ from crawler.settings import (
 )
 from environment_settings import PUBLIC_API_HOST, API_VERSION, TIMEZONE
 from edr_bot.handlers import edr_bot_tender_handler
+from edr_bot.utils import get_request_retry_countdown
 from datetime import datetime
 import requests
 
@@ -146,6 +147,6 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
         else:
             logger.warning("Unexpected status code {}: {}".format(response.status_code, response.text),
                            extra={"MESSAGE_ID": "FEED_UNEXPECTED_STATUS"})
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=get_request_retry_countdown(response))
 
         return response.status_code
