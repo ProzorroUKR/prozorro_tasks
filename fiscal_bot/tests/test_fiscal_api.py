@@ -28,7 +28,7 @@ class ReceiptTestCase(unittest.TestCase):
         get_daily_increment_id_mock.assert_called_once()
         self.assertEqual(
             filename,
-            "2659" "0002426097" "J1603101" "1" "00" "0000202" "1" "12" "2017" "2659.xml"
+            "2659" "1010101017" "J1603101" "1" "00" "0000202" "1" "12" "2017" "2659.xml"
         )
 
         self.assertIn(b"<HNUM>2</HNUM>", content)
@@ -36,7 +36,7 @@ class ReceiptTestCase(unittest.TestCase):
         self.assertIn(b"<HFILL>31122017</HFILL>", content)
         self.assertIn(b"<HTIME>12:00:05</HTIME>", content)
         self.assertIn("<HNAME>ДП «ПРОЗОРРО»</HNAME>".encode("windows-1251"), content)
-        self.assertIn(b"<HTIN>02426097</HTIN>", content)
+        self.assertIn(b"<HTIN>1010101017</HTIN>", content)
         self.assertIn(b"<HKSTI>2659</HKSTI>", content)
         self.assertIn("<HSTI>ДПI у Шевченківському районі ГУ ДФС у м. Києві</HSTI>".encode("windows-1251"), content)
         self.assertIn(b"<R0101G1S>UA-2019-01-31-000147-a</R0101G1S>", content)
@@ -65,7 +65,7 @@ class ReceiptTestCase(unittest.TestCase):
         get_daily_increment_id_mock.assert_called_once()
         self.assertEqual(
             filename,
-            "2659" + FISCAL_TEST_IDENTIFIER + "J1603101" "1" "00" "0000202" "1" "12" "2017" "2659.xml"
+            "2659" + FISCAL_SENDER_TIN + "J1603101" "1" "00" "0000202" "1" "12" "2017" "2659.xml"
         )
 
         self.assertIn(b"<HNUM>2</HNUM>", content)
@@ -73,7 +73,7 @@ class ReceiptTestCase(unittest.TestCase):
         self.assertIn(b"<HFILL>31122017</HFILL>", content)
         self.assertIn(b"<HTIME>12:00:05</HTIME>", content)
         self.assertIn("<HNAME>ДП «ПРОЗОРРО»</HNAME>".encode("windows-1251"), content)
-        self.assertIn(b"<HTIN>02426097</HTIN>", content)
+        self.assertIn(b"<HTIN>1010101017</HTIN>", content)
         self.assertIn(b"<HKSTI>2659</HKSTI>", content)
         self.assertIn("<HSTI>ДПI у Шевченківському районі ГУ ДФС у м. Києві</HSTI>".encode("windows-1251"), content)
         self.assertIn(b"<R0101G1S>UA-2019-01-31-000147-a</R0101G1S>", content)

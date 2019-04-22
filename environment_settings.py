@@ -34,7 +34,7 @@ API_SIGN_USER = os.environ.get("API_SIGN_USER", "test")
 API_SIGN_PASSWORD = os.environ.get("API_SIGN_PASSWORD", "test")
 
 FISCAL_API_HOST = os.environ.get("FISCAL_API_HOST", "https://cabinet.sfs.gov.ua")
-FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "02426097")
+FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "1010101017")  # set "02426097" for ПРОЗОРРО
 FISCAL_SENDER_NAME = os.environ.get("FISCAL_SENDER_NAME", "ДП «ПРОЗОРРО»")
 FISCAL_SENDER_STI = os.environ.get("FISCAL_SENDER_STI", "ДПI у Шевченківському районі ГУ ДФС у м. Києві")
 FISCAL_TEST_MODE = os.environ.get("FISCAL_TEST_MODE", False)

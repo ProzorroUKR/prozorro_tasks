@@ -17,13 +17,9 @@ TEMPLATES = jinja2.Environment(
 def build_receipt_request(task, tenderID, identifier, name):
     now = get_now()
 
-    sender_tin = FISCAL_SENDER_TIN
     if FISCAL_TEST_MODE:
-        # we replace both object and subject identification.
         name = FISCAL_TEST_NAME
         identifier = FISCAL_TEST_IDENTIFIER
-        # Seems only identifier in file name is validated, so I don't replace the other fields
-        sender_tin = FISCAL_TEST_IDENTIFIER
         logger.info(
             "FISCAL_TEST_MODE is enabled: {} {}".format(FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER),
             extra={"MESSAGE_ID": "FISCAL_TEST_MODE"}
@@ -33,7 +29,7 @@ def build_receipt_request(task, tenderID, identifier, name):
     filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver}{c_doc_stan}{c_doc_type}{c_doc_count:07d}" \
                "{period_type}{period_month:02d}{period_year}{authority}.xml".format(
                     authority="2659",
-                    identifier="0" * (10 - len(sender_tin)) + sender_tin,
+                    identifier="0" * (10 - len(FISCAL_SENDER_TIN)) + FISCAL_SENDER_TIN,
                     c_doc="J16",  # J17 for response
                     c_doc_sub="031",
                     c_doc_ver="01",
