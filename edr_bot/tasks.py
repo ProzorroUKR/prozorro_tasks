@@ -237,7 +237,8 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
-    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
+    unique_data = {k: v for k, v in data.items() if k != "meta"}
+    upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
 
     if upload_results is None:
         # generate file data
@@ -270,7 +271,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
         # save response to mongodb, so that the file won't be uploaded again
         # fail silently: if mongodb isn't available, the task will neither fail nor retry
         # in worst case there might be a duplicate attached to the tender
-        uid = save_upload_results(response_json, data, tender_id, item_name, item_id)
+        uid = save_upload_results(response_json, unique_data, tender_id, item_name, item_id)
         logger.info("Saved document with uid {} for {} {} {}".format(
             uid, tender_id, item_name, item_id),
             extra={"MESSAGE_ID": "EDR_POST_UPLOAD_RESULTS_SUCCESS"}
@@ -286,8 +287,8 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 # ---------- ATTACH DOCUMENT TO ITS TENDER
 @app.task(bind=True)
 def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
-
-    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
+    unique_data = {k: v for k, v in data.items() if k != "meta"}
+    upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
     if file_data is None:
         if upload_results is None:
             fall_msg = "Saved results are missed for {} {} {}".format(tender_id, item_name, item_id)
@@ -356,7 +357,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 raise self.retry(countdown=get_request_retry_countdown(response))
             else:
                 # won't raise anything
-                uid = set_upload_results_attached(data, tender_id, item_name, item_id)
+                uid = set_upload_results_attached(unique_data, tender_id, item_name, item_id)
                 logger.info("Set attached document with uid {} for {} {} {}".format(
                     uid, tender_id, item_name, item_id),
                     extra={"MESSAGE_ID": "EDR_SET_ATTACHED_RESULTS"}
