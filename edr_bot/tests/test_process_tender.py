@@ -1,10 +1,12 @@
 from edr_bot.settings import DEFAULT_RETRY_AFTER, SPREAD_TENDER_TASKS_INTERVAL
-from edr_bot.tasks import process_tender
 from uuid import uuid4
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
 import unittest
 import requests
+
+with patch('celery_worker.locks.unique_task_decorator', lambda x: x):
+    from edr_bot.tasks import process_tender
 
 
 class TestHandlerCase(unittest.TestCase):

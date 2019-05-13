@@ -1,4 +1,5 @@
 from celery_worker.celery import app
+from celery_worker.locks import unique_task_decorator
 from celery.utils.log import get_task_logger
 from edr_bot.utils import get_request_retry_countdown
 from edr_bot.settings import (
@@ -33,6 +34,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(bind=True)
+@unique_task_decorator
 def process_tender(self, tender_id):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
