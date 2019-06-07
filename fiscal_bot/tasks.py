@@ -16,6 +16,7 @@ from tasks_utils.datetime import get_now, get_working_datetime, working_days_cou
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
 from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.requests import get_filename_from_response
 from datetime import timedelta
 import requests
 import base64
@@ -198,20 +199,15 @@ def decode_and_save_data(self, name, data, tender_id, award_id):
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            if response.content.startswith(b"<?xml"):
-                upload_to_doc_service.delay(
-                    name=name,
-                    content=base64.b64encode(response.content).decode(),
-                    doc_type=DOC_TYPE,
-                    tender_id=tender_id,
-                    item_name="award",
-                    item_id=award_id
-                )
-            else:
-                logger.error(
-                    "Unexpected fiscal data: {} {}".format(response.status_code, response.text),
-                    extra={"MESSAGE_ID": "FISCAL_API_DATA_ERROR"}
-                )
+            filename = get_filename_from_response(response)
+            upload_to_doc_service.delay(
+                name=filename or name,
+                content=base64.b64encode(response.content).decode(),
+                doc_type=DOC_TYPE,
+                tender_id=tender_id,
+                item_name="award",
+                item_id=award_id
+            )
 
 
 @app.task(bind=True, max_retries=10)
