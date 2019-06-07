@@ -12,7 +12,7 @@ from fiscal_bot.settings import (
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER
 from fiscal_bot.fiscal_api import build_receipt_request
-from fiscal_bot.settings import CUSTOM_WORK_DAY
+from fiscal_bot.settings import CUSTOM_WORK_DAY, FISCAL_BOT_START_DATE
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
@@ -54,7 +54,7 @@ def process_tender(self, tender_id):
         tender = response.json()["data"]
 
         for award in tender.get('awards', []):
-            if award["status"] == "pending":
+            if award["status"] == "pending" and award["date"] > FISCAL_BOT_START_DATE:
                 if not any(doc.get('documentType') == DOC_TYPE for doc in award.get('documents', [])):
                     for supplier in award['suppliers']:
                         identifier = str(supplier['identifier']['id'])

@@ -90,6 +90,21 @@ class TenderTestCase(unittest.TestCase):
                             {
                                 "id": item_id,
                                 "status": "pending",
+                                "date": "2019-06-07T14:27:03.148663+03:00",
+                                "suppliers": [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-EDR",
+                                            "legalName": 'Wow',
+                                            "id": code_1,
+                                        },
+                                    }
+                                ],
+                            },
+                            {
+                                "id": item_id,
+                                "status": "pending",
+                                "date": "2019-07-01T14:27:03.148663+03:00",
                                 "suppliers": [
                                     {
                                         "identifier": {

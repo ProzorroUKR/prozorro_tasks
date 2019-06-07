@@ -1,3 +1,4 @@
+import os
 
 DOC_TYPE = 'registerFiscal'
 IDENTIFICATION_SCHEME = 'UA-EDR'
@@ -14,5 +15,7 @@ CUSTOM_WORK_DAY = dict(
     start=(9, 0),
     end=(16, 0),
 )
+
+FISCAL_BOT_START_DATE = os.environ.get("FISCAL_BOT_START_DATE", "2019-07-01")
 
 
