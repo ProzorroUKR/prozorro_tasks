@@ -76,7 +76,9 @@ class CheckResponseTestCase(unittest.TestCase):
                     request_time=request_time,
                     requests_reties=0
                 )
-        working_days_count_since_mock.assert_called_once_with(request_time, custom_wd=CUSTOM_WORK_DAY)
+        working_days_count_since_mock.assert_called_once_with(
+            request_time, custom_wd=CUSTOM_WORK_DAY, working_weekends_enabled=True
+        )
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),

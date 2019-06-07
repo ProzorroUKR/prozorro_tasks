@@ -9,8 +9,11 @@ HOLIDAYS = {
     "2019-05-01",
 }
 
+WORKING_WEEKENDS = {"2019-06-08"}
+
 
 @patch("tasks_utils.datetime.HOLIDAYS", new=HOLIDAYS)
+@patch("tasks_utils.datetime.WORKING_WEEKENDS", new=WORKING_WEEKENDS)
 class GetWorkingTimeCase(unittest.TestCase):
 
     def test_working_time(self):
@@ -87,8 +90,29 @@ class GetWorkingTimeCase(unittest.TestCase):
             TIMEZONE.localize(datetime(2019, 3, 11, 9))
         )
 
+    def test_working_weekends_disabled(self):
+        now = TIMEZONE.localize(datetime(2019, 6, 7, 18, 30))
+
+        result = get_working_datetime(now)
+
+        self.assertEqual(
+            result,
+            TIMEZONE.localize(datetime(2019, 6, 10, 9))
+        )
+
+    def test_working_weekends_enabled(self):
+        now = TIMEZONE.localize(datetime(2019, 6, 7, 18, 30))
+
+        result = get_working_datetime(now, working_weekends_enabled=True)
+
+        self.assertEqual(
+            result,
+            TIMEZONE.localize(datetime(2019, 6, 8, 9))
+        )
+
 
 @patch("tasks_utils.datetime.HOLIDAYS", new=HOLIDAYS)
+@patch("tasks_utils.datetime.WORKING_WEEKENDS", new=WORKING_WEEKENDS)
 class WorkingDaysCountSinceCase(unittest.TestCase):
 
     def test_same_working_day(self):
@@ -165,6 +189,31 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
         now = TIMEZONE.localize(datetime(2019, 3, 24, 18))
         result = working_days_count_since(dt, now=now)
         self.assertEqual(result, 0)
+
+    # working weekends
+    def test_ww_disabled(self):
+        dt = TIMEZONE.localize(datetime(2019, 6, 7, 9, 1))
+        now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
+        result = working_days_count_since(dt, now=now)
+        self.assertEqual(result, 2)
+
+    def test_ww_enabled(self):
+        dt = TIMEZONE.localize(datetime(2019, 6, 7, 9, 1))
+        now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
+        result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
+        self.assertEqual(result, 3)
+
+    def test_ww_enabled_from_ww(self):
+        dt = TIMEZONE.localize(datetime(2019, 6, 8, 9, 1))
+        now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
+        result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
+        self.assertEqual(result, 2)
+
+    def test_ww_enabled_from_ww_evening(self):
+        dt = TIMEZONE.localize(datetime(2019, 6, 8, 18, 1))
+        now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
+        result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
+        self.assertEqual(result, 1)
 
     # holidays
     def test_on_holiday(self):
