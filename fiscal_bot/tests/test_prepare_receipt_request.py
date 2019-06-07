@@ -74,7 +74,7 @@ class ReceiptTestCase(unittest.TestCase):
         )
 
         with patch("fiscal_bot.tasks.get_now") as get_now_mock:
-            get_now_mock.return_value = TIMEZONE.localize(datetime(2019, 3, 31, 12))  # Sunday 12:00
+            get_now_mock.return_value = TIMEZONE.localize(datetime(2019, 4, 1, 16, 1))  # Monday 16:01
 
             with patch("fiscal_bot.tasks.requests") as requests_mock:
                 requests_mock.post.side_effect = [
@@ -93,7 +93,7 @@ class ReceiptTestCase(unittest.TestCase):
             )
 
             send_request_receipt_mock.apply_async.assert_called_once_with(
-                eta=TIMEZONE.localize(datetime(2019, 4, 1, 9)),  # Monday 9:00
+                eta=TIMEZONE.localize(datetime(2019, 4, 2, 9)),  # Tuesday 9:00
                 kwargs=dict(
                     request_data=base64.b64encode(b"content").decode(),
                     filename="hallo.xml",

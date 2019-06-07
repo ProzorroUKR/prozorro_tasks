@@ -12,6 +12,7 @@ from fiscal_bot.settings import (
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER
 from fiscal_bot.fiscal_api import build_receipt_request
+from fiscal_bot.settings import CUSTOM_WORK_DAY
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
@@ -100,7 +101,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
             request_data = base64.b64encode(response.content).decode()
-            eta = get_working_datetime(get_now())
+            eta = get_working_datetime(get_now(), custom_wd=CUSTOM_WORK_DAY)
             send_request_receipt.apply_async(
                 eta=eta,
                 kwargs=dict(
@@ -157,9 +158,9 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
 
     # response check should be after an hour
     # also later we will need to know how many working days have passed since now including this
-    # one (if it's working)
+    # one (if it's a working day)
     now = get_now()
-    check_response_time = get_working_datetime(now + timedelta(seconds=60 * 60))
+    check_response_time = get_working_datetime(now + timedelta(seconds=60 * 60), custom_wd=CUSTOM_WORK_DAY)
     prepare_check_request.apply_async(
         eta=check_response_time,
         kwargs=dict(
@@ -250,7 +251,7 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
 @app.task(bind=True, max_retries=None)
 def check_for_response_file(self, request_data, supplier, request_time, requests_reties):
 
-    if working_days_count_since(request_time) > WORKING_DAYS_BEFORE_REQUEST_AGAIN:
+    if working_days_count_since(request_time, custom_wd=CUSTOM_WORK_DAY) > WORKING_DAYS_BEFORE_REQUEST_AGAIN:
 
         if requests_reties < REQUEST_MAX_RETRIES:
             prepare_receipt_request.delay(
@@ -294,7 +295,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                                  extra={"MESSAGE_ID": "FISCAL_API_POST_RESULT_UNSUCCESSFUL_RESPONSE"})
 
                     #  schedule next check on work time
-                    eta = get_working_datetime(get_now() + timedelta(seconds=60 * 60))
+                    eta = get_working_datetime(get_now() + timedelta(seconds=60 * 60), custom_wd=CUSTOM_WORK_DAY)
                     raise self.retry(eta=eta)
 
                 else:

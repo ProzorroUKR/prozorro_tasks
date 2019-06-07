@@ -23,6 +23,20 @@ class GetWorkingTimeCase(unittest.TestCase):
             TIMEZONE.localize(datetime(2019, 3, 19, 14, 31))
         )
 
+    def test_custom_working_time(self):
+        now = TIMEZONE.localize(datetime(2019, 3, 19, 16, 30, 45, 12))
+
+        custom_work_time = dict(
+            start=(7, 30),
+            end=(16, 0),
+        )
+        result = get_working_datetime(now, custom_wd=custom_work_time)
+
+        self.assertEqual(
+            result,
+            TIMEZONE.localize(datetime(2019, 3, 20, 7, 30))
+        )
+
     def test_morning(self):
         now = TIMEZONE.localize(datetime(2019, 3, 19, 6, 30, 1, 1))
 
@@ -87,6 +101,26 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
         dt = TIMEZONE.localize(datetime(2019, 3, 19, 14, 30, 45, 12))
         now = dt + timedelta(days=1, hours=2)
         result = working_days_count_since(dt, now=now)
+        self.assertEqual(result, 2)
+
+    def test_next_working_day_with_custom_day(self):
+        dt = TIMEZONE.localize(datetime(2019, 3, 19, 14, 30, 45, 12))
+        now = dt + timedelta(days=1, hours=2)
+        custom_work_time = dict(
+            start=(7, 30),
+            end=(14, 0),
+        )
+        result = working_days_count_since(dt, now=now, custom_wd=custom_work_time)
+        self.assertEqual(result, 1)
+
+    def test_next_working_day_with_custom_day_2(self):
+        dt = TIMEZONE.localize(datetime(2019, 3, 19, 14, 30, 45, 12))
+        now = dt + timedelta(days=1, hours=2)
+        custom_work_time = dict(
+            start=(7, 30),
+            end=(15, 0),
+        )
+        result = working_days_count_since(dt, now=now, custom_wd=custom_work_time)
         self.assertEqual(result, 2)
 
     def test_non_working_time(self):
