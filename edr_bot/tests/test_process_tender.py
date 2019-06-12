@@ -2,13 +2,12 @@ from edr_bot.settings import DEFAULT_RETRY_AFTER, SPREAD_TENDER_TASKS_INTERVAL
 from uuid import uuid4
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
+from edr_bot.tasks import process_tender
 import unittest
 import requests
 
-with patch('celery_worker.locks.unique_task_decorator', lambda x: x):
-    from edr_bot.tasks import process_tender
 
-
+@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class TestHandlerCase(unittest.TestCase):
 
     def test_handle_connection_error(self):

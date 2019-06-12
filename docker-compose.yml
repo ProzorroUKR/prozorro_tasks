@@ -5,42 +5,42 @@ services:
     hostname: mongo
     image: 'bitnami/mongodb:latest'
     environment:
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_REPLICA_SET_KEY: replicaSetKey
+#      MONGODB_REPLICA_SET_MODE: primary
+#      MONGODB_REPLICA_SET_NAME: rs0
+#      MONGODB_REPLICA_SET_KEY: replicaSetKey
       MONGODB_ROOT_PASSWORD: example
     logging:
       driver: "none"
 
-  mongo-secondary:
-    hostname: mongo-secondary
-    image: 'bitnami/mongodb:latest'
-    depends_on:
-      - mongo
-    environment:
-      MONGODB_REPLICA_SET_MODE: secondary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_PRIMARY_HOST: mongo
-      MONGODB_PRIMARY_PORT_NUMBER: 27017
-      MONGODB_REPLICA_SET_KEY: replicaSetKey
-      MONGODB_PRIMARY_ROOT_PASSWORD: example
-    logging:
-      driver: "none"
-
-  mongodb-arbiter:
-    hostname: mongo-arbiter
-    image: 'bitnami/mongodb:latest'
-    depends_on:
-      - mongo
-    environment:
-      MONGODB_REPLICA_SET_MODE: arbiter
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_PRIMARY_HOST: mongo
-      MONGODB_PRIMARY_PORT_NUMBER: 27017
-      MONGODB_REPLICA_SET_KEY: replicaSetKey
-      MONGODB_PRIMARY_ROOT_PASSWORD: example
-    logging:
-      driver: "none"
+#  mongo-secondary:
+#    hostname: mongo-secondary
+#    image: 'bitnami/mongodb:latest'
+#    depends_on:
+#      - mongo
+#    environment:
+#      MONGODB_REPLICA_SET_MODE: secondary
+#      MONGODB_REPLICA_SET_NAME: rs0
+#      MONGODB_PRIMARY_HOST: mongo
+#      MONGODB_PRIMARY_PORT_NUMBER: 27017
+#      MONGODB_REPLICA_SET_KEY: replicaSetKey
+#      MONGODB_PRIMARY_ROOT_PASSWORD: example
+#    logging:
+#      driver: "none"
+#
+#  mongodb-arbiter:
+#    hostname: mongo-arbiter
+#    image: 'bitnami/mongodb:latest'
+#    depends_on:
+#      - mongo
+#    environment:
+#      MONGODB_REPLICA_SET_MODE: arbiter
+#      MONGODB_REPLICA_SET_NAME: rs0
+#      MONGODB_PRIMARY_HOST: mongo
+#      MONGODB_PRIMARY_PORT_NUMBER: 27017
+#      MONGODB_REPLICA_SET_KEY: replicaSetKey
+#      MONGODB_PRIMARY_ROOT_PASSWORD: example
+#    logging:
+#      driver: "none"
 
   mongo-express:
     image: mongo-express
@@ -52,9 +52,9 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_SERVER: mongo,mongo-secondary,mongodb-arbiter
-    logging:
-      driver: "none"
+      ME_CONFIG_MONGODB_SERVER: mongo
+#    logging:
+#      driver: "none"
 
   rabbit:
     hostname: rabbit
@@ -69,17 +69,17 @@ services:
     logging:
       driver: "none"
 
-  hare:
-    hostname: hare
-    image: rabbitmq:3-management
-    ports:
-      - "15673:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: mypass
-      RABBITMQ_ERLANG_COOKIE: whatever
-    logging:
-      driver: "none"
+#  hare:
+#    hostname: hare
+#    image: rabbitmq:3-management
+#    ports:
+#      - "15673:15672"
+#    environment:
+#      RABBITMQ_DEFAULT_USER: admin
+#      RABBITMQ_DEFAULT_PASS: mypass
+#      RABBITMQ_ERLANG_COOKIE: whatever
+#    logging:
+#      driver: "none"
   #to set syncing the nodes:
   #docker-compose exec hare bash
   #rabbitmqctl stop_app
@@ -92,8 +92,8 @@ services:
 #    image: prozorro/prozorro_tasks:latest
     build: .
     environment:
-      - MONGODB_URL=mongodb://root:example@mongo:27017,mongo-secondary:27017,mongodb-arbiter:27017/?replicaSet=rs0
-      - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//;amqp://admin:mypass@hare:5672//
+      - MONGODB_URL=mongodb://root:example@mongo:27017
+      - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
       - C_FORCE_ROOT=1
       - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
@@ -107,13 +107,13 @@ services:
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
       - EDR_API_PASSWORD=91b3233be66e418683247cbbea7b7b4f
+      - FISCAL_TEST_MODE=1
     command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
     volumes:
         - .:/app
     depends_on:
       - mongo
       - rabbit
-      - hare
   flower:
     build: .
     command: celery -A celery_worker flower --port=5555

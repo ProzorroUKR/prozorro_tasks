@@ -5,12 +5,12 @@ from crawler.settings import (
 )
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
+from crawler.tasks import process_feed
 import unittest
 import requests
-with patch('celery_worker.locks.unique_task_decorator', lambda x: x):
-    from crawler.tasks import process_feed
 
 
+@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class ProcessTestCase(unittest.TestCase):
 
     def test_handle_connection_error(self):

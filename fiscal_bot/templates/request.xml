@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="windows-1251" standalone="no"?>
+<DECLAR xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="J1603101.xsd">
+    <DECLARHEAD>
+        <TIN>{{ sender_tin }}</TIN>
+        <C_DOC>J16</C_DOC>
+        <C_DOC_SUB>031</C_DOC_SUB>
+        <C_DOC_VER>1</C_DOC_VER>
+        <C_DOC_TYPE>0</C_DOC_TYPE>
+        <C_DOC_CNT>{{ c_doc_count }}</C_DOC_CNT>
+        <C_REG>26</C_REG>
+        <C_RAJ>59</C_RAJ>
+        <PERIOD_MONTH>{{ now.month }}</PERIOD_MONTH>
+        <PERIOD_TYPE>1</PERIOD_TYPE>
+        <PERIOD_YEAR>{{ now.year }}</PERIOD_YEAR>
+        <C_STI_ORIG>2659</C_STI_ORIG>
+        <C_DOC_STAN>1</C_DOC_STAN>
+        <LINKED_DOCS xsi:nil="true"/>
+        <D_FILL>{{ now.strftime('%d%m%Y') }}</D_FILL>
+        <SOFTWARE>IntegrationBot</SOFTWARE>
+    </DECLARHEAD>
+    <DECLARBODY>
+        <HNUM>{{ h_num }}</HNUM>
+        <HNAME>{{ sender_name }}</HNAME>
+        <HTIN>{{ sender_tin }}</HTIN>
+        <HKSTI>2659</HKSTI>
+        <HSTI>{{ sender_sti }}</HSTI>
+        <R0101G1S>{{ tenderID }}</R0101G1S>
+        <R0201G1S>{{ identifier }}</R0201G1S>
+        <R0202G1S>{{ name }}</R0202G1S>
+        {% if is_physical -%}
+        <R0203G1S>{{ last_name}}</R0203G1S>
+        <R0204G1S>{{ first_name }}</R0204G1S>
+        <R0205G1S>{{ patronymic }}</R0205G1S>
+        {%- endif %}
+        <HFILL>{{ now.strftime('%d%m%Y') }}</HFILL>
+        <HTIME>{{ now.strftime('%H:%M:%S') }}</HTIME>
+    </DECLARBODY>
+</DECLAR>
