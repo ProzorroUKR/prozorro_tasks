@@ -1,10 +1,12 @@
-from edr_bot.settings import DEFAULT_RETRY_AFTER
-from edr_bot.tasks import process_tender
+from edr_bot.settings import DEFAULT_RETRY_AFTER, SPREAD_TENDER_TASKS_INTERVAL
 from uuid import uuid4
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
 import unittest
 import requests
+
+with patch('celery_worker.locks.unique_task_decorator', lambda x: x):
+    from edr_bot.tasks import process_tender
 
 
 class TestHandlerCase(unittest.TestCase):
@@ -123,21 +125,27 @@ class TestHandlerCase(unittest.TestCase):
             process_tender(tender_id)
 
         self.assertEqual(
-            get_edr_data.delay.call_args_list,
+            get_edr_data.apply_async.call_args_list,
             [
                 call(
-                    code=code_1,
-                    request_id=response_id,
-                    item_id=item_id,
-                    item_name=item_name,
-                    tender_id=tender_id
+                    countdown=0,
+                    kwargs=dict(
+                        code=code_1,
+                        request_id=response_id,
+                        item_id=item_id,
+                        item_name=item_name,
+                        tender_id=tender_id
+                    )
                 ),
                 call(
-                    code=code_2,
-                    request_id=response_id,
-                    item_id=item_id,
-                    item_name=item_name,
-                    tender_id=tender_id
+                    countdown=SPREAD_TENDER_TASKS_INTERVAL,
+                    kwargs=dict(
+                        code=code_2,
+                        request_id=response_id,
+                        item_id=item_id,
+                        item_name=item_name,
+                        tender_id=tender_id
+                    )
                 )
             ]
         )
@@ -187,7 +195,7 @@ class TestHandlerCase(unittest.TestCase):
 
             process_tender(tender_id)
 
-        get_edr_data.delay.assert_not_called()
+        get_edr_data.apply_async.assert_not_called()
 
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_award_invalid_identifier(self, get_edr_data):
@@ -221,7 +229,7 @@ class TestHandlerCase(unittest.TestCase):
             )
             process_tender(tender_id)
 
-        get_edr_data.delay.assert_not_called()
+        get_edr_data.apply_async.assert_not_called()
 
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_qualification(self, get_edr_data):
@@ -270,7 +278,17 @@ class TestHandlerCase(unittest.TestCase):
                             {
                                 "id": item_id,
                                 "bidID": "qwerty",
-                                "status": "pending",  # it's not a real case (two pending awards);for test purpose only
+                                "status": "pending",
+                            },
+                            {
+                                "id": item_id,  # 2 it's a duplicate, but bot will proceed anyway
+                                "bidID": "qwerty",
+                                "status": "pending",
+                            },
+                            {
+                                "id": item_id,  # 3
+                                "bidID": "qwerty",
+                                "status": "pending",
                             },
                         ]
                     },
@@ -281,14 +299,37 @@ class TestHandlerCase(unittest.TestCase):
             process_tender(tender_id)
 
         self.assertEqual(
-            get_edr_data.delay.call_args_list,
+            get_edr_data.apply_async.call_args_list,
             [
                 call(
-                    code=code_1,
-                    request_id=response_id,
-                    item_id=item_id,
-                    item_name=item_name,
-                    tender_id=tender_id
+                    countdown=0,
+                    kwargs=dict(
+                        code=code_1,
+                        request_id=response_id,
+                        item_id=item_id,
+                        item_name=item_name,
+                        tender_id=tender_id
+                    )
+                ),
+                call(
+                    countdown=SPREAD_TENDER_TASKS_INTERVAL,
+                    kwargs=dict(
+                        code=code_1,
+                        request_id=response_id,
+                        item_id=item_id,
+                        item_name=item_name,
+                        tender_id=tender_id
+                    )
+                ),
+                call(
+                    countdown=SPREAD_TENDER_TASKS_INTERVAL * 2,
+                    kwargs=dict(
+                        code=code_1,
+                        request_id=response_id,
+                        item_id=item_id,
+                        item_name=item_name,
+                        tender_id=tender_id
+                    )
                 )
             ]
         )
@@ -324,7 +365,7 @@ class TestHandlerCase(unittest.TestCase):
 
             process_tender(tender_id)
 
-        get_edr_data.delay.assert_not_called()
+        get_edr_data.apply_async.assert_not_called()
 
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_qualification_bid_is_missed(self, get_edr_data):
@@ -352,7 +393,7 @@ class TestHandlerCase(unittest.TestCase):
 
             process_tender(tender_id)
 
-        get_edr_data.delay.assert_not_called()
+        get_edr_data.apply_async.assert_not_called()
 
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_qualification_invalid_identification(self, get_edr_data):
@@ -393,4 +434,4 @@ class TestHandlerCase(unittest.TestCase):
 
             process_tender(tender_id)
 
-        get_edr_data.delay.assert_not_called()
+        get_edr_data.apply_async.assert_not_called()

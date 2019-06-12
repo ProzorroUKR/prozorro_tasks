@@ -50,11 +50,10 @@ class AttachDocTestCase(unittest.TestCase):
         file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
-        ret_aft, server_id = 13, "e" * 32
+        server_id = "e" * 32
         with patch("edr_bot.tasks.requests") as requests_mock:
             requests_mock.head.return_value = Mock(
                 status_code=429,
-                headers={'Retry-After': ret_aft},
                 cookies={'SERVER_ID': server_id}
             )
             requests_mock.post.return_value = Mock(status_code=201)
@@ -102,6 +101,7 @@ class AttachDocTestCase(unittest.TestCase):
                 attach_doc_to_tender(file_data=file_data, data=data,
                                      tender_id=tender_id, item_name=item_name, item_id=item_id)
 
+        attach_doc_to_tender.retry.assert_called_once_with(countdown=13.0)
         requests_mock.post.assert_called_once_with(
             "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
                 host=API_HOST,
@@ -167,7 +167,7 @@ class AttachDocTestCase(unittest.TestCase):
     @patch("edr_bot.tasks.get_upload_results")
     def test_handle_success_post(self, get_upload_results, set_upload_results_attached):
         get_upload_results.return_value = None
-        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {}
+        file_data, data = {"meta": {"id": 1}, "data": {'test': 3}}, {'meta': 1, 'data': 2}
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         server_id = "e" * 32
@@ -197,8 +197,8 @@ class AttachDocTestCase(unittest.TestCase):
         )
 
         attach_doc_to_tender.retry.assert_not_called()
-        get_upload_results.assert_called_once_with(attach_doc_to_tender, data, tender_id, item_name, item_id)
-        set_upload_results_attached.assert_called_once_with(data, tender_id, item_name, item_id)
+        get_upload_results.assert_called_once_with(attach_doc_to_tender, {'data': 2}, tender_id, item_name, item_id)
+        set_upload_results_attached.assert_called_once_with({'data': 2}, tender_id, item_name, item_id)
 
     @patch("edr_bot.tasks.set_upload_results_attached")
     @patch("edr_bot.tasks.get_upload_results")

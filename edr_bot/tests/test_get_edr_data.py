@@ -28,11 +28,10 @@ class TestHandlerCase(unittest.TestCase):
         request_id = uuid4().hex
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
-        ret_aft = 13
         with patch("edr_bot.tasks.requests") as requests:
             requests.get.return_value = Mock(
                 status_code=429,
-                headers={'Retry-After': ret_aft}
+                headers={'Retry-After': "13"}
             )
 
             get_edr_data.retry = Mock(side_effect=get_edr_data.retry)

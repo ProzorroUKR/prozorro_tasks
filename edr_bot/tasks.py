@@ -1,10 +1,12 @@
 from celery_worker.celery import app
+from celery_worker.locks import unique_task_decorator
 from celery.utils.log import get_task_logger
+from edr_bot.utils import get_request_retry_countdown
 from edr_bot.settings import (
     DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
     CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
-    FILE_NAME, ID_PASSPORT_LEN,
+    FILE_NAME, ID_PASSPORT_LEN, SPREAD_TENDER_TASKS_INTERVAL
 )
 from edr_bot.results_db import (
     get_upload_results,
@@ -32,6 +34,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(bind=True)
+@unique_task_decorator
 def process_tender(self, tender_id):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
@@ -54,24 +57,27 @@ def process_tender(self, tender_id):
                 response.status_code, tender_id
             ), extra={"MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
                       "STATUS_CODE": response.status_code})
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=get_request_retry_countdown(response))
 
         tender_data = response.json()["data"]
 
         # --------
+        i = 0  # spread in time tasks that belongs to a single tender CS-3854
         if 'awards' in tender_data:
             for award in tender_data['awards']:
                 if should_process_item(award):
                     for supplier in award['suppliers']:
-                        process_award_supplier(response, tender_data, award, supplier)
+                        process_award_supplier(response, tender_data, award, supplier, i)
+                        i += 1
 
         elif 'qualifications' in tender_data:
             for qualification in tender_data['qualifications']:
                 if should_process_item(qualification):
-                    process_qualification(response, tender_data, qualification)
+                    process_qualification(response, tender_data, qualification, i)
+                    i += 1
 
 
-def process_award_supplier(response, tender, award, supplier):
+def process_award_supplier(response, tender, award, supplier, item_number):
     if not is_valid_identifier(supplier['identifier']):
         logger.warning('Tender {} award {} identifier {} is not valid.'.format(
             tender['id'], award["id"], supplier['identifier']
@@ -81,16 +87,19 @@ def process_award_supplier(response, tender, award, supplier):
             tender['id'], award['bid_id'], award['id']
         ), extra={"MESSAGE_ID": "EDR_CANCELLED_LOT"})
     else:
-        get_edr_data.delay(
-            code=str(supplier['identifier']['id']),
-            request_id=response.headers['X-Request-ID'],
-            tender_id=tender['id'],
-            item_name="award",
-            item_id=award['id']
+        get_edr_data.apply_async(
+            countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
+            kwargs=dict(
+                code=str(supplier['identifier']['id']),
+                request_id=response.headers['X-Request-ID'],
+                tender_id=tender['id'],
+                item_name="award",
+                item_id=award['id']
+            )
         )
 
 
-def process_qualification(response, tender, qualification):
+def process_qualification(response, tender, qualification, item_number):
     appropriate_bids = [b for b in tender.get("bids", [])
                         if b['id'] == qualification['bidID']]
     if not appropriate_bids:
@@ -111,12 +120,15 @@ def process_qualification(response, tender, qualification):
             tender['id'], qualification["id"], tenderers[0]['identifier']
         ), extra={"MESSAGE_ID": "EDR_INVALID_IDENTIFIER"})
     else:
-        get_edr_data.delay(
-            code=str(tenderers[0]['identifier']['id']),
-            request_id=response.headers['X-Request-ID'],
-            tender_id=tender['id'],
-            item_name="qualification",
-            item_id=qualification['id']
+        get_edr_data.apply_async(
+            countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
+            kwargs=dict(
+                code=str(tenderers[0]['identifier']['id']),
+                request_id=response.headers['X-Request-ID'],
+                tender_id=tender['id'],
+                item_name="qualification",
+                item_id=qualification['id']
+            )
         )
 
 
@@ -215,7 +227,7 @@ def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
                 file_content['meta']['id'] = meta_id
                 data_list.append(file_content)
         else:
-            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=get_request_retry_countdown(response))
 
         for data in data_list:
             upload_to_doc_service.delay(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
@@ -227,7 +239,8 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
-    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
+    unique_data = {k: v for k, v in data.items() if k != "meta"}
+    upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
 
     if upload_results is None:
         # generate file data
@@ -253,14 +266,14 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
                 logger.error("Incorrect upload status for doc {}".format(data['meta']['id']),
                              extra={"MESSAGE_ID": "EDR_POST_DOC_ERROR",
                                     "STATUS_CODE": response.status_code})
-                raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_request_retry_countdown(response))
 
             response_json = response.json()
             response_json['meta'] = {'id': data['meta']['id']}
         # save response to mongodb, so that the file won't be uploaded again
         # fail silently: if mongodb isn't available, the task will neither fail nor retry
         # in worst case there might be a duplicate attached to the tender
-        uid = save_upload_results(response_json, data, tender_id, item_name, item_id)
+        uid = save_upload_results(response_json, unique_data, tender_id, item_name, item_id)
         logger.info("Saved document with uid {} for {} {} {}".format(
             uid, tender_id, item_name, item_id),
             extra={"MESSAGE_ID": "EDR_POST_UPLOAD_RESULTS_SUCCESS"}
@@ -276,8 +289,8 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 # ---------- ATTACH DOCUMENT TO ITS TENDER
 @app.task(bind=True)
 def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
-
-    upload_results = get_upload_results(self, data, tender_id, item_name, item_id)
+    unique_data = {k: v for k, v in data.items() if k != "meta"}
+    upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
     if file_data is None:
         if upload_results is None:
             fall_msg = "Saved results are missed for {} {} {}".format(tender_id, item_name, item_id)
@@ -343,10 +356,10 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
-                raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_request_retry_countdown(response))
             else:
                 # won't raise anything
-                uid = set_upload_results_attached(data, tender_id, item_name, item_id)
+                uid = set_upload_results_attached(unique_data, tender_id, item_name, item_id)
                 logger.info("Set attached document with uid {} for {} {} {}".format(
                     uid, tender_id, item_name, item_id),
                     extra={"MESSAGE_ID": "EDR_SET_ATTACHED_RESULTS"}
