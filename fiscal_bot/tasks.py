@@ -4,7 +4,7 @@ from celery.utils.log import get_task_logger
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
-    FISCAL_API_HOST,
+    FISCAL_API_HOST, FISCAL_API_PROXIES
 )
 from fiscal_bot.settings import (
     IDENTIFICATION_SCHEME, DOC_TYPE,
@@ -121,6 +121,7 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
         try:
             response = requests.post(
                 '{}/cabinet/public/api/exchange/report'.format(FISCAL_API_HOST),
+                proxies=FISCAL_API_PROXIES,
                 json=[{'contentBase64': request_data, 'fname': filename}]
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
@@ -278,6 +279,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
             response = requests.post(
                 '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                proxies=FISCAL_API_PROXIES,
                 data=request_data
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
