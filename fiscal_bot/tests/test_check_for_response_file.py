@@ -1,4 +1,4 @@
-from environment_settings import FISCAL_API_HOST, TIMEZONE
+from environment_settings import FISCAL_API_HOST, TIMEZONE, FISCAL_API_PROXIES
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from fiscal_bot.tasks import check_for_response_file
 from fiscal_bot.settings import REQUEST_MAX_RETRIES, CUSTOM_WORK_DAY
@@ -84,6 +84,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            proxies=FISCAL_API_PROXIES,
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -123,6 +124,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            proxies=FISCAL_API_PROXIES,
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -162,6 +164,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            proxies=FISCAL_API_PROXIES,
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -194,6 +197,7 @@ class CheckResponseTestCase(unittest.TestCase):
                     '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
                     data=request_data,
                     timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                    proxies=FISCAL_API_PROXIES,
                 )
             ]
         )

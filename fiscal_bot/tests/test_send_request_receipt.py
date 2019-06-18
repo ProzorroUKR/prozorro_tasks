@@ -1,4 +1,4 @@
-from environment_settings import TIMEZONE, FISCAL_API_HOST
+from environment_settings import TIMEZONE, FISCAL_API_HOST, FISCAL_API_PROXIES
 from datetime import datetime, timedelta
 from fiscal_bot.tasks import send_request_receipt
 from celery.exceptions import Retry
@@ -135,7 +135,8 @@ class ReceiptTestCase(unittest.TestCase):
 
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/report'.format(FISCAL_API_HOST),
-            json=[{'contentBase64': request_data, 'fname': filename}]
+            json=[{'contentBase64': request_data, 'fname': filename}],
+            proxies=FISCAL_API_PROXIES,
         )
         get_result_mock.assert_called_once_with(
             send_request_receipt,
