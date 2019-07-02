@@ -104,7 +104,7 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = args_to_uid(
-            ("test_method", (1, 2), dict(message="Hi"))
+            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
             {"_id": task_uid}
@@ -133,7 +133,7 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = args_to_uid(
-            ("test_method", (1, 2), dict(message="Hi"))
+            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
             {"_id": task_uid}
@@ -160,7 +160,7 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = args_to_uid(
-            ("test_method", (1, 2), dict(message="Hi"))
+            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
             {"_id": task_uid}
@@ -196,7 +196,7 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = args_to_uid(
-            ("test_method", (1, 2), dict(message="Hi"))
+            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
             {"_id": task_uid}
@@ -229,7 +229,7 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = args_to_uid(
-            ("test_method", (1, 2), dict(message="Hi"))
+            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
             {"_id": task_uid}

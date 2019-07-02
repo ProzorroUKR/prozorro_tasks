@@ -87,7 +87,7 @@ def unique_task_decorator(task):
             self, key_args = None, args
 
         task_uid = args_to_uid(
-            (task.__name__, key_args, kwargs)
+            (task.__module__, task.__name__, key_args, kwargs)
         )
         collection = get_mongodb_collection()
         try:
