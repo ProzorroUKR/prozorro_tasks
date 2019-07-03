@@ -11,7 +11,8 @@ procedures = (
 
 WORKING_DAYS_BEFORE_REQUEST_AGAIN = 2
 REQUEST_MAX_RETRIES = 2
-CUSTOM_WORK_DAY = dict(
+
+SEND_REQUESTS_WORK_DAY = dict(
     start=(9, 0),
     end=(16, 0),
 )
