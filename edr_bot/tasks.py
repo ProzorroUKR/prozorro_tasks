@@ -157,7 +157,7 @@ def is_valid_identifier(identifier):
 
 # ------- GET EDR DATA
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=20)
 def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
     meta = {
         'id': uuid4().hex,

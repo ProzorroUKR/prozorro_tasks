@@ -55,6 +55,8 @@ def echo_task(self, v=0):  # pragma: no cover
 @app.task(bind=True, acks_late=True, max_retries=None)
 @unique_task_decorator
 def process_feed(self, resource="tenders", offset="", descending="", mode="_all_", cookies=None, try_count=0):
+    logger.info("Start task {}".format(self.request.id),
+                extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})
 
     if not offset:  # initialization
         descending = "1"
@@ -106,12 +108,16 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                 else:
                     if offset == next_page_kwargs["offset"]:
                         next_page_kwargs["try_count"] = try_count + 1
-                    process_feed.apply_async(
+                    result = process_feed.apply_async(
                         kwargs=next_page_kwargs,
                         countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                     )
+                    logger.info("Planned task {}".format(result.id),
+                                extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
             else:
-                process_feed.apply_async(kwargs=next_page_kwargs)
+                result = process_feed.apply_async(kwargs=next_page_kwargs)
+                logger.info("Planned task {}".format(result.id),
+                            extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
 
             # if it's initialization, add forward crawling task
             if not offset:
@@ -126,10 +132,12 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                     process_kwargs["offset"] = ""
                     process_kwargs["try_count"] = try_count + 1
 
-                process_feed.apply_async(
+                result = process_feed.apply_async(
                     kwargs=process_kwargs,
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
+                logger.info("Planned task {}".format(result.id),
+                            extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
         elif response.status_code == 412:  # Precondition failed
             logger.warning("Precondition failed with cookies {}".format(cookies),
                            extra={"MESSAGE_ID": "FEED_PRECONDITION_FAILED"})
