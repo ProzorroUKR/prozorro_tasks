@@ -9,10 +9,8 @@ app = Celery(
     'celery_worker',
     broker=CELERY_BROKER_URL,
     include=[
-        'crawler.tasks',
-        'edr_bot.tasks',
-        'fiscal_bot.tasks',
-        'tasks_utils.tasks',
+        "{}.tasks".format(module_name)
+        for module_name in celeryconfig.task_modules
     ],
 )
 app.config_from_object(celeryconfig)

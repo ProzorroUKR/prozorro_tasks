@@ -53,8 +53,8 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_SERVER: mongo
-#    logging:
-#      driver: "none"
+    logging:
+      driver: "none"
 
   rabbit:
     hostname: rabbit
