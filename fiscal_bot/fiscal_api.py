@@ -1,7 +1,7 @@
 from environment_settings import (
     FISCAL_SENDER_NAME, FISCAL_SENDER_STI, FISCAL_SENDER_TIN,
-    FISCAL_TEST_MODE, FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER
 )
+from fiscal_bot.settings import REQUEST_DOC_VERSION
 from tasks_utils.datetime import get_now
 from celery.utils.log import get_task_logger
 from fiscal_bot.utils import get_daily_increment_id, get_monthly_increment_id
@@ -17,22 +17,14 @@ TEMPLATES = jinja2.Environment(
 def build_receipt_request(task, tenderID, identifier, name):
     now = get_now()
 
-    if FISCAL_TEST_MODE:
-        name = FISCAL_TEST_NAME
-        identifier = FISCAL_TEST_IDENTIFIER
-        logger.info(
-            "FISCAL_TEST_MODE is enabled: {} {}".format(FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER),
-            extra={"MESSAGE_ID": "FISCAL_TEST_MODE"}
-        )
-
     c_doc_count = get_monthly_increment_id(task, now.date())
-    filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver}{c_doc_stan}{c_doc_type}{c_doc_count:07d}" \
+    filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver:02d}{c_doc_stan}{c_doc_type}{c_doc_count:07d}" \
                "{period_type}{period_month:02d}{period_year}{authority}.xml".format(
                     authority="2659",
                     identifier="0" * (10 - len(FISCAL_SENDER_TIN)) + FISCAL_SENDER_TIN,
                     c_doc="J16",  # J17 for response
                     c_doc_sub="031",
-                    c_doc_ver="01",
+                    c_doc_ver=REQUEST_DOC_VERSION,
                     c_doc_stan="1",
                     c_doc_type="00",
                     c_doc_count=c_doc_count,

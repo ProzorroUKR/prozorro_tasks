@@ -43,6 +43,3 @@ FISCAL_API_PROXIES = FISCAL_API_PROXIES or None
 FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "1010101017")  # set "02426097" for ПРОЗОРРО
 FISCAL_SENDER_NAME = os.environ.get("FISCAL_SENDER_NAME", "ДП «ПРОЗОРРО»")
 FISCAL_SENDER_STI = os.environ.get("FISCAL_SENDER_STI", "ДПI у Шевченківському районі ГУ ДФС у м. Києві")
-FISCAL_TEST_MODE = os.environ.get("FISCAL_TEST_MODE", False)
-FISCAL_TEST_NAME = os.environ.get("FISCAL_TEST_NAME", "Мирний Олександр Максимович")
-FISCAL_TEST_IDENTIFIER = os.environ.get("FISCAL_TEST_IDENTIFIER", "1010101017")

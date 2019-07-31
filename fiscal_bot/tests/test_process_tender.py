@@ -1,5 +1,5 @@
 from unittest.mock import patch, Mock, call
-from environment_settings import PUBLIC_API_HOST, API_VERSION, FISCAL_TEST_NAME, FISCAL_TEST_IDENTIFIER
+from environment_settings import PUBLIC_API_HOST, API_VERSION
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.exceptions import Retry
 from fiscal_bot.tasks import process_tender
