@@ -1,5 +1,5 @@
 from environment_settings import (
-    FISCAL_SENDER_NAME, FISCAL_SENDER_STI, FISCAL_SENDER_TIN,
+    FISCAL_SENDER_NAME, FISCAL_SENDER_STI, FISCAL_SENDER_TIN, FISCAL_BOT_ENV_NUMBER
 )
 from fiscal_bot.settings import REQUEST_DOC_VERSION
 from tasks_utils.datetime import get_now
@@ -18,7 +18,11 @@ def build_receipt_request(task, tenderID, identifier, name):
     now = get_now()
 
     c_doc_count = get_monthly_increment_id(task, now.date())
-    filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver:02d}{c_doc_stan}{c_doc_type}{c_doc_count:07d}" \
+    if len("{:d}".format(c_doc_count)) > 6:
+        logger.critical("Month doc count doesn't fit 6 signs")  # I don't really expect this to happen
+
+    filename = "{authority}{identifier}{c_doc}{c_doc_sub}{c_doc_ver:02d}{c_doc_stan}{c_doc_type}" \
+               "{env_number:d}{c_doc_count:06d}" \
                "{period_type}{period_month:02d}{period_year}{authority}.xml".format(
                     authority="2659",
                     identifier="0" * (10 - len(FISCAL_SENDER_TIN)) + FISCAL_SENDER_TIN,
@@ -27,12 +31,12 @@ def build_receipt_request(task, tenderID, identifier, name):
                     c_doc_ver=REQUEST_DOC_VERSION,
                     c_doc_stan="1",
                     c_doc_type="00",
+                    env_number=FISCAL_BOT_ENV_NUMBER,
                     c_doc_count=c_doc_count,
                     period_type="1",
                     period_month=now.month,
                     period_year=now.year,
                )
-
     template = TEMPLATES.get_template('request.xml')
 
     context = dict(
