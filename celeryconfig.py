@@ -16,6 +16,9 @@ broker_connection_max_retries = None
 # Maximum number of retries before we give up re-establishing a connection to the AMQP broker.
 # If this is set to 0 or None, we’ll retry forever.
 
+# https://github.com/celery/celery/issues/5410
+broker_transport_options = {'confirm_publish': True}
+
 # Celery will automatically retry sending messages in the event of connection failure,
 # and retry behavior can be configured – like how often to retry,
 # or a maximum number of retries – or disabled all together.
