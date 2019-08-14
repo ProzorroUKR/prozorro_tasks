@@ -46,6 +46,7 @@ def build_receipt_request(task, tenderID, identifier, name):
         tenderID=tenderID,
         identifier=identifier,
         name=name,
+        c_doc_ver=REQUEST_DOC_VERSION,
         c_doc_count=c_doc_count,
         h_num=get_daily_increment_id(task, now.date()),
         now=now,
