@@ -54,7 +54,7 @@ def process_tender(self, tender_id):
         tender = response.json()["data"]
 
         for award in tender.get('awards', []):
-            if award["status"] == "pending" and award["date"] > FISCAL_BOT_START_DATE:
+            if award["status"] == "active" and award["date"] > FISCAL_BOT_START_DATE:
                 if not any(doc.get('documentType') == DOC_TYPE for doc in award.get('documents', [])):
                     for supplier in award['suppliers']:
                         identifier = str(supplier['identifier']['id'])

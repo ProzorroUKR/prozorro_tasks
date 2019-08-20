@@ -1,10 +1,10 @@
-from .settings import pre_qualification_procedures, qualification_procedures
+from .settings import pre_qualification_procedures, awarded_procedures
 from .tasks import process_tender
 
 
-def valid_qualification_tender(tender):
-    return (tender['status'] == "active.qualification" and
-            tender['procurementMethodType'] in qualification_procedures)
+def valid_awarded_tender(tender):
+    return (tender['status'] == "active.awarded" and
+            tender['procurementMethodType'] in awarded_procedures)
 
 
 def valid_pre_qualification_tender(tender):
@@ -13,5 +13,5 @@ def valid_pre_qualification_tender(tender):
 
 
 def edr_bot_tender_handler(tender):
-    if valid_qualification_tender(tender) or valid_pre_qualification_tender(tender):
+    if valid_awarded_tender(tender) or valid_pre_qualification_tender(tender):
         process_tender.delay(tender_id=tender['id'], tender_status=tender['status'])
