@@ -39,6 +39,7 @@ def build_receipt_request(task, tenderID, identifier, name):
                )
     template = TEMPLATES.get_template('request.xml')
 
+    is_legal = len(identifier) == 8 and identifier.isdigit()
     context = dict(
         sender_tin=FISCAL_SENDER_TIN,
         sender_name=FISCAL_SENDER_NAME,
@@ -49,7 +50,7 @@ def build_receipt_request(task, tenderID, identifier, name):
         c_doc_count=c_doc_count,
         h_num=get_daily_increment_id(task, now.date()),
         now=now,
-        is_physical=len(identifier) == 8 and identifier[2:].isdigit() or len(identifier) == 10 and identifier.isdigit(),
+        is_physical=not is_legal,
     )
     if context["is_physical"]:
         name_parts = name.strip().split(" ")
