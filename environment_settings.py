@@ -40,7 +40,7 @@ if os.environ.get("FISCAL_API_HTTP_PROXY"):
 if os.environ.get("FISCAL_API_HTTPS_PROXY"):
     FISCAL_API_PROXIES["https"] = os.environ.get("FISCAL_API_HTTPS_PROXY")
 FISCAL_API_PROXIES = FISCAL_API_PROXIES or None
-FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "1010101017")  # set "02426097" for ПРОЗОРРО
+FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "02426097")
 FISCAL_SENDER_NAME = os.environ.get("FISCAL_SENDER_NAME", "ДП «ПРОЗОРРО»")
 FISCAL_SENDER_STI = os.environ.get("FISCAL_SENDER_STI", "ДПI у Шевченківському районі ГУ ДФС у м. Києві")
 # as long as the fiscal api doesn't provide any test environments

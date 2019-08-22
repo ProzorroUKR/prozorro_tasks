@@ -1,6 +1,7 @@
 from datetime import datetime
 from fiscal_bot.fiscal_api import build_receipt_request
 from fiscal_bot.settings import REQUEST_DOC_VERSION
+from environment_settings import FISCAL_SENDER_TIN
 from unittest.mock import patch, Mock
 import unittest
 
@@ -25,7 +26,7 @@ class ReceiptTestCase(unittest.TestCase):
         get_daily_increment_id_mock.assert_called_once()
         self.assertEqual(
             filename,
-            "2659" "1010101017" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "1000000202" "1" "12" "2017" "2659.xml"
+            "2659" "0002426097" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "1000000202" "1" "12" "2017" "2659.xml"
         )
 
         self.assertIn(b"<HNUM>2</HNUM>", content)
@@ -34,7 +35,7 @@ class ReceiptTestCase(unittest.TestCase):
         self.assertIn(b"<HFILL>31122017</HFILL>", content)
         self.assertIn(b"<HTIME>12:00:05</HTIME>", content)
         self.assertIn("<HNAME>ДП «ПРОЗОРРО»</HNAME>".encode("windows-1251"), content)
-        self.assertIn(b"<HTIN>1010101017</HTIN>", content)
+        self.assertIn(b"<HTIN>02426097</HTIN>", content)
         self.assertIn(b"<HKSTI>2659</HKSTI>", content)
         self.assertIn("<HSTI>ДПI у Шевченківському районі ГУ ДФС у м. Києві</HSTI>".encode("windows-1251"), content)
         self.assertIn(b"<R0101G1S>UA-2019-01-31-000147-a</R0101G1S>", content)
@@ -62,7 +63,7 @@ class ReceiptTestCase(unittest.TestCase):
         get_daily_increment_id_mock.assert_called_once()
         self.assertEqual(
             filename,
-            "2659" "1010101017" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "1" 
+            "2659" "0002426097" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "1" 
             "00" "0000013" "1" "12" "2017" "2659.xml"
         )
 
@@ -71,7 +72,7 @@ class ReceiptTestCase(unittest.TestCase):
         self.assertIn(b"<HFILL>31122017</HFILL>", content)
         self.assertIn(b"<HTIME>12:00:05</HTIME>", content)
         self.assertIn("<HNAME>ДП «ПРОЗОРРО»</HNAME>".encode("windows-1251"), content)
-        self.assertIn(b"<HTIN>1010101017</HTIN>", content)
+        self.assertIn(b"<HTIN>02426097</HTIN>", content)
         self.assertIn(b"<HKSTI>2659</HKSTI>", content)
         self.assertIn("<HSTI>ДПI у Шевченківському районі ГУ ДФС у м. Києві</HSTI>".encode("windows-1251"), content)
         self.assertIn(b"<R0101G1S>UA-2019-01-31-000147-a</R0101G1S>", content)
@@ -100,6 +101,6 @@ class ReceiptTestCase(unittest.TestCase):
         get_daily_increment_id_mock.assert_called_once()
         self.assertEqual(
             filename,
-            "2659" "1010101017" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "100" 
+            "2659" "0002426097" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "100" 
             "9" "000202" "1" "12" "2017" "2659.xml"
         )
