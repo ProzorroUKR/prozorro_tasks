@@ -30,6 +30,7 @@ class ReceiptTestCase(unittest.TestCase):
 
         self.assertIn(b"<HNUM>2</HNUM>", content)
         self.assertIn(b"<C_DOC_CNT>202</C_DOC_CNT>", content)
+        self.assertIn("<C_DOC_VER>{}</C_DOC_VER>".format(REQUEST_DOC_VERSION).encode("windows-1251"), content)
         self.assertIn(b"<HFILL>31122017</HFILL>", content)
         self.assertIn(b"<HTIME>12:00:05</HTIME>", content)
         self.assertIn("<HNAME>ДП «ПРОЗОРРО»</HNAME>".encode("windows-1251"), content)

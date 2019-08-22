@@ -293,10 +293,11 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
             else:
                 data = response.json()
 
-                if data.get("status") != "OK" or not any(kv.get("finalKvt") for kv in data.get("kvtList", [])):
-
-                    for kv in data.get("kvtList", []):  # strip file content for logger
-                        kv["kvtBase64"] = "{}...".format(kv["kvtBase64"][:10])
+                kvt_list = data.get("kvtList") or []
+                if data.get("status") != "OK" or not any(kv.get("finalKvt") for kv in kvt_list):
+                    for kv in kvt_list:  # strip file content for logger
+                        if isinstance(kv, dict) and "kvtBase64" in kv:
+                            kv["kvtBase64"] = "{}...".format(kv["kvtBase64"][:10])
                     logger.error("Unsuccessful: {}".format(data),
                                  extra={"MESSAGE_ID": "FISCAL_API_POST_RESULT_UNSUCCESSFUL_RESPONSE"})
 
