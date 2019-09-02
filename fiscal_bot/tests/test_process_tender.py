@@ -77,19 +77,11 @@ class TenderTestCase(unittest.TestCase):
                                 'status': 'cancelled',
                             },
                             {
-                                'status': 'unsuccessful',
-                            },
-                            {
-                                'status': 'active',
-                                'documents': [
-                                    {
-                                        "title": "sfs_reference.yaml",
-                                    }
-                                ]
+                                'status': 'pending',
                             },
                             {
                                 "id": item_id,
-                                "status": "pending",
+                                "status": "active",
                                 "date": "2019-06-07T14:27:03.148663+03:00",
                                 "suppliers": [
                                     {
@@ -103,7 +95,7 @@ class TenderTestCase(unittest.TestCase):
                             },
                             {
                                 "id": item_id,
-                                "status": "pending",
+                                "status": "active",
                                 "date": "2019-07-01T14:27:03.148663+03:00",
                                 "suppliers": [
                                     {
@@ -158,63 +150,3 @@ class TenderTestCase(unittest.TestCase):
                     )
                 ]
             )
-
-    @patch("fiscal_bot.tasks.prepare_receipt_request")
-    @patch("fiscal_bot.tasks.requests")
-    def test_handle_200_response_test_mode(self, requests_mock, prepare_receipt_request):
-        code_1 = "1" * 8
-        code_2 = "2" * 10
-        tender_id, item_id = "f" * 32, "a" * 32
-        tenderID = "UA-0000"
-
-        requests_mock.get.return_value = Mock(
-            status_code=200,
-            json=Mock(return_value={
-                'data': {
-                    'id': tender_id,
-                    'tenderID': tenderID,
-                    'awards': [
-                        {
-                            'status': 'cancelled',
-                        },
-                        {
-                            'status': 'unsuccessful',
-                        },
-                        {
-                            'status': 'active',
-                            'documents': [
-                                {
-                                    "title": "sfs_reference.yaml",
-                                }
-                            ]
-                        },
-                        {
-                            "id": item_id,
-                            "status": "pending",
-                            "suppliers": [
-                                {
-                                    "identifier": {
-                                        "scheme": "UA-EDR",
-                                        "legalName": 'OOO "Моя оборона"',
-                                        "id": code_1,
-                                    },
-                                },
-                                {
-                                    "identifier": {
-                                        "scheme": "UA-EDR",
-                                        "id": code_2,
-                                    },
-                                    "name": "Monty",
-                                },
-                                {
-                                    "identifier": {
-                                        "scheme": "UA-WTF",
-                                        "id": code_1,
-                                    },
-                                }
-                            ],
-                        },
-                    ]
-                },
-            })
-        )

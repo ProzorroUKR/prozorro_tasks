@@ -14,7 +14,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("fiscal_bot.handlers.process_tender.delay")
     def test_wrong_status(self, process_tender_mock):
         tender = {
-            "status": "active.awarded",
+            "status": "active.qualification",
             "procurementMethodType": test_procedures[0],
         }
         fiscal_bot_tender_handler(tender)
@@ -23,7 +23,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("fiscal_bot.handlers.process_tender.delay")
     def test_wrong_type(self, process_tender_mock):
         tender = {
-            "status": "active.qualification",
+            "status": "active.awarded",
             "procurementMethodType": "fake_procedure_0",
         }
         fiscal_bot_tender_handler(tender)
@@ -33,7 +33,7 @@ class TestHandlerCase(unittest.TestCase):
     def test_success(self, process_tender_mock):
         tender = {
             "id": "134",
-            "status": "active.qualification",
+            "status": "active.awarded",
             "procurementMethodType": test_procedures[0],
         }
         fiscal_bot_tender_handler(tender)
