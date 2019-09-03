@@ -65,14 +65,14 @@ def process_tender(self, tender_id, *args, **kwargs):
         i = 0  # spread in time tasks that belongs to a single tender CS-3854
         if 'awards' in tender_data:
             for award in tender_data['awards']:
-                if award['status'] == 'active' and doc_is_missed(award):
+                if should_process_item(award):
                     for supplier in award['suppliers']:
                         process_award_supplier(response, tender_data, award, supplier, i)
                         i += 1
 
         elif 'qualifications' in tender_data:
             for qualification in tender_data['qualifications']:
-                if qualification['status'] == 'pending' and doc_is_missed(qualification):
+                if should_process_item(qualification):
                     process_qualification(response, tender_data, qualification, i)
                     i += 1
 
@@ -132,8 +132,10 @@ def process_qualification(response, tender, qualification, item_number):
         )
 
 
-def doc_is_missed(item):
-    return not any(document.get('documentType') == DOC_TYPE for document in item.get('documents', []))
+def should_process_item(item):
+    return (item['status'] == 'pending' and
+            not any(document.get('documentType') == DOC_TYPE
+                    for document in item.get('documents', [])))
 
 
 def check_related_lot_status(tender, award):

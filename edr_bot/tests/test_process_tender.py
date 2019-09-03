@@ -91,9 +91,6 @@ class TestHandlerCase(unittest.TestCase):
                             },
                             {
                                 'status': 'pending',
-                            },
-                            {
-                                'status': 'active',
                                 'documents': [
                                     {
                                         "documentType": "registerExtract",
@@ -102,7 +99,7 @@ class TestHandlerCase(unittest.TestCase):
                             },
                             {
                                 "id": item_id,
-                                "status": "active",
+                                "status": "pending",
                                 "suppliers": [
                                     {
                                         "identifier": {

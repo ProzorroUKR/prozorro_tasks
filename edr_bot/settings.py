@@ -12,7 +12,7 @@ pre_qualification_procedures = (
     'esco',
     'closeFrameworkAgreementUA',
 )
-awarded_procedures = (
+qualification_procedures = (
     'aboveThresholdUA',
     'aboveThresholdUA.defense',
     'aboveThresholdEU',
