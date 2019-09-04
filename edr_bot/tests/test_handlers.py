@@ -5,13 +5,13 @@ import unittest
 test_pre_qualification_procedures = (
     'fake_qualification_pro',
 )
-test_awarded_procedures = (
+test_qualification_procedures = (
     'fake_pre_qualification_pro',
 )
 
 
 @patch("edr_bot.handlers.pre_qualification_procedures", new=test_pre_qualification_procedures)
-@patch("edr_bot.handlers.awarded_procedures", new=test_awarded_procedures)
+@patch("edr_bot.handlers.qualification_procedures", new=test_qualification_procedures)
 class TestHandlerCase(unittest.TestCase):
 
     @patch("edr_bot.handlers.process_tender")
@@ -27,7 +27,7 @@ class TestHandlerCase(unittest.TestCase):
     def test_just_active_qualification(self, process_tender):
         tender = {
             "status": "active",
-            "procurementMethodType": test_awarded_procedures[0],
+            "procurementMethodType": test_qualification_procedures[0],
         }
         edr_bot_tender_handler(tender)
         process_tender.delay.assert_not_called()
@@ -45,7 +45,7 @@ class TestHandlerCase(unittest.TestCase):
     def test_active_pre_qualification_wrong_type(self, process_tender):
         tender = {
             "status": "active.pre-qualification",
-            "procurementMethodType": test_awarded_procedures[0],
+            "procurementMethodType": test_qualification_procedures[0],
         }
         edr_bot_tender_handler(tender)
         process_tender.delay.assert_not_called()
@@ -67,11 +67,11 @@ class TestHandlerCase(unittest.TestCase):
     def test_active_qualification(self, process_tender):
         tender = {
             "id": "qwa",
-            "status": "active.awarded",
-            "procurementMethodType": test_awarded_procedures[0],
+            "status": "active.qualification",
+            "procurementMethodType": test_qualification_procedures[0],
         }
         edr_bot_tender_handler(tender)
         process_tender.delay.assert_called_with(
             tender_id="qwa",
-            tender_status="active.awarded"
+            tender_status="active.qualification"
         )
