@@ -24,11 +24,12 @@ class ReceiptTestCase(unittest.TestCase):
             tender_id="f" * 32,
             award_id="c" * 32,
             tenderID="UA-2019-01-31-000147-a",
+            lot_index=None,
         )
 
         requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
         with self.assertRaises(Retry):
-                prepare_receipt_request(supplier=supplier)
+            prepare_receipt_request(supplier=supplier)
 
         retry_mock.assert_called_once_with(
             exc=requests_mock.post.side_effect
@@ -51,6 +52,7 @@ class ReceiptTestCase(unittest.TestCase):
             tender_id="f" * 32,
             award_id="c" * 32,
             tenderID="UA-2019-01-31-000147-a",
+            lot_index=None,
         )
 
         with self.assertRaises(Retry):
@@ -71,6 +73,7 @@ class ReceiptTestCase(unittest.TestCase):
             tender_id="f" * 32,
             award_id="c" * 32,
             tenderID="UA-2019-01-31-000147-a",
+            lot_index=None,
         )
 
         with patch("fiscal_bot.tasks.get_now") as get_now_mock:

@@ -24,7 +24,7 @@
         <HTIN>{{ sender_tin }}</HTIN>
         <HKSTI>2659</HKSTI>
         <HSTI>{{ sender_sti }}</HSTI>
-        <R0101G1S>{{ tenderID }}</R0101G1S>
+        <R0101G1S>{{ tenderID }}{% if lot_index is not none %} Ћот {{ lot_index + 1 }}{% endif %}</R0101G1S>
         <R0201G1S>{{ identifier }}</R0201G1S>
         <R0202G1S>{{ name }}</R0202G1S>
         {% if is_physical -%}
