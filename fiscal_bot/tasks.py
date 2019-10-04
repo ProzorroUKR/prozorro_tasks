@@ -28,7 +28,7 @@ logger = get_task_logger(__name__)
 
 @app.task(bind=True)
 @unique_task_decorator
-def process_tender(self, tender_id):
+def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
         version=API_VERSION,
