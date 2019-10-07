@@ -14,7 +14,7 @@ TEMPLATES = jinja2.Environment(
 )
 
 
-def build_receipt_request(task, tenderID, identifier, name):
+def build_receipt_request(task, tenderID, lot_index, identifier, name):
     now = get_now()
 
     c_doc_count = get_monthly_increment_id(task, now.date())
@@ -45,6 +45,7 @@ def build_receipt_request(task, tenderID, identifier, name):
         sender_name=FISCAL_SENDER_NAME,
         sender_sti=FISCAL_SENDER_STI,
         tenderID=tenderID,
+        lot_index=lot_index,
         identifier=identifier,
         name=name,
         c_doc_ver=REQUEST_DOC_VERSION,

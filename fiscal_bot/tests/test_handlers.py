@@ -14,7 +14,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("fiscal_bot.handlers.process_tender.delay")
     def test_wrong_status(self, process_tender_mock):
         tender = {
-            "status": "active.qualification",
+            "status": "active.auction",
             "procurementMethodType": test_procedures[0],
         }
         fiscal_bot_tender_handler(tender)
@@ -28,6 +28,16 @@ class TestHandlerCase(unittest.TestCase):
         }
         fiscal_bot_tender_handler(tender)
         process_tender_mock.assert_not_called()
+
+    @patch("fiscal_bot.handlers.process_tender.delay")
+    def test_success_qualifications(self, process_tender_mock):
+        tender = {
+            "id": "134",
+            "status": "active.qualification",
+            "procurementMethodType": test_procedures[0],
+        }
+        fiscal_bot_tender_handler(tender)
+        process_tender_mock.assert_called_with(tender_id="134")
 
     @patch("fiscal_bot.handlers.process_tender.delay")
     def test_success(self, process_tender_mock):

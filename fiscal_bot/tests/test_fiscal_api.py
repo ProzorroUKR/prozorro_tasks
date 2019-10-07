@@ -1,7 +1,6 @@
 from datetime import datetime
 from fiscal_bot.fiscal_api import build_receipt_request
 from fiscal_bot.settings import REQUEST_DOC_VERSION
-from environment_settings import FISCAL_SENDER_TIN
 from unittest.mock import patch, Mock
 import unittest
 
@@ -19,6 +18,7 @@ class ReceiptTestCase(unittest.TestCase):
             filename, content = build_receipt_request(
                 task=Mock(),
                 tenderID="UA-2019-01-31-000147-a",
+                lot_index=None,
                 identifier="AA426097",
                 name="Python Monty Иванович",
             )
@@ -47,6 +47,25 @@ class ReceiptTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.fiscal_api.get_monthly_increment_id")
     @patch("fiscal_bot.fiscal_api.get_daily_increment_id")
+    def test_template_built_lot(self, get_daily_increment_id_mock, get_monthly_increment_id_mock):
+        get_monthly_increment_id_mock.return_value = 202
+        get_daily_increment_id_mock.return_value = 2
+
+        with patch("fiscal_bot.fiscal_api.get_now") as get_now_mock:
+            get_now_mock.return_value = datetime(2017, 12, 31, 12, 0, 5)
+            filename, content = build_receipt_request(
+                task=Mock(),
+                tenderID="UA-2019-01-31-000147-a",
+                lot_index=0,
+                identifier="AA426097",
+                name="Python Monty Иванович",
+            )
+        get_monthly_increment_id_mock.assert_called_once()
+        get_daily_increment_id_mock.assert_called_once()
+        self.assertIn("<R0101G1S>UA-2019-01-31-000147-a Лот 1</R0101G1S>".encode("windows-1251"), content)
+
+    @patch("fiscal_bot.fiscal_api.get_monthly_increment_id")
+    @patch("fiscal_bot.fiscal_api.get_daily_increment_id")
     def test_template_built_legal_entity(self, get_daily_increment_id_mock, get_monthly_increment_id_mock):
         get_monthly_increment_id_mock.return_value = 13
         get_daily_increment_id_mock.return_value = 12
@@ -56,6 +75,7 @@ class ReceiptTestCase(unittest.TestCase):
             filename, content = build_receipt_request(
                 task=Mock(),
                 tenderID="UA-2019-01-31-000147-a",
+                lot_index=None,
                 identifier="12426097",
                 name="ПП `Python Monty Иванович`",
             )
@@ -94,6 +114,7 @@ class ReceiptTestCase(unittest.TestCase):
             filename, content = build_receipt_request(
                 task=Mock(),
                 tenderID="UA-2019-01-31-000147-a",
+                lot_index=None,
                 identifier="AA426097",
                 name="Python Monty Иванович",
             )

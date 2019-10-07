@@ -27,8 +27,7 @@ logger = get_task_logger(__name__)
 
 
 @app.task(bind=True)
-@unique_task_decorator
-def process_tender(self, tender_id):
+def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
         version=API_VERSION,
@@ -56,6 +55,8 @@ def process_tender(self, tender_id):
         for award in tender.get('awards', []):
             if award["status"] == "active" and award["date"] > FISCAL_BOT_START_DATE:
                 if not any(doc.get('documentType') == DOC_TYPE for doc in award.get('documents', [])):
+                    lot_ids = [l.get("id") for l in tender.get('lots', [])]
+
                     for supplier in award['suppliers']:
                         identifier = str(supplier['identifier']['id'])
 
@@ -70,6 +71,7 @@ def process_tender(self, tender_id):
                                 supplier=dict(
                                     tender_id=tender['id'],
                                     tenderID=tender['tenderID'],
+                                    lot_index=lot_ids.index(award['lotID']) if "lotID" in award else None,
                                     award_id=award['id'],
                                     identifier=identifier,
                                     name=name,
@@ -81,8 +83,10 @@ def process_tender(self, tender_id):
 
 
 @app.task(bind=True, max_retries=10)
+@unique_task_decorator
 def prepare_receipt_request(self, supplier, requests_reties=0):
-    filename, content = build_receipt_request(self, supplier["tenderID"], supplier["identifier"], supplier["name"])
+    filename, content = build_receipt_request(self, supplier["tenderID"], supplier["lot_index"],
+                                              supplier["identifier"], supplier["name"])
     try:
         response = requests.post(
             "{}/encrypt_fiscal/file".format(API_SIGN_HOST),

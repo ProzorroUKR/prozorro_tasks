@@ -7,7 +7,6 @@ import requests
 import unittest
 
 
-@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class TenderTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.tasks.process_tender.retry")
@@ -137,6 +136,7 @@ class TenderTestCase(unittest.TestCase):
                             award_id=item_id,
                             tender_id=tender_id,
                             tenderID=tenderID,
+                            lot_index=None,
                         )
                     ),
                     call(
@@ -145,7 +145,93 @@ class TenderTestCase(unittest.TestCase):
                             name="Monty",
                             award_id=item_id,
                             tender_id=tender_id,
-                            tenderID=tenderID
+                            tenderID=tenderID,
+                            lot_index=None,
+                        )
+                    )
+                ]
+            )
+
+    @patch("fiscal_bot.tasks.prepare_receipt_request")
+    def test_handle_200_with_lots_response(self, prepare_receipt_request):
+        code_1 = "1" * 8
+        code_2 = "2" * 10
+        tender_id, item_id = "f" * 32, "a" * 32
+        tenderID = "UA-0000"
+
+        with patch("fiscal_bot.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={
+                    'data': {
+                        'id': tender_id,
+                        'tenderID': tenderID,
+                        'awards': [
+                            {
+                                "id": item_id,
+                                "status": "active",
+                                "lotID": "1234",
+                                "date": "2019-07-01T14:27:03.148663+03:00",
+                                "suppliers": [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-EDR",
+                                            "legalName": 'OOO "Моя оборона"',
+                                            "id": code_1,
+                                        },
+                                    },
+                                ],
+                            },
+                            {
+                                "id": item_id,
+                                "status": "active",
+                                "lotID": "1",
+                                "date": "2019-07-01T14:27:03.148663+03:00",
+                                "suppliers": [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-EDR",
+                                            "id": code_2,
+                                        },
+                                        "name": "Monty",
+                                    },
+                                ],
+                            },
+                        ],
+                        "lots": [
+                            {"id": "1"},
+                            {"id": "12"},
+                            {"id": "123"},
+                            {"id": "1234"},
+                            {"id": "12345"},
+                        ],
+                    },
+                })
+            )
+
+            process_tender(tender_id)
+
+            self.assertEqual(
+                prepare_receipt_request.delay.call_args_list,
+                [
+                    call(
+                        supplier=dict(
+                            identifier=code_1,
+                            name='OOO "Моя оборона"',
+                            award_id=item_id,
+                            tender_id=tender_id,
+                            tenderID=tenderID,
+                            lot_index=3,
+                        )
+                    ),
+                    call(
+                        supplier=dict(
+                            identifier=code_2,
+                            name="Monty",
+                            award_id=item_id,
+                            tender_id=tender_id,
+                            tenderID=tenderID,
+                            lot_index=0,
                         )
                     )
                 ]
