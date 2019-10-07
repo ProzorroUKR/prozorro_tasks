@@ -27,7 +27,6 @@ logger = get_task_logger(__name__)
 
 
 @app.task(bind=True)
-@unique_task_decorator
 def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
@@ -84,6 +83,7 @@ def process_tender(self, tender_id, *args, **kwargs):
 
 
 @app.task(bind=True, max_retries=10)
+@unique_task_decorator
 def prepare_receipt_request(self, supplier, requests_reties=0):
     filename, content = build_receipt_request(self, supplier["tenderID"], supplier["lot_index"],
                                               supplier["identifier"], supplier["name"])

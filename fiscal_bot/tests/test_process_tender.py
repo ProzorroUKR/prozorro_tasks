@@ -7,7 +7,6 @@ import requests
 import unittest
 
 
-@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class TenderTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.tasks.process_tender.retry")

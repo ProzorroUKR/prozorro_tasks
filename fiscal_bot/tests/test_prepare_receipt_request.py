@@ -9,6 +9,7 @@ import unittest
 import base64
 
 
+@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class ReceiptTestCase(unittest.TestCase):
 
     @patch("fiscal_bot.tasks.prepare_receipt_request.retry")
