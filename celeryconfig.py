@@ -1,3 +1,4 @@
+from kombu import Queue
 
 task_acks_late = True
 # Default: Disabled.
@@ -29,3 +30,26 @@ retry_policy = {
     'interval_max': 0.2,
 }
 
+task_modules = [
+    'crawler',
+    'edr_bot',
+    'fiscal_bot',
+    'tasks_utils',
+]
+
+# Route tasks to different queues
+# crawler.tasks -> crawler
+# edr_bot -> edr_bot
+# etc.
+
+task_routes = ([
+    ('{}.*'.format(module_name), {'queue': module_name})
+    for module_name in task_modules
+],)
+
+task_queues = tuple(
+    Queue(module_name)
+    for module_name in task_modules
+) + (
+    Queue('celery',  routing_key=''),  # default
+)
