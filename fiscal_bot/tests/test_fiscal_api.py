@@ -125,3 +125,22 @@ class ReceiptTestCase(unittest.TestCase):
             "2659" "0002426097" "J16031" "{0:02d}".format(REQUEST_DOC_VERSION) + "100" 
             "9" "000202" "1" "12" "2017" "2659.xml"
         )
+
+    @patch("fiscal_bot.fiscal_api.FISCAL_BOT_ENV_NUMBER", 0)
+    @patch("fiscal_bot.fiscal_api.get_monthly_increment_id")
+    @patch("fiscal_bot.fiscal_api.get_daily_increment_id")
+    def test_template_built_encode_error(self, get_daily_increment_id_mock, get_monthly_increment_id_mock):
+        get_monthly_increment_id_mock.return_value = 202
+        get_daily_increment_id_mock.return_value = 2
+
+        with patch("fiscal_bot.fiscal_api.get_now") as get_now_mock:
+            get_now_mock.return_value = datetime(2017, 12, 31, 12, 0, 5)
+            _, content = build_receipt_request(
+                task=Mock(),
+                tenderID="UA-2019-01-31-000147-a",
+                lot_index=None,
+                identifier="03328362",
+                name="КП ″КОМУНАЛЬНЕ ШЛЯХОВО-ЕКСПЛУАТАЦІЙНЕ  ПІДПРИЄМСТВО″ УЖГОРОДСЬКОЇ МІСЬКОЇ РАДИ",
+            )
+        self.assertIn("<R0202G1S>КП КОМУНАЛЬНЕ ШЛЯХОВО-ЕКСПЛУАТАЦІЙНЕ  ПІДПРИЄМСТВО УЖГОРОДСЬКОЇ "
+                      "МІСЬКОЇ РАДИ</R0202G1S>".encode("windows-1251"), content)

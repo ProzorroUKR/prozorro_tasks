@@ -63,7 +63,7 @@ def build_receipt_request(task, tenderID, lot_index, identifier, name):
                 if len(name_parts) > 2:
                     context["patronymic"] = name_parts[2]
 
-    content = template.render(context).encode('windows-1251')
+    content = template.render(context).encode('windows-1251', errors='ignore')
 
     return filename, content
 
