@@ -85,7 +85,7 @@ def process_tender(self, tender_id, *args, **kwargs):
 @app.task(bind=True, max_retries=10)
 @unique_task_decorator
 def prepare_receipt_request(self, supplier, requests_reties=0):
-    filename, content = build_receipt_request(self, supplier["tenderID"], supplier["lot_index"],
+    filename, content = build_receipt_request(self, supplier["tenderID"], supplier.get("lot_index"),
                                               supplier["identifier"], supplier["name"])
     try:
         response = requests.post(

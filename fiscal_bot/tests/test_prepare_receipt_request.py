@@ -105,3 +105,30 @@ class ReceiptTestCase(unittest.TestCase):
                     requests_reties=0
                 )
             )
+
+    @patch("fiscal_bot.tasks.send_request_receipt")
+    @patch("fiscal_bot.tasks.build_receipt_request")
+    def test_lot_index_change_backward_compatibility(self, build_receipt_mock, send_request_receipt_mock):
+        build_receipt_mock.return_value = "hallo.xml", b"unencrypted contents"
+
+        supplier = dict(
+            name="Python Monty Иванович",
+            identifier="AA426097",
+            tender_id="f" * 32,
+            award_id="c" * 32,
+            tenderID="UA-2019-01-31-000147-a",
+        )
+
+        with patch("fiscal_bot.tasks.requests") as requests_mock:
+            requests_mock.post.side_effect = [
+                Mock(
+                    status_code=200,
+                    content=b"content",
+                ),
+            ]
+            prepare_receipt_request(supplier=supplier)
+
+        build_receipt_mock.assert_called_once_with(
+            prepare_receipt_request, supplier["tenderID"], None, supplier["identifier"], supplier["name"]
+        )
+
