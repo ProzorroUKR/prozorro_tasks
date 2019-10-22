@@ -97,7 +97,6 @@ class ReceiptTestCase(unittest.TestCase):
             )
 
             send_request_receipt_mock.apply_async.assert_called_once_with(
-                eta=TIMEZONE.localize(datetime(2019, 4, 2, 9)),  # Tuesday 9:00
                 kwargs=dict(
                     request_data=base64.b64encode(b"content").decode(),
                     filename="hallo.xml",
