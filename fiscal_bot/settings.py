@@ -12,11 +12,6 @@ procedures = (
 WORKING_DAYS_BEFORE_REQUEST_AGAIN = 2
 REQUEST_MAX_RETRIES = 2
 
-SEND_REQUESTS_WORK_DAY = dict(
-    start=(9, 0),
-    end=(16, 0),
-)
-
 FISCAL_BOT_START_DATE = os.environ.get("FISCAL_BOT_START_DATE", "2019-07-01")
 REQUEST_DOC_VERSION = int(os.environ.get("FISCAL_BOT_REQUEST_DOC_VERSION", 2))
 

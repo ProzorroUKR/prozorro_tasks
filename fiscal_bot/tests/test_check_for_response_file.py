@@ -1,7 +1,7 @@
 from environment_settings import FISCAL_API_HOST, TIMEZONE, FISCAL_API_PROXIES
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from fiscal_bot.tasks import check_for_response_file
-from fiscal_bot.settings import REQUEST_MAX_RETRIES, SEND_REQUESTS_WORK_DAY
+from fiscal_bot.settings import REQUEST_MAX_RETRIES
 from celery.exceptions import Retry
 from datetime import datetime
 from unittest.mock import patch, Mock, call

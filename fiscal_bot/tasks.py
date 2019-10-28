@@ -12,7 +12,7 @@ from fiscal_bot.settings import (
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER
 from fiscal_bot.fiscal_api import build_receipt_request
-from fiscal_bot.settings import SEND_REQUESTS_WORK_DAY, FISCAL_BOT_START_DATE
+from fiscal_bot.settings import FISCAL_BOT_START_DATE
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
@@ -105,9 +105,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
             request_data = base64.b64encode(response.content).decode()
-            eta = get_working_datetime(get_now(), custom_wd=SEND_REQUESTS_WORK_DAY, working_weekends_enabled=True)
             send_request_receipt.apply_async(
-                eta=eta,
                 kwargs=dict(
                     request_data=request_data,
                     filename=filename,
