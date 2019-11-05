@@ -46,7 +46,7 @@ def process_tender(self, tender_id, *args, **kwargs):
         if response.status_code != 200:
             logger.error("Unexpected status code {} while getting tender {}: {}".format(
                 response.status_code, tender_id, response.text
-            ), extra={"MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
+            ), extra={"MESSAGE_ID": "FISCAL_GET_TENDER_UNSUCCESSFUL_CODE",
                       "STATUS_CODE": response.status_code})
             raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
@@ -95,12 +95,13 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
-        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCODE_API_ERROR"})
+        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"})
         raise self.retry(exc=e)
     else:
         if response.status_code != 200:
             logger.error(
-                "Encrypting has failed: {} {}".format(response.status_code, response.text)
+                "Encrypting has failed: {} {}".format(response.status_code, response.text),
+                extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"}
             )
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
@@ -195,13 +196,13 @@ def decode_and_save_data(self, name, data, tender_id, award_id):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
-        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_REQUEST_API_ERROR"})
+        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_DECRYPT_API_ERROR"})
         raise self.retry(exc=e)
     else:
         if response.status_code != 200:
             logger.error(
                 "Signing has failed: {} {}".format(response.status_code, response.text),
-                extra={"MESSAGE_ID": "FISCAL_API_STATUS_ERROR"}
+                extra={"MESSAGE_ID": "FISCAL_DECRYPT_API_ERROR"}
             )
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
@@ -237,12 +238,13 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
-        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCODE_API_ERROR"})
+        logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"})
         raise self.retry(exc=e)
     else:
         if response.status_code != 200:
             logger.error(
-                "Encrypting has failed: {} {}".format(response.status_code, response.text)
+                "Encrypting has failed: {} {}".format(response.status_code, response.text),
+                extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"}
             )
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
@@ -267,7 +269,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
             )
             logger.warning(
                 "Request retry scheduled",
-                extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY"}
+                extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_SCHEDULED"}
             )
         else:
             logger.warning(
@@ -284,13 +286,13 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                 data=request_data
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
-            logger.exception(e, extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
+            logger.exception(e, extra={"MESSAGE_ID": "FISCAL_API_CHECK_RESPONSE_ERROR"})
             raise self.retry(exc=e)
         else:
 
             if response.status_code != 200:
                 logger.error("Unsuccessful status code: {} {}".format(response.status_code, response.text),
-                             extra={"MESSAGE_ID": "FISCAL_API_POST_RESULT_ERROR"})
+                             extra={"MESSAGE_ID": "FISCAL_API_CHECK_RESPONSE_ERROR"})
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
             else:
                 data = response.json()
@@ -301,7 +303,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                         if isinstance(kv, dict) and "kvtBase64" in kv:
                             kv["kvtBase64"] = "{}...".format(kv["kvtBase64"][:10])
                     logger.error("Unsuccessful: {}".format(data),
-                                 extra={"MESSAGE_ID": "FISCAL_API_POST_RESULT_UNSUCCESSFUL_RESPONSE"})
+                                 extra={"MESSAGE_ID": "FISCAL_API_CHECK_UNSUCCESSFUL_RESPONSE"})
 
                     #  schedule next check on work time
                     eta = get_working_datetime(
@@ -323,5 +325,5 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                                 "Found kvt file: {}".format(
                                     {k: v for k, v in kvt.items() if k != "kvtBase64"}
                                 ),
-                                extra={"MESSAGE_ID": "FISCAL_API_POST_RESULT_KVT_NOT_FOUND"}
+                                extra={"MESSAGE_ID": "FISCAL_API_KVT_FOUND"}
                             )
