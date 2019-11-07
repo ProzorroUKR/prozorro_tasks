@@ -33,12 +33,12 @@ def upload_to_doc_service(self, name, content, doc_type,
                 files={'file': (name, base64.b64decode(content))},
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "POST_DOC_EXCEPTION"})
+            logger.exception(exc, extra={"MESSAGE_ID": "POST_DOC_API_ERROR"})
             raise self.retry(exc=exc)
         else:
             if response.status_code != 200:
                 logger.error("Incorrect upload status for doc {}".format(name),
-                             extra={"MESSAGE_ID": "POST_DOC_ERROR",
+                             extra={"MESSAGE_ID": "POST_DOC_API_ERROR",
                                     "STATUS_CODE": response.status_code})
                 raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
@@ -52,7 +52,7 @@ def upload_to_doc_service(self, name, content, doc_type,
             uid = save_task_result(self, result, task_args)
             logger.info("Saved document with uid {} for {} {} {}".format(
                 uid, tender_id, item_name, item_id),
-                extra={"MESSAGE_ID": "POST_UPLOAD_DOC_RESULTS_SUCCESS"}
+                extra={"MESSAGE_ID": "SAVE_UPLOAD_DOC_RESULTS_SUCCESS"}
             )
 
     attach_doc_to_tender.delay(
@@ -90,7 +90,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                 }
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "ATTACH_DOC_HEAD_EXCEPTION"})
+            logger.exception(exc, extra={"MESSAGE_ID": "ATTACH_DOC_HEAD_ERROR"})
             raise self.retry(exc=exc)
         else:
             # post document
@@ -105,7 +105,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     cookies=head_response.cookies,
                 )
             except RETRY_REQUESTS_EXCEPTIONS as exc:
-                logger.exception(exc, extra={"MESSAGE_ID": "ATTACH_DOC_POST_EXCEPTION"})
+                logger.exception(exc, extra={"MESSAGE_ID": "ATTACH_DOC_POST_ERROR"})
                 raise self.retry(exc=exc)
             else:
                 # handle response code
@@ -117,7 +117,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                 elif response.status_code != 201:
                     logger.error("Incorrect upload status while attaching doc {} to tender {}: {}".format(
                         data["title"], tender_id, response.text
-                    ), extra={"MESSAGE_ID": "ATTACH_DOC_STATUS_ERROR", "STATUS_CODE": response.status_code})
+                    ), extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code})
                     raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
                 else:
                     uid = save_task_result(self, True, task_args)

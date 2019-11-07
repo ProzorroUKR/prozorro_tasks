@@ -1,0 +1,79 @@
+@startuml
+class Crawler{
+procurementMethodType in\n- aboveThresholdUA\n- aboveThresholdUA.defense\n- aboveThresholdEU\n- competitiveDialogueUA.stage2\n- competitiveDialogueEU.stage2\n- esco\n- closeFrameworkAgreementUA\n AND\n status in (active.awarded, active.qualification)
+}
+class process_tender{
+    logging MESSAGE_IDs:
+    - FISCAL_GET_TENDER_EXCEPTION
+    - FISCAL_GET_TENDER_UNSUCCESSFUL_CODE
+    - FISCAL_IDENTIFIER_VALIDATION_ERROR
+}
+class prepare_receipt_request{
+    unique - won't run a duplicate task
+    the lock collection in mongodb has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - FISCAL_ENCRYPT_API_ERROR
+}
+class send_request_receipt{
+    Results of the request are saved,
+    so duplicate tasks won't send requests.
+    collection has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - FISCAL_API_POST_REQUEST_ERROR
+    - FISCAL_API_POST_REQUEST_SUCCESS
+    - FISCAL_API_CHECK_SCHEDULE
+}
+class prepare_check_request{
+    logging MESSAGE_IDs:
+    - FISCAL_ENCRYPT_API_ERROR
+}
+class check_for_response_file{
+    logging MESSAGE_IDs:
+    - FISCAL_API_CHECK_RESPONSE_ERROR
+    - FISCAL_API_CHECK_UNSUCCESSFUL_RESPONSE
+    - FISCAL_API_KVT_FOUND
+    - FISCAL_REQUEST_RETRY_SCHEDULED
+    - FISCAL_REQUEST_RETRY_EXCEED
+}
+class decode_and_save_data{
+    logging MESSAGE_IDs:
+    - FISCAL_DECRYPT_API_ERROR
+}
+class upload_to_doc_service{
+    Results of the task are saved,
+    so duplicate tasks won't send requests.
+    collection has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - POST_DOC_API_ERROR
+    - SAVE_UPLOAD_DOC_RESULTS_SUCCESS
+}
+class attach_doc_to_tender{
+    Results of the task are saved,
+    so duplicate tasks won't send requests.
+    collection has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - ATTACH_DOC_HEAD_ERROR
+    - ATTACH_DOC_POST_ERROR
+    - ATTACH_DOC_DATA_ERROR
+    - ATTACH_DOC_UNSUCCESSFUL_STATUS
+    - SUCCESSFUL_DOC_ATTACHED
+}
+Crawler -down-|> process_tender:tender_id
+process_tender -down-|> prepare_receipt_request:for every supplier in active awards
+prepare_receipt_request -right|> send_request_receipt
+send_request_receipt -up-|> prepare_check_request:request UID\n(after an hour)
+send_request_receipt -up-|> decode_and_save_data:1st receipt
+prepare_check_request -up-|> check_for_response_file:base64(encrypted UID)
+check_for_response_file --|> prepare_receipt_request:on 3rd working day\n2 retries only
+check_for_response_file -right|> decode_and_save_data:2st receipt
+decode_and_save_data -down-|> upload_to_doc_service
+upload_to_doc_service -down-|> attach_doc_to_tender
+
+
+hide class circle
+
+@enduml
