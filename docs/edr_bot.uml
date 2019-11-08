@@ -1,0 +1,58 @@
+@startuml
+class Crawler{
+    status is active.pre-qualification\nAND procurementMethodType in\n- aboveThresholdEU\n- competitiveDialogueUA\n- competitiveDialogueEU\n- esco\n- closeFrameworkAgreementUA
+    --
+    OR
+    --
+    status in active.qualification\nAND procurementMethodType in\n- aboveThresholdUA\n- aboveThresholdUA.defense\n- aboveThresholdEU\n- competitiveDialogueUA.stage2\n- competitiveDialogueEU.stage2\n- esco\n- closeFrameworkAgreementUA
+}
+class process_tender{
+    logging MESSAGE_IDs:
+    - EDR_GET_TENDER_EXCEPTION
+    - EDR_GET_TENDER_CODE_ERROR
+    - EDR_INVALID_IDENTIFIER
+    - EDR_CANCELLED_LOT
+    - EDR_BID_ID_INVALID
+    - EDR_TENDERER_KEY_MISSED
+}
+class get_edr_data{
+    unique_task - successful task cause\nall duplicate task are discarded (ttl 30min)
+    --
+    logging MESSAGE_IDs:
+    - EDR_GET_DATA_EXCEPTION
+    - EDR_JSON_DECODE_EXCEPTION
+    - EDR_GET_DATA_EMPTY_RESPONSE
+}
+
+class upload_to_doc_service{
+    Results of the task are saved,
+    so duplicate tasks won't send requests.
+    collection has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - EDR_POST_DOC_EXCEPTION
+    - EDR_POST_DOC_ERROR
+    - EDR_POST_UPLOAD_RESULTS_SUCCESS
+}
+class attach_doc_to_tender{
+    Results of the task are saved,
+    so duplicate tasks won't send requests.
+    collection has ttl 30min
+    --
+    logging MESSAGE_IDs:
+    - EDR_SAVED_RESULTS_MISSED
+    - EDR_FILE_ALREADY_ATTACHED
+    - EDR_ATTACH_DOC_HEAD_EXCEPTION
+    - EDR_ATTACH_DOC_POST_EXCEPTION
+    - EDR_ATTACH_DATA_ERROR
+    - EDR_SET_ATTACHED_RESULTS
+}
+Crawler -right-|> process_tender:tender_id
+process_tender -right-|> get_edr_data:for every supplier in pending awards\nor every tenderer in pending qualifications
+get_edr_data -down-|> upload_to_doc_service:edr data
+upload_to_doc_service -left-|> attach_doc_to_tender:uploaded file json
+
+
+hide class circle
+
+@enduml

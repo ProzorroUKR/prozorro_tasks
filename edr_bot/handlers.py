@@ -14,4 +14,4 @@ def valid_pre_qualification_tender(tender):
 
 def edr_bot_tender_handler(tender):
     if valid_qualification_tender(tender) or valid_pre_qualification_tender(tender):
-        process_tender.delay(tender_id=tender['id'], tender_status=tender['status'])
+        process_tender.delay(tender_id=tender['id'])

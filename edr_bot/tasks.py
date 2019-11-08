@@ -1,5 +1,5 @@
 from celery_worker.celery import app
-from celery_worker.locks import unique_task_decorator
+from celery_worker.locks import unique_task_decorator, concurrency_lock
 from celery.utils.log import get_task_logger
 from edr_bot.utils import get_request_retry_countdown
 from edr_bot.settings import (
@@ -34,7 +34,6 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(bind=True)
-@unique_task_decorator
 def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
@@ -91,7 +90,6 @@ def process_award_supplier(response, tender, award, supplier, item_number):
             countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
             kwargs=dict(
                 code=str(supplier['identifier']['id']),
-                request_id=response.headers['X-Request-ID'],
                 tender_id=tender['id'],
                 item_name="award",
                 item_id=award['id']
@@ -124,7 +122,6 @@ def process_qualification(response, tender, qualification, item_number):
             countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
             kwargs=dict(
                 code=str(tenderers[0]['identifier']['id']),
-                request_id=response.headers['X-Request-ID'],
                 tender_id=tender['id'],
                 item_name="qualification",
                 item_id=qualification['id']
@@ -156,13 +153,17 @@ def is_valid_identifier(identifier):
 
 
 # ------- GET EDR DATA
-
 @app.task(bind=True, max_retries=20)
-def get_edr_data(self, code, request_id, tender_id, item_name, item_id):
+@concurrency_lock
+@unique_task_decorator
+def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
+    """
+    request_id: is deprecated, should be removed in the next releases
+    """
     meta = {
         'id': uuid4().hex,
         'author': DOC_AUTHOR,
-        'sourceRequests': [request_id],
+        'sourceRequests': [],
         'version': EDR_BOT_VERSION,
     }
     param = 'id' if code.isdigit() and len(code) != ID_PASSPORT_LEN else 'passport'

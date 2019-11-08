@@ -58,10 +58,7 @@ class TestHandlerCase(unittest.TestCase):
             "procurementMethodType": test_pre_qualification_procedures[0],
         }
         edr_bot_tender_handler(tender)
-        process_tender.delay.assert_called_with(
-            tender_id="qwerty",
-            tender_status="active.pre-qualification"
-        )
+        process_tender.delay.assert_called_with(tender_id="qwerty")
 
     @patch("edr_bot.handlers.process_tender")
     def test_active_qualification(self, process_tender):
@@ -71,7 +68,4 @@ class TestHandlerCase(unittest.TestCase):
             "procurementMethodType": test_qualification_procedures[0],
         }
         edr_bot_tender_handler(tender)
-        process_tender.delay.assert_called_with(
-            tender_id="qwa",
-            tender_status="active.qualification"
-        )
+        process_tender.delay.assert_called_with(tender_id="qwa")
