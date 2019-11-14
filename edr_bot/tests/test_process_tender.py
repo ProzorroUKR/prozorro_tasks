@@ -7,7 +7,6 @@ import unittest
 import requests
 
 
-@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class TestHandlerCase(unittest.TestCase):
 
     def test_handle_connection_error(self):
@@ -76,7 +75,6 @@ class TestHandlerCase(unittest.TestCase):
     def test_handle_200_response_award(self, get_edr_data):
         code_1 = "758234578270346"
         code_2 = "758234578270347"
-        response_id = uuid4().hex
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -117,8 +115,7 @@ class TestHandlerCase(unittest.TestCase):
                             },
                         ]
                     },
-                }),
-                headers={'X-Request-ID': response_id}
+                })
             )
 
             process_tender(tender_id)
@@ -130,7 +127,6 @@ class TestHandlerCase(unittest.TestCase):
                     countdown=0,
                     kwargs=dict(
                         code=code_1,
-                        request_id=response_id,
                         item_id=item_id,
                         item_name=item_name,
                         tender_id=tender_id
@@ -140,7 +136,6 @@ class TestHandlerCase(unittest.TestCase):
                     countdown=SPREAD_TENDER_TASKS_INTERVAL,
                     kwargs=dict(
                         code=code_2,
-                        request_id=response_id,
                         item_id=item_id,
                         item_name=item_name,
                         tender_id=tender_id
@@ -152,7 +147,6 @@ class TestHandlerCase(unittest.TestCase):
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_award_lot_is_missed(self, get_edr_data):
         code = "758234578270346"
-        response_id = uuid4().hex
         tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -188,8 +182,7 @@ class TestHandlerCase(unittest.TestCase):
                             },
                         ]
                     },
-                }),
-                headers={'X-Request-ID': response_id}
+                })
             )
 
             process_tender(tender_id)
@@ -234,7 +227,6 @@ class TestHandlerCase(unittest.TestCase):
     def test_handle_200_response_qualification(self, get_edr_data):
         code_1 = "758234578270346"
         code_2 = "758234578270347"
-        response_id = uuid4().hex
         tender_id, item_name, item_id = "f" * 32, "qualification", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -291,8 +283,7 @@ class TestHandlerCase(unittest.TestCase):
                             },
                         ]
                     },
-                }),
-                headers={'X-Request-ID': response_id}
+                })
             )
 
             process_tender(tender_id)
@@ -304,7 +295,6 @@ class TestHandlerCase(unittest.TestCase):
                     countdown=0,
                     kwargs=dict(
                         code=code_1,
-                        request_id=response_id,
                         item_id=item_id,
                         item_name=item_name,
                         tender_id=tender_id
@@ -314,7 +304,6 @@ class TestHandlerCase(unittest.TestCase):
                     countdown=SPREAD_TENDER_TASKS_INTERVAL,
                     kwargs=dict(
                         code=code_1,
-                        request_id=response_id,
                         item_id=item_id,
                         item_name=item_name,
                         tender_id=tender_id
@@ -324,7 +313,6 @@ class TestHandlerCase(unittest.TestCase):
                     countdown=SPREAD_TENDER_TASKS_INTERVAL * 2,
                     kwargs=dict(
                         code=code_1,
-                        request_id=response_id,
                         item_id=item_id,
                         item_name=item_name,
                         tender_id=tender_id
@@ -397,7 +385,6 @@ class TestHandlerCase(unittest.TestCase):
     @patch("edr_bot.tasks.get_edr_data")
     def test_handle_200_response_qualification_invalid_identification(self, get_edr_data):
         code = "758234578270346"
-        response_id = uuid4().hex
         tender_id, item_name, item_id = "f" * 32, "qualification", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
@@ -428,9 +415,7 @@ class TestHandlerCase(unittest.TestCase):
                         ]
                     },
                 }),
-                headers={'X-Request-ID': response_id}
             )
-
             process_tender(tender_id)
 
         get_edr_data.apply_async.assert_not_called()

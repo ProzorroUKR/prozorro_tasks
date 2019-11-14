@@ -98,15 +98,15 @@ services:
       - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
-      - API_TOKEN=ef7269f17acd462f9fc560e0a0ba26d3
+      - API_TOKEN=
       - DS_HOST=https://upload-docs-sandbox.prozorro.gov.ua
       - DS_USER=edrbot
-      - DS_PASSWORD=28223af397704c9dbd942ff9b0b81100
+      - DS_PASSWORD=
       - EDR_API_HOST=https://edr-dev-gc.prozorro.gov.ua
       - EDR_API_PORT=443
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
-      - EDR_API_PASSWORD=91b3233be66e418683247cbbea7b7b4f
+      - EDR_API_PASSWORD=
     command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
     volumes:
         - .:/app
