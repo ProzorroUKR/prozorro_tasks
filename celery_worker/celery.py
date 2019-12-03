@@ -1,9 +1,15 @@
 from __future__ import absolute_import
-from environment_settings import CELERY_BROKER_URL
+from environment_settings import CELERY_BROKER_URL, SENTRY_DSN, SENTRY_ENVIRONMENT
 from celery import Celery
 from celery.signals import after_setup_logger, after_setup_task_logger
 from pythonjsonlogger import jsonlogger
 import celeryconfig
+
+import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
+
+if SENTRY_DSN:
+    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENVIRONMENT, integrations=[CeleryIntegration()])
 
 app = Celery(
     'celery_worker',
