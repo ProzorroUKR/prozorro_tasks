@@ -1,4 +1,5 @@
-from edr_bot.settings import DEFAULT_RETRY_AFTER, SPREAD_TENDER_TASKS_INTERVAL
+from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from environment_settings import SPREAD_TENDER_TASKS_INTERVAL
 from uuid import uuid4
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry

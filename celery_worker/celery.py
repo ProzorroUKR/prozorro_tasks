@@ -39,6 +39,7 @@ class TaskJsonFormatter(jsonlogger.JsonFormatter):
                     TASK_NAME=task.name,
                     TASK_ARGS=request.args,
                     TASK_KWARGS=request.kwargs,
+                    TASK_RETRIES=request.retries,
                 )
                 return extra
             self.get_task_extra = get_task_extra

@@ -7,7 +7,7 @@ from crawler.settings import (
 )
 from environment_settings import PUBLIC_API_HOST, API_VERSION, CRAWLER_TENDER_HANDLERS
 from edr_bot.handlers import edr_bot_tender_handler
-from edr_bot.utils import get_request_retry_countdown
+from tasks_utils.requests import get_request_retry_countdown
 from fiscal_bot.handlers import fiscal_bot_tender_handler
 import requests
 

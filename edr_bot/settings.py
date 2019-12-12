@@ -1,5 +1,3 @@
-import os
-
 VERSION = "2.0.0"
 DOC_TYPE = 'registerExtract'
 IDENTIFICATION_SCHEME = 'UA-EDR'
@@ -22,8 +20,3 @@ qualification_procedures = (
     'closeFrameworkAgreementUA',
 )
 ID_PASSPORT_LEN = 9
-
-CONNECT_TIMEOUT = 5.0
-READ_TIMEOUT = 30.0
-DEFAULT_RETRY_AFTER = 5
-SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS_INTERVAL", "30"))
