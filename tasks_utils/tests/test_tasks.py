@@ -263,6 +263,58 @@ class AttachToTenderTestCase(unittest.TestCase):
             }
         )
 
+    @patch("tasks_utils.tasks.save_task_result")
+    @patch("tasks_utils.tasks.get_task_result")
+    def test_exception_post_403(self, get_task_result_mock, save_task_result_mock):
+        get_task_result_mock.return_value = None
+        tender_id = "a" * 32
+        item_name = "award"
+        item_id = "f" * 32
+        data = {
+            "url": "https://public-docs-sandbox.prozorro.gov.ua/get/3b29a",
+            "title": "26591010101017J1603101100000000111220172659.KVT",
+            "hash": "md5:73ab99ea2d04a128ac0220ac7bb517b7",
+            "format": "text/plain"
+        }
+
+        with patch("tasks_utils.tasks.requests") as requests_mock:
+            requests_mock.head.return_value = MagicMock(
+                status_code=200, cookies={"SERVER_ID": "1" * 32}
+            )
+            requests_mock.post.return_value = MagicMock(
+                status_code=403,
+                json={"errors": [
+                    {
+                        "location": "body",
+                        "name": "data",
+                        "description": "Can't add document in current (complete) tender status"
+                    }
+                ]}
+            )
+            attach_doc_to_tender(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+
+        url = "{host}/api/{version}/tenders/{tender_id}/awards/{award_id}/documents".format(
+            host=API_HOST,
+            version=API_VERSION,
+            award_id=item_id,
+            tender_id=tender_id,
+        )
+        requests_mock.head.assert_called_once_with(
+            url,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'Authorization': 'Bearer {}'.format(API_TOKEN)}
+        )
+        requests_mock.post.assert_called_once_with(
+            url,
+            json={'data': data},
+            cookies={"SERVER_ID": "1" * 32},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+            }
+        )
+        save_task_result_mock.assert_not_called()
+
 
 class DSUploadTestCase(unittest.TestCase):
 

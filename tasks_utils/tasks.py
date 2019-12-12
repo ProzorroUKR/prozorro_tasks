@@ -113,7 +113,11 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     logger.error("Incorrect document data while attaching doc {} to tender {}: {}".format(
                         data["title"], tender_id, response.text
                     ), extra={"MESSAGE_ID": "ATTACH_DOC_DATA_ERROR"})
-
+                elif response.status_code == 403:
+                    logger.warning(
+                        "Can't upload document: {}".format(response.json),
+                        extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code}
+                    )
                 elif response.status_code != 201:
                     logger.error("Incorrect upload status while attaching doc {} to tender {}: {}".format(
                         data["title"], tender_id, response.text
