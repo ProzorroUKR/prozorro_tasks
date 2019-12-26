@@ -9,6 +9,7 @@ from environment_settings import (
 from fiscal_bot.settings import (
     IDENTIFICATION_SCHEME, DOC_TYPE,
     WORKING_DAYS_BEFORE_REQUEST_AGAIN, REQUEST_MAX_RETRIES,
+    WORKING_TIME,
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER
 from fiscal_bot.fiscal_api import build_receipt_request
@@ -167,6 +168,7 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
     now = get_now()
     check_response_time = get_working_datetime(
         now + timedelta(seconds=60 * 60),
+        custom_wd=WORKING_TIME,
         working_weekends_enabled=True
     )
     prepare_check_request.apply_async(
@@ -260,7 +262,9 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
 @app.task(bind=True, max_retries=None)
 def check_for_response_file(self, request_data, supplier, request_time, requests_reties):
 
-    days_passed = working_days_count_since(request_time, working_weekends_enabled=True)
+    days_passed = working_days_count_since(
+        request_time, custom_wd=WORKING_TIME, working_weekends_enabled=True)
+
     if days_passed > WORKING_DAYS_BEFORE_REQUEST_AGAIN:
 
         if requests_reties < REQUEST_MAX_RETRIES:
@@ -309,6 +313,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                     #  schedule next check on work time
                     eta = get_working_datetime(
                         get_now() + timedelta(seconds=60 * 60),
+                        custom_wd=WORKING_TIME,
                         working_weekends_enabled=True,
                     )
                     raise self.retry(eta=eta)
