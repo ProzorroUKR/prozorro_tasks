@@ -27,6 +27,7 @@ EDR_API_PORT = os.environ.get("EDR_API_PORT", "80")
 EDR_API_VERSION = os.environ.get("EDR_API_VERSION", "1.0")
 EDR_API_USER = os.environ.get("EDR_API_USER", "robot")
 EDR_API_PASSWORD = os.environ.get("EDR_API_PASSWORD", "robot")
+SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS_INTERVAL", "30"))
 
 
 API_SIGN_HOST = os.environ.get("API_SIGN_HOST", "http://host.docker.internal:6543")

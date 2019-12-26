@@ -1,12 +1,15 @@
 from celery_worker.celery import app
 from celery_worker.locks import unique_task_decorator, concurrency_lock
 from celery.utils.log import get_task_logger
-from edr_bot.utils import get_request_retry_countdown
+from tasks_utils.requests import get_request_retry_countdown, get_exponential_request_retry_countdown
+from tasks_utils.settings import (
+    CONNECT_TIMEOUT,
+    READ_TIMEOUT,
+)
 from edr_bot.settings import (
     DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
-    CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
-    FILE_NAME, ID_PASSPORT_LEN, SPREAD_TENDER_TASKS_INTERVAL
+    FILE_NAME, ID_PASSPORT_LEN,
 )
 from edr_bot.results_db import (
     get_upload_results,
@@ -17,6 +20,7 @@ from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
     EDR_API_HOST, EDR_API_PORT, EDR_API_VERSION, EDR_API_USER, EDR_API_PASSWORD,
     DS_HOST, DS_USER, DS_PASSWORD,
+    SPREAD_TENDER_TASKS_INTERVAL,
 )
 from uuid import uuid4
 import requests
@@ -188,8 +192,12 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
         try:
             resp_json = response.json()
         except json.decoder.JSONDecodeError as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "EDR_JSON_DECODE_EXCEPTION"})
-            raise self.retry(exc=exc, countdown=DEFAULT_RETRY_AFTER)
+            logger.warning(
+                "JSONDecodeError on edr request with status {}: ".format(response.status_code),
+                extra={"MESSAGE_ID": "EDR_JSON_DECODE_EXCEPTION"}
+            )
+            countdown = get_exponential_request_retry_countdown(self, response)
+            raise self.retry(exc=exc, countdown=countdown)
 
         data_list = []
 
@@ -204,9 +212,7 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
             data_list.append(file_content)
 
         elif response.status_code == 200:
-
             document_id = meta["id"]
-
             for i, obj in enumerate(resp_json['data']):
 
                 if len(resp_json['data']) > 1:
@@ -228,7 +234,8 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
                 file_content['meta']['id'] = meta_id
                 data_list.append(file_content)
         else:
-            raise self.retry(countdown=get_request_retry_countdown(response))
+            countdown = get_exponential_request_retry_countdown(self, response)
+            raise self.retry(countdown=countdown)
 
         for data in data_list:
             upload_to_doc_service.delay(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
