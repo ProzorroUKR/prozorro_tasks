@@ -133,7 +133,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.requests")
     def test_check_request_fail_no_report(self, requests_mock, decode_and_save_data_mock, retry_mock, get_now_mock):
-        get_now_mock.return_value = TIMEZONE.localize(datetime(2007, 1, 2, 17, 30))
+        get_now_mock.return_value = TIMEZONE.localize(datetime(2007, 1, 2, 20, 30))
         retry_mock.side_effect = Retry
 
         request_data = "aGVsbG8="

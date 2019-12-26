@@ -57,6 +57,15 @@ class GetWorkingTimeCase(unittest.TestCase):
 
         self.assertEqual(
             result,
+            TIMEZONE.localize(datetime(2019, 3, 19, 18, 1))
+        )
+
+        now = TIMEZONE.localize(datetime(2019, 3, 19, 21, 0, 0, 1))
+
+        result = get_working_datetime(now)
+
+        self.assertEqual(
+            result,
             TIMEZONE.localize(datetime(2019, 3, 20, 9))
         )
 
@@ -97,11 +106,20 @@ class GetWorkingTimeCase(unittest.TestCase):
 
         self.assertEqual(
             result,
+            TIMEZONE.localize(datetime(2019, 6, 7, 18, 30))
+        )
+
+        now = TIMEZONE.localize(datetime(2019, 6, 7, 21, 30))
+
+        result = get_working_datetime(now)
+
+        self.assertEqual(
+            result,
             TIMEZONE.localize(datetime(2019, 6, 10, 9))
         )
 
     def test_working_weekends_enabled(self):
-        now = TIMEZONE.localize(datetime(2019, 6, 7, 18, 30))
+        now = TIMEZONE.localize(datetime(2019, 6, 7, 21, 30))
 
         result = get_working_datetime(now, working_weekends_enabled=True)
 
@@ -160,7 +178,7 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
 
     # friday - monday cases
     def test_friday_evening_to_monday_morning(self):
-        dt = TIMEZONE.localize(datetime(2019, 3, 22, 18, 1))
+        dt = TIMEZONE.localize(datetime(2019, 3, 22, 21, 1))
         now = TIMEZONE.localize(datetime(2019, 3, 25, 8, 59))
         result = working_days_count_since(dt, now=now)
         self.assertEqual(result, 0)
@@ -179,6 +197,11 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
 
     def test_evening_friday_to_monday(self):
         dt = TIMEZONE.localize(datetime(2019, 3, 22, 18, 1))
+        now = TIMEZONE.localize(datetime(2019, 3, 25, 9))
+        result = working_days_count_since(dt, now=now)
+        self.assertEqual(result, 2)
+
+        dt = TIMEZONE.localize(datetime(2019, 3, 22, 21, 1))
         now = TIMEZONE.localize(datetime(2019, 3, 25, 9))
         result = working_days_count_since(dt, now=now)
         self.assertEqual(result, 1)
@@ -210,7 +233,7 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
         self.assertEqual(result, 2)
 
     def test_ww_enabled_from_ww_evening(self):
-        dt = TIMEZONE.localize(datetime(2019, 6, 8, 18, 1))
+        dt = TIMEZONE.localize(datetime(2019, 6, 8, 21, 1))
         now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
         result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
         self.assertEqual(result, 1)
@@ -260,7 +283,7 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
         self.assertEqual(result, 4)
 
     def test_week_with_a_holiday_and_weekends(self):
-        dt = TIMEZONE.localize(datetime(2019, 3, 1, 18, 1))
+        dt = TIMEZONE.localize(datetime(2019, 3, 1, 21, 1))
         now = TIMEZONE.localize(datetime(2019, 3, 11, 8, 59))
         result = working_days_count_since(dt, now=now)
         self.assertEqual(result, 4)

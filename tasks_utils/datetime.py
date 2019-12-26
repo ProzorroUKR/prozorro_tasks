@@ -15,7 +15,7 @@ def is_working_time(dt, custom_wd=None, working_weekends_enabled=False):
     if custom_wd:
         start, end = time(*custom_wd["start"]), time(*custom_wd["end"])
     else:
-        start, end = time(9, 0), time(18, 0)
+        start, end = time(9, 0), time(21, 0)
 
     result = (
         start <= dt.time() <= end
@@ -33,7 +33,7 @@ def get_working_datetime(dt, custom_wd=None, working_weekends_enabled=False):
     """
     Returns the closest business time to what you provided,
     Sun 13:00 -> Mon 9:00
-    Friday 18:01 -> Mon 9:00
+    Friday 21:01 -> Mon 9:00
     etc
     :param dt:
     :param custom_wd:
@@ -43,7 +43,7 @@ def get_working_datetime(dt, custom_wd=None, working_weekends_enabled=False):
     assert dt.tzinfo.zone == TIMEZONE.zone
 
     start_hour, start_minute = 9, 0
-    end_hour, end_minute = 18, 0
+    end_hour, end_minute = 21, 0
     if custom_wd:
         start_hour, start_minute = custom_wd['start']
         end_hour, end_minute = custom_wd['end']
