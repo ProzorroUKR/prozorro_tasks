@@ -119,7 +119,7 @@ class ReceiptTestCase(unittest.TestCase):
         }
 
         with patch("fiscal_bot.tasks.get_now") as get_now_mock:
-            get_now_mock.return_value = TIMEZONE.localize(datetime(2019, 3, 28, 21))
+            get_now_mock.return_value = TIMEZONE.localize(datetime(2019, 3, 28, 18))
 
             with patch("fiscal_bot.tasks.requests") as requests_mock:
                 requests_mock.post.side_effect = [
