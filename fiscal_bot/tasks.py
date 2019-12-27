@@ -262,8 +262,7 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
 @app.task(bind=True, max_retries=None)
 def check_for_response_file(self, request_data, supplier, request_time, requests_reties):
 
-    days_passed = working_days_count_since(
-        request_time, custom_wd=WORKING_TIME, working_weekends_enabled=True)
+    days_passed = working_days_count_since(request_time, working_weekends_enabled=True)
 
     if days_passed > WORKING_DAYS_BEFORE_REQUEST_AGAIN:
 
