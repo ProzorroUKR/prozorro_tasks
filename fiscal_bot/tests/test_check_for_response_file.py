@@ -78,7 +78,7 @@ class CheckResponseTestCase(unittest.TestCase):
                     requests_reties=0
                 )
         working_days_count_since_mock.assert_called_once_with(
-            request_time, custom_wd=WORKING_TIME, working_weekends_enabled=True
+            request_time, working_weekends_enabled=True
         )
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
         requests_mock.post.assert_called_once_with(
