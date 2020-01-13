@@ -1,7 +1,7 @@
 from environment_settings import FISCAL_API_HOST, TIMEZONE, FISCAL_API_PROXIES
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from fiscal_bot.tasks import check_for_response_file
-from fiscal_bot.settings import REQUEST_MAX_RETRIES
+from fiscal_bot.settings import REQUEST_MAX_RETRIES, WORKING_TIME
 from celery.exceptions import Retry
 from datetime import datetime
 from unittest.mock import patch, Mock, call
@@ -9,6 +9,7 @@ import requests
 import unittest
 
 
+@patch("fiscal_bot.tasks.WORKING_TIME", {"start": (9, 0), "end": (21, 0)})
 class CheckResponseTestCase(unittest.TestCase):
     fail_response = {
         'message': None,
@@ -133,7 +134,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.requests")
     def test_check_request_fail_no_report(self, requests_mock, decode_and_save_data_mock, retry_mock, get_now_mock):
-        get_now_mock.return_value = TIMEZONE.localize(datetime(2007, 1, 2, 17, 30))
+        get_now_mock.return_value = TIMEZONE.localize(datetime(2007, 1, 2, 20, 30))
         retry_mock.side_effect = Retry
 
         request_data = "aGVsbG8="
