@@ -1,0 +1,32 @@
+@startuml
+
+actor "External User or Service" as ES
+
+cloud "K8s \n" {
+    component tasks_api
+    component worker1
+    component worker2
+    component worker3
+    database MongoDB
+    database RabbitMQ
+
+    tasks_api --> MongoDB
+    tasks_api --> RabbitMQ
+    worker1 <-up-> RabbitMQ
+    worker2 <-up-> RabbitMQ
+    worker3 <-up-> RabbitMQ
+
+    worker1 <-up-> MongoDB
+    worker2 <-up-> MongoDB
+    worker3 <-up-> MongoDB
+}
+ES --> tasks_api
+
+component "API ЦБД" as api
+
+
+api <-up-> worker1
+api <-up-> worker2
+api <-up-> worker3
+
+@endumml
