@@ -35,6 +35,7 @@ task_modules = [
     'edr_bot',
     'fiscal_bot',
     'tasks_utils',
+    'payments',
 ]
 
 # Route tasks to different queues
