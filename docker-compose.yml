@@ -99,6 +99,7 @@ services:
       - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
       - API_TOKEN=
+      - API_VERSION=2.5
       - DS_HOST=https://upload-docs-sandbox.prozorro.gov.ua
       - DS_USER=edrbot
       - DS_PASSWORD=
@@ -110,6 +111,27 @@ services:
     command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
     volumes:
         - .:/app
+    depends_on:
+      - mongo
+      - rabbit
+  app:
+#    hostname: app
+#    image: prozorro/prozorro_tasks:latest
+    build: .
+    environment:
+      - MONGODB_URL=mongodb://root:example@mongo:27017
+      - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+      - C_FORCE_ROOT=1
+      - PYTHONUNBUFFERED=1
+      - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
+      - API_VERSION=2.5
+      - API_TOKEN=
+    command: python runserver.py
+    volumes:
+        - .:/app
+    ports:
+      - "8000:8000"
     depends_on:
       - mongo
       - rabbit
