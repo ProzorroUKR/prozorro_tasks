@@ -1,12 +1,14 @@
-from flask import Blueprint, jsonify, request
-from flask_restful import Resource, reqparse, abort
+from flask import Blueprint, jsonify
+from flask_restful import Resource, reqparse
 from liqpay.liqpay3 import LiqPay
 
 from app.api import Api
 from app.auth import login_group_required, ip_group_required
+from environment_settings import LIQPAY_PUBLIC_KEY, LIQPAY_PRIVATE_KEY
 from liqpay_int.exceptions import LiqpayResponseError
-from liqpay_int.settings import LIQPAY_PUBLIC_KEY, LIQPAY_PRIVATE_KEY
-from liqpay_int.utils import generate_checkout_params, process_payment
+from liqpay_int.utils import generate_checkout_params
+from celery_worker.celery import app as celery_app
+
 
 API_VERSION = 1
 
@@ -37,7 +39,7 @@ class PushResource(Resource):
     }
 
     def post(self):
-        process_payment(parser_push.parse_args(request))
+        celery_app.send_task('payments.process_payment', kwargs=dict(payment_data=parser_push.parse_args()))
         return jsonify({"status": "success"})
 
 
@@ -47,7 +49,7 @@ class CheckoutResource(Resource):
     }
 
     def post(self):
-        params = generate_checkout_params(parser_checkout.parse_args(request))
+        params = generate_checkout_params(parser_checkout.parse_args())
         liqpay = LiqPay(LIQPAY_PUBLIC_KEY, LIQPAY_PRIVATE_KEY)
         try:
             resp_json = liqpay.api("/request", params)

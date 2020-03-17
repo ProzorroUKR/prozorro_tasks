@@ -1,14 +1,12 @@
 import unittest
 
-from payments.settings import (
-    TENDER_COMPLAINT_TYPE, QUALIFICATION_COMPLAINT_TYPE, AWARD_COMPLAINT_TYPE,
-    CANCELLATION_COMPLAINT_TYPE,
-    ALLOWED_COMPLAINT_PAYMENT_STATUSES,
-)
 from payments.utils import (
-    get_complaint_params, get_complaint_type, get_item_data, check_complaint_status,
+    get_complaint_params,
+    get_item_data,
+    check_complaint_status,
     check_complaint_value_amount,
     check_complaint_value_currency,
+    ALLOWED_COMPLAINT_PAYMENT_STATUSES,
 )
 
 valid_tender_complaint_str = [
@@ -68,40 +66,6 @@ valid_cancellation_complaint_str = [
 ]
 
 
-class GetComplaintTypeTestCase(unittest.TestCase):
-    """
-    Test utils.get_complaint_type
-    """
-
-    def test_valid_tender_complaint(self):
-        for complaint_str in valid_tender_complaint_str:
-            self.assertEqual(
-                get_complaint_type(complaint_str),
-                TENDER_COMPLAINT_TYPE
-            )
-
-    def test_valid_qualification_complaint(self):
-        for complaint_str in valid_qualification_complaint_str:
-            self.assertEqual(
-                get_complaint_type(complaint_str),
-                QUALIFICATION_COMPLAINT_TYPE
-            )
-
-    def test_valid_award_complaint(self):
-        for complaint_str in valid_award_complaint_str:
-            self.assertEqual(
-                get_complaint_type(complaint_str),
-                AWARD_COMPLAINT_TYPE
-            )
-
-    def test_valid_cancellation_complaint(self):
-        for complaint_str in valid_cancellation_complaint_str:
-            self.assertEqual(
-                get_complaint_type(complaint_str),
-                CANCELLATION_COMPLAINT_TYPE
-            )
-
-
 class GetComplaintParamsTestCase(unittest.TestCase):
     """
     Test utils.get_complaint_params
@@ -110,9 +74,11 @@ class GetComplaintParamsTestCase(unittest.TestCase):
     def test_valid_tender_complaint(self):
         for complaint_str in valid_tender_complaint_str:
             self.assertEqual(
-                get_complaint_params(complaint_str, TENDER_COMPLAINT_TYPE),
+                get_complaint_params(complaint_str),
                 {
                     "tender_id": "6be521090fa444c881e27af026c04e8a",
+                    "item_type": None,
+                    "item_id": None,
                     "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
                 }
             )
@@ -120,10 +86,11 @@ class GetComplaintParamsTestCase(unittest.TestCase):
     def test_valid_qualification_complaint(self):
         for complaint_str in valid_qualification_complaint_str:
             self.assertEqual(
-                get_complaint_params(complaint_str, QUALIFICATION_COMPLAINT_TYPE),
+                get_complaint_params(complaint_str),
                 {
                     "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "qualification_id": "6be521090fa444c881e27af026c04e8a",
+                    "item_type": "qualifications",
+                    "item_id": "6be521090fa444c881e27af026c04e8a",
                     "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
                 }
             )
@@ -131,10 +98,11 @@ class GetComplaintParamsTestCase(unittest.TestCase):
     def test_valid_award_complaint(self):
         for complaint_str in valid_award_complaint_str:
             self.assertEqual(
-                get_complaint_params(complaint_str, AWARD_COMPLAINT_TYPE),
+                get_complaint_params(complaint_str),
                 {
                     "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "award_id": "6be521090fa444c881e27af026c04e8a",
+                    "item_type": "awards",
+                    "item_id": "6be521090fa444c881e27af026c04e8a",
                     "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
                 }
             )
@@ -142,10 +110,11 @@ class GetComplaintParamsTestCase(unittest.TestCase):
     def test_valid_cancellation_complaint(self):
         for complaint_str in valid_cancellation_complaint_str:
             self.assertEqual(
-                get_complaint_params(complaint_str, CANCELLATION_COMPLAINT_TYPE),
+                get_complaint_params(complaint_str),
                 {
                     "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "cancellation_id": "6be521090fa444c881e27af026c04e8a",
+                    "item_type": "cancellations",
+                    "item_id": "6be521090fa444c881e27af026c04e8a",
                     "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
                 }
             )
