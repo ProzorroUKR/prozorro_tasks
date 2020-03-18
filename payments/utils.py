@@ -1,21 +1,21 @@
+import re
+
 from celery.utils.log import get_task_logger
 
-from payments.settings import (
-    ALLOWED_COMPLAINT_PAYMENT_STATUSES,
-    COMPLAINT_RE_DICT,
-)
 
 logger = get_task_logger(__name__)
 
+COMPLAINT_RE = re.compile(
+    r"/\s*tenders\s*/\s*(?P<tender_id>[0-9a-f]{32})\s*"
+    r"(?:/\s*(?P<item_type>qualifications|awards|cancellations)\s*/\s*(?P<item_id>[0-9a-f]{32})\s*)?"
+    r"/\s*complaints\s*/\s*(?P<complaint_id>[0-9a-f]{32})\s*",
+)
 
-def get_complaint_type(description):
-    for complaint_type, complaint_re in COMPLAINT_RE_DICT.items():
-        if complaint_re.search(description):
-            return complaint_type
+ALLOWED_COMPLAINT_PAYMENT_STATUSES = ["draft"]
 
 
-def get_complaint_params(description, complaint_type):
-    match = COMPLAINT_RE_DICT[complaint_type].search(description)
+def get_complaint_params(description):
+    match = COMPLAINT_RE.search(description)
     if match:
         return match.groupdict()
 

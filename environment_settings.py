@@ -52,3 +52,6 @@ FISCAL_BOT_ENV_NUMBER = int(os.environ.get("FISCAL_BOT_ENV_NUMBER", 0))
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", None)
+
+LIQPAY_PUBLIC_KEY = os.environ.get("LIQPAY_PUBLIC_KEY", "")
+LIQPAY_PRIVATE_KEY = os.environ.get("LIQPAY_PRIVATE_KEY", "")

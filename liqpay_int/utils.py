@@ -1,9 +1,5 @@
-from liqpay_int.settings import LIQPAY_PUBLIC_KEY
-from celery_worker.celery import app as celery_app
+from environment_settings import LIQPAY_PUBLIC_KEY
 
-
-def process_payment(args):
-    celery_app.send_task('payments.process_payment', kwargs=dict(payment_data=args))
 
 def generate_checkout_params(args):
     params = {
