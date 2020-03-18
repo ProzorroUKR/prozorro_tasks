@@ -132,6 +132,10 @@ services:
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
       - API_VERSION=2.5
       - API_TOKEN=
+      - LIQPAY_PUBLIC_KEY=
+      - LIQPAY_PRIVATE_KEY=
+      - LIQPAY_SANDBOX_PUBLIC_KEY=
+      - LIQPAY_SANDBOX_PRIVATE_KEY=
     command: python runserver.py
     volumes:
         - .:/app
