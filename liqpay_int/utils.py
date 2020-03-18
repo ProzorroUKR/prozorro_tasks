@@ -15,4 +15,6 @@ def generate_checkout_params(args):
         params.update({"language": args.get("language")})
     if args.get("result_url"):
         params.update({"result_url": args.get("result_url")})
+    if args.get("server_url"):
+        params.update({"server_url": args.get("server_url")})
     return params
