@@ -10,17 +10,17 @@
             <additionalClassificationsId>{{ classification.id }}</additionalClassificationsId>
             <additionalClassificationsDescription>{{ classification.description }}</additionalClassificationsDescription>
         </additionalClassification>{% endfor %}</additionalClassifications>
-    <budgetDescription>{{ plan.budget.description }}</budgetDescription>
-    <budgetAmount>{{ plan.budget.amount }}</budgetAmount>
-    <budgetCurrency>{{ plan.budget.currency }}</budgetCurrency>
-    <budgetAmountNet>{{ plan.budget.amountNet }}</budgetAmountNet>
+    <budgetDescription>{{ plan.budget and plan.budget.description }}</budgetDescription>
+    <budgetAmount>{{ plan.budget and plan.budget.amount }}</budgetAmount>
+    <budgetCurrency>{{ plan.budget and plan.budget.currency }}</budgetCurrency>
+    <budgetAmountNet>{{ plan.budget and plan.budget.amountNet }}</budgetAmountNet>
     <tenderPeriodStartDate>{{ plan.tender.tenderPeriod.startDate }}</tenderPeriodStartDate>
     <tenderProcurementMethodType>{{ plan.tender.procurementMethodType }}</tenderProcurementMethodType>
-    <breakdowns>{% for breakdown in plan.budget.breakdown  %}
+    <breakdowns>{% if plan.budget  %}{% for breakdown in plan.budget.breakdown   %}
         <breakdown>
             <breakdownId>{{ breakdown.id }}</breakdownId>
             <breakdownTitle>{{ breakdown.title }}</breakdownTitle>
             <breakdownDescription>{{ breakdown.description }}</breakdownDescription>
             <breakdownAmount>{{ breakdown.value.amount }}</breakdownAmount>
-        </breakdown>{% endfor %}</breakdowns>
+        </breakdown>{% endfor %}{% endif %}</breakdowns>
 </plan>

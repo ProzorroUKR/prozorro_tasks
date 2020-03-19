@@ -8,9 +8,9 @@
         <item>
             <itemsId>{{ item.id }}</itemsId>
             <itemsDescription>{{ item.description }}</itemsDescription>
-            <itemsClassificationScheme>{{ item.classification.scheme }}</itemsClassificationScheme>
-            <itemsClassificationId>{{ item.classification.id }}</itemsClassificationId>
-            <itemsClassificationDescription>{{ item.classification.description }}</itemsClassificationDescription>
+            <itemsClassificationScheme>{{ item.classification and item.classification.scheme }}</itemsClassificationScheme>
+            <itemsClassificationId>{{ item.classification and item.classification.id }}</itemsClassificationId>
+            <itemsClassificationDescription>{{ item.classification and item.classification.description }}</itemsClassificationDescription>
             <itemsAdditionalClassifications>{% for classification in item.additionalClassifications %}
                 <itemsAdditionalClassification>
                     <itemsAdditionalClassificationsScheme>{{ classification.scheme }}</itemsAdditionalClassificationsScheme>
@@ -19,9 +19,9 @@
                 </itemsAdditionalClassification>{% endfor %}
             </itemsAdditionalClassifications>
             <itemsQuantity>{{ item.quantity }}</itemsQuantity>
-            <itemsUnitName>{{ item.unit.name }}</itemsUnitName>
-            <itemsDeliveryAddress>{{ item.deliveryAddress.values()|join(', ') }}</itemsDeliveryAddress>
-            <itemsDeliveryDateEndDate>{{ item.deliveryDate.endDate }}</itemsDeliveryDateEndDate>
+            <itemsUnitName>{{ item.unit and item.unit.name }}</itemsUnitName>
+            <itemsDeliveryAddress>{{ item.deliveryAddress and item.deliveryAddress.values()|join(', ') }}</itemsDeliveryAddress>
+            <itemsDeliveryDateEndDate>{{ item.deliveryDate and item.deliveryDate.endDate }}</itemsDeliveryDateEndDate>
         </item>{% endfor %}</items>
     <milestones>{% for milestone in tender.milestones %}
         <milestone>

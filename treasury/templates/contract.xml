@@ -3,11 +3,11 @@
     <contract>
         <contractId>{{ contract.id }}</contractId>
         <contractNumber>{{ contract.contractNumber }}</contractNumber>
-        <contractsPeriodStartDate>{{ contract.period.startDate }}</contractsPeriodStartDate>
-        <contractsPeriodEndDate>{{ contract.period.endDate }}</contractsPeriodEndDate>
-        <contractsValueAmount>{{ contract.value.amount }}</contractsValueAmount>
-        <contractsValueCurrency>{{ contract.value.currency }}</contractsValueCurrency>
-        <contractsValueAmountNet>{{ contract.value.amountNet }}</contractsValueAmountNet>
+        <contractsPeriodStartDate>{{ contract.period and contract.period.startDate }}</contractsPeriodStartDate>
+        <contractsPeriodEndDate>{{ contract.period and contract.period.endDate }}</contractsPeriodEndDate>
+        <contractsValueAmount>{{ contract.value and contract.value.amount }}</contractsValueAmount>
+        <contractsValueCurrency>{{ contract.value and contract.value.currency }}</contractsValueCurrency>
+        <contractsValueAmountNet>{{ contract.value and contract.value.amountNet }}</contractsValueAmountNet>
         <contractsDateSigned>{{ contract.dateSigned }}</contractsDateSigned>
         <contractsDocuments>{{ contract.documents }}</contractsDocuments>
     </contract>

@@ -2,9 +2,9 @@
 <root method_name="PrChange">
     <contractId>{{ contract.id }}</contractId>
     <contractsDateSigned>{{ contract.dateSigned and contract.dateSigned.strftime(datetime_fmt) }}</contractsDateSigned>
-    <contractsValueAmount>{{ contract.value.amount }}</contractsValueAmount>
-    <contractsValueCurrency>{{ contract.value.currency }}</contractsValueCurrency>
-    <contractsValueAmountNet>{{ contract.value.amountNet }}</contractsValueAmountNet>
+    <contractsValueAmount>{{ contract.value and contract.value.amount }}</contractsValueAmount>
+    <contractsValueCurrency>{{ contract.value and contract.value.currency }}</contractsValueCurrency>
+    <contractsValueAmountNet>{{ contract.value and contract.value.amountNet }}</contractsValueAmountNet>
     <changeId>{{ change.id }}</changeId>
     <changeContractNumber>{{ change.contractNumber }}</changeContractNumber>
     <changeRationale>{{ change.rationale }}</changeRationale>

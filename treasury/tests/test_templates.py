@@ -122,8 +122,6 @@ test_tender = dict(
             additionalClassifications=[],
             quantity=3,
             unit=dict(name="FFA"),
-            deliveryAddress=dict(city="Kharkiv", street="Nauki, 23"),
-            deliveryDate=dict(endDate=datetime(1999, 12, 22)),
         )
     ],
     milestones=[
@@ -347,8 +345,8 @@ class TemplatesTestCase(unittest.TestCase):
             b'            </itemsAdditionalClassifications>\n'
             b'            <itemsQuantity>3</itemsQuantity>\n'
             b'            <itemsUnitName>FFA</itemsUnitName>\n'
-            b'            <itemsDeliveryAddress>Kharkiv, Nauki, 23</itemsDeliveryAddress>\n'
-            b'            <itemsDeliveryDateEndDate>1999-12-22 00:00:00</itemsDeliveryDateEndDate>\n'
+            b'            <itemsDeliveryAddress></itemsDeliveryAddress>\n'
+            b'            <itemsDeliveryDateEndDate></itemsDeliveryDateEndDate>\n'
             b'        </item></items>\n'
             b'    <milestones>\n'
             b'        <milestone>\n'
@@ -410,9 +408,11 @@ class TemplatesTestCase(unittest.TestCase):
             initial_bids=test_initial_bids,
         )
         context = deepcopy(context)
+        del context["contract"]["period"]
+        del context["contract"]["value"]
         context["contract"]["changes"] = []
-        context["plan"]["additionalClassifications"] = []
-        context["plan"]["budget"]["breakdown"] = []
+        del context["plan"]["additionalClassifications"]
+        del context["plan"]["budget"]
         context["tender"]["items"] = []
         context["tender"]["milestones"] = []
         context["tender"]["bids"] = []
@@ -424,11 +424,11 @@ class TemplatesTestCase(unittest.TestCase):
             b'    <contract>\n'
             b'        <contractId>123</contractId>\n'
             b'        <contractNumber></contractNumber>\n'
-            b'        <contractsPeriodStartDate>2001-12-01 00:00:00</contractsPeriodStartDate>\n'
-            b'        <contractsPeriodEndDate>2021-12-31 00:00:00</contractsPeriodEndDate>\n'
-            b'        <contractsValueAmount>12</contractsValueAmount>\n'
-            b'        <contractsValueCurrency>slaves</contractsValueCurrency>\n'
-            b'        <contractsValueAmountNet>13</contractsValueAmountNet>\n'
+            b'        <contractsPeriodStartDate></contractsPeriodStartDate>\n'
+            b'        <contractsPeriodEndDate></contractsPeriodEndDate>\n'
+            b'        <contractsValueAmount></contractsValueAmount>\n'
+            b'        <contractsValueCurrency></contractsValueCurrency>\n'
+            b'        <contractsValueAmountNet></contractsValueAmountNet>\n'
             b'        <contractsDateSigned>2001-12-03 00:00:00</contractsDateSigned>\n'
             b'        <contractsDocuments>spam=</contractsDocuments>\n'
             b'    </contract>\n'
@@ -440,10 +440,10 @@ class TemplatesTestCase(unittest.TestCase):
             b'    <classificationId>678</classificationId>\n'
             b'    <classificationDescription>Banana</classificationDescription>\n'
             b'    <additionalClassifications></additionalClassifications>\n'
-            b'    <budgetDescription>Budget</budgetDescription>\n'
-            b'    <budgetAmount>500</budgetAmount>\n'
-            b'    <budgetCurrency>UAU</budgetCurrency>\n'
-            b'    <budgetAmountNet>550</budgetAmountNet>\n'
+            b'    <budgetDescription></budgetDescription>\n'
+            b'    <budgetAmount></budgetAmount>\n'
+            b'    <budgetCurrency></budgetCurrency>\n'
+            b'    <budgetAmountNet></budgetAmountNet>\n'
             b'    <tenderPeriodStartDate>1990-01-01 12:30:00</tenderPeriodStartDate>\n'
             b'    <tenderProcurementMethodType>belowAbove</tenderProcurementMethodType>\n'
             b'    <breakdowns></breakdowns>\n'
