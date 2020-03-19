@@ -96,7 +96,8 @@ services:
       - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
       - C_FORCE_ROOT=1
       - PYTHONUNBUFFERED=1
-      - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      - PUBLIC_API_HOST=https://public.api.openprocurement.org
+      - API_VERSION=0
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
       - API_TOKEN=
       - API_VERSION=2.5
@@ -108,7 +109,7 @@ services:
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
       - EDR_API_PASSWORD=
-    command: celery worker -A celery_worker  --concurrency=20 --loglevel=info
+    command: celery worker -A celery_worker -B --concurrency=20 --loglevel=info
     volumes:
         - .:/app
     depends_on:
@@ -151,15 +152,15 @@ services:
       interval: 60s
       timeout: 30s
       retries: 3
-  flower:
-    build: .
-    command: celery -A celery_worker flower --port=5555
-    # --broker=amqp://user:bitnami@127.0.0.1:5672/edr-bot
-    volumes:
-      - .:/app
-    ports:
-      - "5555:5555"
-    depends_on:
-      - rabbit
-    logging:
-      driver: "none"
+#  flower:
+#    build: .
+#    command: celery -A celery_worker flower --port=5555
+#    # --broker=amqp://user:bitnami@127.0.0.1:5672/edr-bot
+#    volumes:
+#      - .:/app
+#    ports:
+#      - "5555:5555"
+#    depends_on:
+#      - rabbit
+#    logging:
+#      driver: "none"

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<root method_name="PrChange">
+    <contractId>{{ contract.id }}</contractId>
+    <contractsDateSigned>{{ contract.dateSigned and contract.dateSigned.strftime(datetime_fmt) }}</contractsDateSigned>
+    <contractsValueAmount>{{ contract.value.amount }}</contractsValueAmount>
+    <contractsValueCurrency>{{ contract.value.currency }}</contractsValueCurrency>
+    <contractsValueAmountNet>{{ contract.value.amountNet }}</contractsValueAmountNet>
+    <changeId>{{ change.id }}</changeId>
+    <changeContractNumber>{{ change.contractNumber }}</changeContractNumber>
+    <changeRationale>{{ change.rationale }}</changeRationale>
+    <changeRationaleTypes>{{ change.rationaleTypes|join(', ') }}</changeRationaleTypes>
+    <DateSigned>{{ change.dateSigned and change.dateSigned.strftime(datetime_fmt) }}</DateSigned>
+    <changeDocuments>{{ change.documents }}</changeDocuments>
+</root>
