@@ -6,7 +6,8 @@ from payments.utils import (
     check_complaint_status,
     check_complaint_value_amount,
     check_complaint_value_currency,
-    get_complaint_params,
+    get_payment_params,
+    check_complaint_code,
 )
 from tasks_utils.requests import get_request_retry_countdown
 from tasks_utils.settings import (
@@ -43,7 +44,7 @@ def process_payment(self, payment_data, *args, **kwargs):
     >>> {
     ...     "amount": "123",
     ...     "currency": "UAH",
-    ...     "description": "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76"
+    ...     "description": "UA-2020-03-17-000090-a.a2-12AD3F12"
     ... }
 
     :param args:
@@ -52,13 +53,66 @@ def process_payment(self, payment_data, *args, **kwargs):
     """
     description = payment_data.get("description", "")
 
-    complaint_params = get_complaint_params(description.lower())
-    if not complaint_params:
+    payment_params = get_payment_params(description)
+    if not payment_params:
         logger.critical("No valid pattern found for \"{}\"".format(
             payment_data.get("description", "")
         ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_PATTERN"})
         return
-    
+
+    complaint_pretty_id = payment_params.get("complaint")
+
+    url = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}".format(
+        host=PUBLIC_API_HOST,
+        version=API_VERSION,
+        complaint_pretty_id=complaint_pretty_id
+    )
+
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "X-Client-Request-ID": uuid4().hex,
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+            },
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_EXCEPTION"})
+        raise self.retry(exc=exc)
+    else:
+        if response.status_code != 200:
+            logger.error("Unexpected status code {} while searching complaint {}".format(
+                response.status_code, complaint_pretty_id
+            ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_CODE_ERROR",
+                      "STATUS_CODE": response.status_code})
+            raise self.retry(countdown=get_request_retry_countdown(response))
+        else:
+            complaints_data = response.json()["data"]
+            if len(complaints_data) == 0:
+                logger.critical("Invalid payment complaint {}".format(
+                    complaint_pretty_id
+                ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_INVALID_COMPLAINT"})
+                return
+            else:
+                for complaint_data in complaints_data:
+                    logger.info("Successfully retrieved complaint {} params".format(
+                        complaint_pretty_id
+                    ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
+                    if check_complaint_code(complaint_data, payment_params):
+                        process_complaint_payment.delay(
+                            payment_data=payment_data,
+                            complaint_params=complaint_data.get("params")
+                        )
+                    else:
+                        logger.critical("Invalid payment code {} while searching complaint {}".format(
+                            payment_params.get("code"), complaint_pretty_id
+                        ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_INVALID_CODE"})
+                        return
+
+
+@app.task(name="payments.process_complaint_payment", bind=True)
+def process_complaint_payment(self, complaint_params, payment_data):
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
@@ -126,13 +180,11 @@ def process_payment(self, payment_data, *args, **kwargs):
             logger.critical("Payment amount doesn't match complaint amount ({} and {}) in complaint {}.".format(
                 payment_data.get("amount"), complaint_data.get("value", {}).get("amount"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_AMOUNT"})
-            process_complaint.apply_async(
-                kwargs=dict(
-                    complaint_params=complaint_params,
-                    data={
-                        "status": "mistaken"
-                    }
-                )
+            process_complaint.delay(
+                complaint_params=complaint_params,
+                data={
+                    "status": "mistaken"
+                }
             )
             return
 
@@ -140,27 +192,23 @@ def process_payment(self, payment_data, *args, **kwargs):
             logger.critical("Payment currency doesn't match complaint currency ({} and {}) in complaint {}.".format(
                 payment_data.get("currency"), complaint_data.get("value", {}).get("currency"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_CURRENCY"})
-            process_complaint.apply_async(
-                kwargs=dict(
-                    complaint_params=complaint_params,
-                    data={
-                        "status": "mistaken"
-                    }
-                )
+            process_complaint.delay(
+                complaint_params=complaint_params,
+                data={
+                    "status": "mistaken"
+                }
             )
             return
 
-        process_complaint.apply_async(
-            kwargs=dict(
-                complaint_params=complaint_params,
-                data={
-                    "status": "pending"
-                }
-            )
+        process_complaint.delay(
+            complaint_params=complaint_params,
+            data={
+                "status": "pending"
+            }
         )
 
 
-@app.task(bind=True)
+@app.task(name="payments.process_complaint", bind=True)
 def process_complaint(self, complaint_params, data):
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
