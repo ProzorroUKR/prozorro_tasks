@@ -2,8 +2,11 @@ from flask import Flask
 from app.views import bp as app_views_bp
 from payments.views import bp as payments_views_bp
 from liqpay_int.resources import bp as liqpay_resources_bp
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__, template_folder="templates")
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
