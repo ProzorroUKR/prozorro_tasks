@@ -13,7 +13,8 @@ sentry-sdk==0.10.2
 gunicorn==20.0.4
 gevent==1.4.0
 flask==1.1.1
-flask-restful==0.3.8
+flask-restplus==0.13.0
 flask-httpauth==3.3.0
+werkzeug==0.16.1
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python

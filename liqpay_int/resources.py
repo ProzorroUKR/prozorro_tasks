@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify
-from flask_restful import Resource, reqparse
+from flask_restplus import Resource, reqparse
 from liqpay.liqpay3 import LiqPay
 
-from app.api import Api
+from liqpay_int.api import RestPlusApi
 from app.auth import login_group_required, ip_group_required
 from environment_settings import (
     LIQPAY_PUBLIC_KEY, LIQPAY_PRIVATE_KEY, LIQPAY_SANDBOX_PUBLIC_KEY,
@@ -14,47 +14,80 @@ from celery_worker.celery import app as celery_app
 
 
 API_VERSION = 1
+API_PREFIX = "/api/v{}".format(API_VERSION)
 
 bp = Blueprint('payments_resources', __name__)
-api = Api(bp, prefix="/api/v{}".format(API_VERSION))
-
-parser_push = reqparse.RequestParser()
-parser_push.add_argument('type', location="json")
-parser_push.add_argument('date_oper', location="json")
-parser_push.add_argument('amount', location="json", required=True)
-parser_push.add_argument('currency', location="json", required=True)
-parser_push.add_argument('okpo', location="json")
-parser_push.add_argument('mfo', location="json")
-parser_push.add_argument('name', location="json")
-parser_push.add_argument('description', location="json", required=True)
-
-parser_checkout = reqparse.RequestParser()
-parser_checkout.add_argument('amount', location="json", required=True)
-parser_checkout.add_argument('currency', location="json", required=True)
-parser_checkout.add_argument('description', location="json", required=True)
-parser_checkout.add_argument('language', location="json")
-parser_checkout.add_argument('result_url', location="json")
-parser_checkout.add_argument('server_url', location="json")
-parser_checkout.add_argument('sandbox', location="args")
+api = RestPlusApi(bp, prefix=API_PREFIX, doc=API_PREFIX, authorizations={
+    'basicAuth': {
+        'type': 'basic',
+    }
+})
 
 
 class PushResource(Resource):
-    method_decorators = {
-        'post': [ip_group_required("payment_providers")]
-    }
+    parser_push = reqparse.RequestParser()
+    parser_push.add_argument('type', location="json", help='Тип операции (debit, credit)')
+    parser_push.add_argument('date_oper', location="json", help='Дата операции')
+    parser_push.add_argument('amount', location="json", required=True, help='Сумма операции')
+    parser_push.add_argument('currency', location="json", required=True, help='Валюта операции')
+    parser_push.add_argument('okpo', location="json", help='Номер счета, с которого выполнена операция')
+    parser_push.add_argument('mfo', location="json", help='МФО счета, с которого выполнена операция')
+    parser_push.add_argument('name', location="json", help='ОКПО счета, с которого выполнена операция')
+    parser_push.add_argument(
+        'description', location="json", required=True,
+        help='Название счета, с которого выполнена операция'
+    )
 
+    method_decorators = [ip_group_required("payment_providers")]
+
+    @api.expect(parser_push, validate=True)
     def post(self):
-        celery_app.send_task('payments.process_payment', kwargs=dict(payment_data=parser_push.parse_args()))
+        celery_app.send_task('payments.process_payment', kwargs=dict(payment_data=self.parser_push.parse_args()))
         return jsonify({"status": "success"})
 
 
 class CheckoutResource(Resource):
-    method_decorators = {
-        'post': [login_group_required("brokers")]
-    }
+    parser_checkout = reqparse.RequestParser()
+    parser_checkout.add_argument(
+        'amount', location="json", required=True,
+        help="Сумма платежа. Например: 2000"
+    )
+    parser_checkout.add_argument(
+        'currency', location="json", required=True,
+        help="Валюта платежа. Например: UAH"
+    )
+    parser_checkout.add_argument(
+        'description', location="json", required=True,
+        help="Назначение платежа"
+    )
+    parser_checkout.add_argument(
+        'language', location="json",
+        help="Язык клиента ru, uk, en"
+    )
+    parser_checkout.add_argument(
+        'result_url', location="json",
+        help="URL в Вашем магазине на который покупатель будет переадресован после завершения покупки. "
+             "Максимальная длина 510 символов."
+    )
+    parser_checkout.add_argument(
+        'server_url', location="json",
+        help="URL API в Вашем магазине для уведомлений об изменении статуса платежа (сервер->сервер). "
+             "Максимальная длина 510 символов. Подробнее: https://www.liqpay.ua/documentation/api/callback"
+    )
+    parser_checkout.add_argument(
+        'order_id', location="json",
+        help="Уникальный ID покупки в Вашем магазине. Максимальная длина 255 символов."
+    )
+    parser_checkout.add_argument(
+        'sandbox', location="args",
+        help="Включить тестовый режим. Подробнее: https://www.liqpay.ua/documentation/api/sandbox"
+    )
 
+    method_decorators = [login_group_required("brokers")]
+
+    @api.expect(parser_checkout, validate=True)
     def post(self):
-        args = parser_checkout.parse_args()
+        args = self.parser_checkout.parse_args()
         params = generate_checkout_params(args)
         if args.get("sandbox", False):
             public_key, private_key = LIQPAY_SANDBOX_PUBLIC_KEY, LIQPAY_SANDBOX_PRIVATE_KEY

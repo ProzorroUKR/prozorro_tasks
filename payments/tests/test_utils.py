@@ -1,7 +1,7 @@
 import unittest
 
 from payments.utils import (
-    get_complaint_params,
+    get_payment_params,
     get_item_data,
     check_complaint_status,
     check_complaint_value_amount,
@@ -9,115 +9,57 @@ from payments.utils import (
     ALLOWED_COMPLAINT_PAYMENT_STATUSES,
 )
 
-valid_tender_complaint_str = [
-    "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/",
-    "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "Text - /tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76 - text",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " /tenders /6be521090fa444c881e27af026c04e8a /complaints /3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders/ 6be521090fa444c881e27af026c04e8a/ complaints/ 3a0cc410ab374e2d8a9361dd59436c76",
-    "Text - / tenders / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76 - text",
+valid_zoned_complaint_str = [
+    "UA-2020-03-17-000090-a.a2-12AD3F12",
+    "ua-2020-03-17-000090-a.a2-12ad3f12",
+    "Text - UA-2020-03-17-000090-a.a2-12AD3F12",
+    "UA-2020-03-17-000090-a.a2-12AD3F12 = text",
 ]
 
-valid_qualification_complaint_str = [
-    "/tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/",
-    "/tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "/tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "Text - /tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/qualifications/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76 - text",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / qualifications / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " /tenders /6be521090fa444c881e27af026c04e8a /qualifications /6be521090fa444c881e27af026c04e8a /complaints /3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders/ 6be521090fa444c881e27af026c04e8a/ qualifications/ 6be521090fa444c881e27af026c04e8a/ complaints/ 3a0cc410ab374e2d8a9361dd59436c76",
-    "Text - / tenders / 6be521090fa444c881e27af026c04e8a / qualifications / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / qualifications / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76 - text",
-]
-
-valid_award_complaint_str = [
-    "/tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/",
-    "/tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "/tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "Text - /tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/awards/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76 - text",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / awards / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " /tenders /6be521090fa444c881e27af026c04e8a /awards /6be521090fa444c881e27af026c04e8a /complaints /3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders/ 6be521090fa444c881e27af026c04e8a/ awards/ 6be521090fa444c881e27af026c04e8a/ complaints/ 3a0cc410ab374e2d8a9361dd59436c76",
-    "Text - / tenders / 6be521090fa444c881e27af026c04e8a / awards / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / awards / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76 - text",
-]
-
-valid_cancellation_complaint_str = [
-    "/tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/",
-    "/tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "/tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76/ ",
-    "Text - /tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76",
-    "/tenders/6be521090fa444c881e27af026c04e8a/cancellations/6be521090fa444c881e27af026c04e8a/complaints/3a0cc410ab374e2d8a9361dd59436c76 - text",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / cancellations / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " /tenders /6be521090fa444c881e27af026c04e8a /cancellations /6be521090fa444c881e27af026c04e8a /complaints /3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders/ 6be521090fa444c881e27af026c04e8a/ cancellations/ 6be521090fa444c881e27af026c04e8a/ complaints/ 3a0cc410ab374e2d8a9361dd59436c76",
-    "Text - / tenders / 6be521090fa444c881e27af026c04e8a / cancellations / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76",
-    " / tenders / 6be521090fa444c881e27af026c04e8a / cancellations / 6be521090fa444c881e27af026c04e8a / complaints / 3a0cc410ab374e2d8a9361dd59436c76 - text",
+valid_not_zoned_complaint_str = [
+    "UA-2020-03-17-000090.2-12AD3F12",
+    "ua-2020-03-17-000090.2-12ad3f12",
+    "Text - UA-2020-03-17-000090.2-12AD3F12",
+    "UA-2020-03-17-000090.2-12AD3F12 = text",
 ]
 
 
-class GetComplaintParamsTestCase(unittest.TestCase):
+class GetPaymentParamsTestCase(unittest.TestCase):
     """
     Test utils.get_complaint_params
     """
 
-    def test_valid_tender_complaint(self):
-        for complaint_str in valid_tender_complaint_str:
+    def test_valid_zoned_complaint(self):
+        for complaint_str in valid_zoned_complaint_str:
+            params = get_payment_params(complaint_str)
             self.assertEqual(
-                get_complaint_params(complaint_str),
                 {
-                    "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "item_type": None,
-                    "item_id": None,
-                    "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
+                    "complaint": params["complaint"].lower(),
+                    "code": params["code"].lower(),
+                },
+                {
+                    "complaint": "UA-2020-03-17-000090-a.a2".lower(),
+                    "code": "12AD3F12".lower(),
                 }
             )
 
-    def test_valid_qualification_complaint(self):
-        for complaint_str in valid_qualification_complaint_str:
+    def test_valid_not_zoned_complaint(self):
+        for complaint_str in valid_not_zoned_complaint_str:
+            params = get_payment_params(complaint_str)
             self.assertEqual(
-                get_complaint_params(complaint_str),
                 {
-                    "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "item_type": "qualifications",
-                    "item_id": "6be521090fa444c881e27af026c04e8a",
-                    "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
+                    "complaint": params["complaint"].lower(),
+                    "code": params["code"].lower(),
+                },
+                {
+                    "complaint": "UA-2020-03-17-000090.2".lower(),
+                    "code": "12AD3F12".lower(),
                 }
             )
 
-    def test_valid_award_complaint(self):
-        for complaint_str in valid_award_complaint_str:
-            self.assertEqual(
-                get_complaint_params(complaint_str),
-                {
-                    "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "item_type": "awards",
-                    "item_id": "6be521090fa444c881e27af026c04e8a",
-                    "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
-                }
-            )
-
-    def test_valid_cancellation_complaint(self):
-        for complaint_str in valid_cancellation_complaint_str:
-            self.assertEqual(
-                get_complaint_params(complaint_str),
-                {
-                    "tender_id": "6be521090fa444c881e27af026c04e8a",
-                    "item_type": "cancellations",
-                    "item_id": "6be521090fa444c881e27af026c04e8a",
-                    "complaint_id": "3a0cc410ab374e2d8a9361dd59436c76",
-                }
-            )
+    def test_invalid_complaint(self):
+        params = get_payment_params("some_str")
+        self.assertIsNone(params)
 
 
 class GetItemDataTestCase(unittest.TestCase):
