@@ -51,9 +51,9 @@ def login_group_required(g):
         def decorated(*args, **kwargs):
             res = auth.login_required(f)(*args, **kwargs)
             if hasattr(res, "status_code") and res.status_code == 401:
-                raise UnauthorizedError()
+                raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
             if users[auth.username()]["group"] != g:
-                raise UnauthorizedError()
+                raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
             return f(*args, **kwargs)
         return decorated
     return decorator
