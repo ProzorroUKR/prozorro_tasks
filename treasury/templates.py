@@ -1,5 +1,8 @@
 from tasks_utils.requests import download_file
 from environment_settings import TREASURY_DATETIME_FMT
+from environment_settings import TIMEZONE
+from datetime import datetime, time, timedelta
+import dateutil.parser
 import jinja2
 import yaml
 
@@ -22,7 +25,7 @@ def render_catalog_xml(context):
 
 
 def _render_xml(name, context):
-    context["datetime_fmt"] = TREASURY_DATETIME_FMT
+    context["format_date"] = format_date
     template = TEMPLATES.get_template(f'{name}.xml')
     try:
         content = template.render(context)
@@ -34,6 +37,14 @@ def _render_xml(name, context):
         print(e)
         raise
     return content.encode('windows-1251', errors='ignore')
+
+
+def format_date(dt):
+    if dt:
+        if not isinstance(dt, datetime):
+            dt = dateutil.parser.parse(dt).astimezone(TIMEZONE)
+        return dt.strftime(TREASURY_DATETIME_FMT)
+    return ""
 
 
 def prepare_contract_context(contract):

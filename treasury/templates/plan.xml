@@ -14,7 +14,7 @@
     <budgetAmount>{{ plan.budget and plan.budget.amount }}</budgetAmount>
     <budgetCurrency>{{ plan.budget and plan.budget.currency }}</budgetCurrency>
     <budgetAmountNet>{{ plan.budget and plan.budget.amountNet }}</budgetAmountNet>
-    <tenderPeriodStartDate>{{ plan.tender.tenderPeriod.startDate }}</tenderPeriodStartDate>
+    <tenderPeriodStartDate>{{ format_date(plan.tender.tenderPeriod.startDate) }}</tenderPeriodStartDate>
     <tenderProcurementMethodType>{{ plan.tender.procurementMethodType }}</tenderProcurementMethodType>
     <breakdowns>{% if plan.budget  %}{% for breakdown in plan.budget.breakdown   %}
         <breakdown>

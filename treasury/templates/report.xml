@@ -1,6 +1,6 @@
 <report>
     <tenderID>{{ tender.id }}</tenderID>
-    <date>{% if lot %}{{ lot.date }}{% else %}{{ tender.date }}{% endif %}</date>
+    <date>{% if lot %}{{ format_date(lot.date) }}{% else %}{{ format_date(tender.date) }}{% endif %}</date>
     <procuringEntityName>{{ tender.procuringEntity.name }}</procuringEntityName>
     <procuringEntityIdentifierId>{{ tender.procuringEntity.identifier.id }}</procuringEntityIdentifierId>
     <mainProcurementCategory>{{ tender.mainProcurementCategory }}</mainProcurementCategory>
@@ -33,7 +33,7 @@
             <milestonesDurationType>{{ milestone.duration.type }}</milestonesDurationType>
             <milestonesPercentage>{{ milestone.percentage }}</milestonesPercentage>
         </milestone>{% endfor %}</milestones>
-    <startDate>{{ tender_award.complaintPeriod.startDate }}</startDate>
+    <startDate>{{ format_date(tender_award.complaintPeriod.startDate) }}</startDate>
     <bids>{% for bid in tender.bids %}
         <bid>
             <bidsId>{{ bid.id }}</bidsId>
@@ -42,9 +42,9 @@
             <bidsValueAmountLast>{{ bid.value.amount }}</bidsValueAmountLast>{# lotValues are already handled in python code #}
             <awardQualifiedEligible>{{ bid.selfQualified }}</awardQualifiedEligible>
         </bid>{% endfor %}</bids>
-    <awardComplaintPeriodStartDate>{{ tender_award.complaintPeriod.startDate }}</awardComplaintPeriodStartDate>
+    <awardComplaintPeriodStartDate>{{ format_date(tender_award.complaintPeriod.startDate) }}</awardComplaintPeriodStartDate>
     <cancellationsReason>{{ cancellation.reason }}</cancellationsReason>{# так как мы берем всегда только contracts:status:active то отмененных закупок и не может быть... #}
-    <contractsDateSigned>{{ tender_contract.dateSigned }}</contractsDateSigned>
+    <contractsDateSigned>{{ format_date(tender_contract.dateSigned) }}</contractsDateSigned>
     <contractsSuppliersIdentifierName>{{ tender_contract.suppliers[0].identifier.legalName }}</contractsSuppliersIdentifierName>
     <contractsSuppliersAddress>{{ tender_contract.suppliers[0].address.values()|join(', ') }}</contractsSuppliersAddress>
     <bidSubcontractingDetails>{{ tender_bid.subcontractingDetails }}</bidSubcontractingDetails>

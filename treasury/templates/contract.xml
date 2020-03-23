@@ -3,12 +3,12 @@
     <contract>
         <contractId>{{ contract.id }}</contractId>
         <contractNumber>{{ contract.contractNumber }}</contractNumber>
-        <contractsPeriodStartDate>{{ contract.period and contract.period.startDate }}</contractsPeriodStartDate>
-        <contractsPeriodEndDate>{{ contract.period and contract.period.endDate }}</contractsPeriodEndDate>
+        <contractsPeriodStartDate>{{ contract.period and format_date(contract.period.startDate) }}</contractsPeriodStartDate>
+        <contractsPeriodEndDate>{{ contract.period and format_date(contract.period.endDate) }}</contractsPeriodEndDate>
         <contractsValueAmount>{{ contract.value and contract.value.amount }}</contractsValueAmount>
         <contractsValueCurrency>{{ contract.value and contract.value.currency }}</contractsValueCurrency>
         <contractsValueAmountNet>{{ contract.value and contract.value.amountNet }}</contractsValueAmountNet>
-        <contractsDateSigned>{{ contract.dateSigned }}</contractsDateSigned>
+        <contractsDateSigned>{{ format_date(contract.dateSigned) }}</contractsDateSigned>
         <contractsDocuments>{{ contract.documents }}</contractsDocuments>
     </contract>
     <changes>{% for change in contract.changes %}
@@ -17,7 +17,7 @@
             <contractNumber>{{ contract.contractNumber }}</contractNumber>
             <changeRationale>{{ change.rationale }}</changeRationale>
             <changeRationaleTypes>{{ change.rationaleTypes|join(', ') }}</changeRationaleTypes>
-            <contractsDateSigned>{{ change.dateSigned }}</contractsDateSigned>
+            <contractsDateSigned>{{ format_date(change.dateSigned) }}</contractsDateSigned>
             <changeDocuments>{{ change.documents }}</changeDocuments>
         </change>{% endfor %}</changes>
     {% if plan %}{% include 'plan.xml' %}{% endif %}
