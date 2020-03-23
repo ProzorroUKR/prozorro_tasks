@@ -1,4 +1,4 @@
-from flask_restplus import representations
+from flask_restx import representations
 
 
 def output_json(data, code, headers=None):

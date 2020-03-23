@@ -1,5 +1,5 @@
 from flask import Blueprint
-from flask_restplus import Api
+from flask_restx import Api
 
 from liqpay_int.representations import output_json
 from liqpay_int.provider.resources import api as provider_ns
