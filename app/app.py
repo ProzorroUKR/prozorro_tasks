@@ -16,6 +16,8 @@ root.addHandler(default_handler)
 
 app = Flask(__name__, template_folder="templates")
 
+app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
+
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.register_blueprint(app_views_bp)

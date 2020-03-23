@@ -14,6 +14,7 @@ if SENTRY_DSN:
 app = Celery(
     'celery_worker',
     broker=CELERY_BROKER_URL,
+    backend=CELERY_BROKER_URL,
     include=[
         "{}.tasks".format(module_name)
         for module_name in celeryconfig.task_modules

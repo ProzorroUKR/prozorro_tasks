@@ -33,7 +33,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(name="payments.process_payment", bind=True)
-def process_payment(self, payment_data, *args, **kwargs):
+def process_payment(self, payment_data, *args, check_only=False, **kwargs):
     """
     Process and validate payment data
 
@@ -47,6 +47,7 @@ def process_payment(self, payment_data, *args, **kwargs):
     ...     "description": "UA-2020-03-17-000090-a.a2-12AD3F12"
     ... }
 
+    :param check_only:
     :param args:
     :param kwargs:
     :return:
@@ -100,10 +101,13 @@ def process_payment(self, payment_data, *args, **kwargs):
                         complaint_pretty_id
                     ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
                     if check_complaint_code(complaint_data, payment_params):
-                        process_complaint_payment.delay(
-                            payment_data=payment_data,
-                            complaint_params=complaint_data.get("params")
-                        )
+                        if check_only:
+                            return True
+                        else:
+                            process_complaint_payment.delay(
+                                payment_data=payment_data,
+                                complaint_params=complaint_data.get("params")
+                            )
                     else:
                         logger.critical("Invalid payment code {} while searching complaint {}".format(
                             payment_params.get("code"), complaint_pretty_id
