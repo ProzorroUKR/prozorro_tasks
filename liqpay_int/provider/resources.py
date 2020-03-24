@@ -1,9 +1,9 @@
 from flask_restx import Namespace, Resource
 
 from app.auth import ip_group_required
-from celery_worker.celery import app as celery_app
 from liqpay_int.provider.models import model_payment
 from liqpay_int.responses import model_response_success
+from payments.tasks import process_payment
 
 api = Namespace(
     'provider',
@@ -23,7 +23,7 @@ class PushResource(Resource):
     @api.marshal_with(model_response_success, code=200)
     @api.expect(model_payment, validate=True)
     def post(self):
-        celery_app.send_task('payments.process_payment', kwargs=dict(
+        process_payment.apply_async(kwargs=dict(
             payment_data=api.payload
         ))
         return {"status": "success"}
