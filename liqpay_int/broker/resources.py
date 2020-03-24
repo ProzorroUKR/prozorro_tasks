@@ -8,9 +8,10 @@ from liqpay_int.broker.models import (
     model_request,
 )
 from liqpay_int.broker.responses import model_response_checkout
-from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError
+from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError, PaymentInvalidError
 from liqpay_int.responses import model_response_success, model_response_error, model_response_failure
 from liqpay_int.utils import liqpay_request, generate_liqpay_receipt_params, generate_liqpay_checkout_params
+from payments.tasks import process_payment
 
 authorizations = {"basicAuth": {"type": "basic"}}
 
@@ -45,18 +46,32 @@ class CheckoutResource(Resource):
         """
         Receive a payment link.
         """
-        params = generate_liqpay_checkout_params(api.payload)
-        try:
-            resp_json = liqpay_request(params=params, sandbox=True)
-        except Exception as ex:
-            raise LiqpayResponseFailureError()
-        else:
-            if resp_json.get("result") == "ok":
-                return {"url_checkout": resp_json.get("url_checkout")}
+        complaint_payment_found = process_payment.apply(
+            kwargs=dict(
+                payment_data=dict(
+                    description=api.payload.get("description"),
+                    amount=api.payload.get("amount"),
+                    currency=api.payload.get("currency"),
+                ),
+                check_only=True
+            )
+        ).wait()
+
+        if complaint_payment_found is True:
+            params = generate_liqpay_checkout_params(api.payload)
+            try:
+                resp_json = liqpay_request(params=params, sandbox=True)
+            except Exception as ex:
+                raise LiqpayResponseFailureError()
             else:
-                raise LiqpayResponseError(
-                    liqpay_err_description=resp_json.get("err_description")
-                )
+                if resp_json.get("result") == "ok":
+                    return {"url_checkout": resp_json.get("url_checkout")}
+                else:
+                    raise LiqpayResponseError(
+                        liqpay_err_description=resp_json.get("err_description")
+                    )
+        else:
+            raise PaymentInvalidError()
 
 
 class ReceiptResource(Resource):

@@ -13,6 +13,7 @@ default_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s: %(m
 
 root = logging.getLogger()
 root.addHandler(default_handler)
+root.setLevel(logging.INFO)
 
 app = Flask(__name__, template_folder="templates")
 
