@@ -23,7 +23,6 @@ from environment_settings import (
 from uuid import uuid4
 import requests
 
-
 logger = get_task_logger(__name__)
 
 RETRY_REQUESTS_EXCEPTIONS = (
@@ -33,7 +32,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(name="payments.process_payment", bind=True)
-def process_payment(self, payment_data, *args, check_only=False, **kwargs):
+def process_payment(self, payment_data, check_only=False):
     """
     Process and validate payment data
 
@@ -101,13 +100,18 @@ def process_payment(self, payment_data, *args, check_only=False, **kwargs):
                         complaint_pretty_id
                     ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
                     if check_complaint_code(complaint_data, payment_params):
-                        if check_only:
-                            return True
-                        else:
-                            process_complaint_payment.delay(
+                        if not check_only:
+                            process_complaint_payment.apply_async(kwargs=dict(
                                 payment_data=payment_data,
-                                complaint_params=complaint_data.get("params")
-                            )
+                                complaint_params=complaint_data.get("params"),
+                            ))
+                        else:
+                            return process_complaint_payment.apply(kwargs=dict(
+                                payment_data=payment_data,
+                                complaint_params=complaint_data.get("params"),
+                                check_only=check_only,
+                            )).wait()
+
                     else:
                         logger.critical("Invalid payment code {} while searching complaint {}".format(
                             payment_params.get("code"), complaint_pretty_id
@@ -116,7 +120,7 @@ def process_payment(self, payment_data, *args, check_only=False, **kwargs):
 
 
 @app.task(name="payments.process_complaint_payment", bind=True)
-def process_complaint_payment(self, complaint_params, payment_data):
+def process_complaint_payment(self, complaint_params, payment_data, check_only=False):
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
@@ -184,32 +188,40 @@ def process_complaint_payment(self, complaint_params, payment_data):
             logger.critical("Payment amount doesn't match complaint amount ({} and {}) in complaint {}.".format(
                 payment_data.get("amount"), complaint_data.get("value", {}).get("amount"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_AMOUNT"})
-            process_complaint.delay(
-                complaint_params=complaint_params,
-                data={
-                    "status": "mistaken"
-                }
-            )
+            if not check_only:
+                process_complaint.apply_async(kwargs=dict(
+                    complaint_params=complaint_params,
+                    data={
+                        "status": "mistaken"
+                    }
+                ))
             return
 
         if not check_complaint_value_currency(complaint_data, payment_data):
             logger.critical("Payment currency doesn't match complaint currency ({} and {}) in complaint {}.".format(
                 payment_data.get("currency"), complaint_data.get("value", {}).get("currency"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_CURRENCY"})
-            process_complaint.delay(
-                complaint_params=complaint_params,
-                data={
-                    "status": "mistaken"
-                }
-            )
+            if not check_only:
+                process_complaint.apply_async(kwargs=dict(
+                    complaint_params=complaint_params,
+                    data={
+                        "status": "mistaken"
+                    }
+                ))
             return
 
-        process_complaint.delay(
-            complaint_params=complaint_params,
-            data={
-                "status": "pending"
-            }
-        )
+        logger.info("Valid payment found for complaint {}.".format(
+            complaint_id
+        ), extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
+        if not check_only:
+            process_complaint.apply_async(kwargs=dict(
+                complaint_params=complaint_params,
+                data={
+                    "status": "pending"
+                }
+            ))
+        else:
+            return True
 
 
 @app.task(name="payments.process_complaint", bind=True)

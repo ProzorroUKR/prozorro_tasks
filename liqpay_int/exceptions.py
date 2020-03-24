@@ -27,8 +27,8 @@ class LiqpayResponseError(HTTPException):
         )
 
 
-class PaymentInvalidCodeError(HTTPException):
+class PaymentInvalidError(HTTPException):
     code = 400
     description = (
-        "Invalid complaint payment code"
+        "Invalid payment data"
     )
