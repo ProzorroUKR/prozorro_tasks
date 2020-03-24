@@ -60,7 +60,7 @@ class CheckoutResource(Resource):
         if complaint_payment_found is True:
             params = generate_liqpay_checkout_params(api.payload)
             try:
-                resp_json = liqpay_request(params=params, sandbox=True)
+                resp_json = liqpay_request(params=params, sandbox=False)
             except Exception as ex:
                 raise LiqpayResponseFailureError()
             else:
@@ -90,7 +90,7 @@ class ReceiptResource(Resource):
         """
         params = generate_liqpay_receipt_params(api.payload)
         try:
-            resp_json = liqpay_request(params=params, sandbox=True)
+            resp_json = liqpay_request(params=params, sandbox=False)
         except Exception as ex:
             raise LiqpayResponseFailureError()
         else:
