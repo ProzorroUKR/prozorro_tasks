@@ -5,7 +5,8 @@ from treasury.documents import prepare_documents
 from treasury.templates import render_contract_xml, render_change_xml, render_catalog_xml, \
     prepare_context, prepare_contract_context
 from treasury.api_requests import send_request, get_request_response, parse_organisations
-from environment_settings import TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES
+from environment_settings import TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES, \
+    TREASURY_INT_START_DATE
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import get_public_api_data
 from tasks_utils.datetime import get_now
@@ -30,6 +31,10 @@ def check_contract(self, contract_id):
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
+    if contract["dateSigned"] < TREASURY_INT_START_DATE:
+        return logger.debug(f"Skipping contract {contract['id']} signed at {contract['dateSigned']}",
+                            extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
+
     identifier = contract["procuringEntity"]["identifier"]
     if contract["status"] != "active" or identifier["scheme"] != "UA-EDR":
         return logger.debug(f"Skipping {contract['status']} contract {contract['id']} with identifier {identifier}",

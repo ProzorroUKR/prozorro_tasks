@@ -79,6 +79,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
@@ -140,6 +141,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
@@ -187,14 +189,41 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
     @patch("treasury.tasks.get_public_api_data")
+    def test_check_contract_before_start(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
+                                         save_context_mock, send_contract_xml_mock):
+        contract_id = "4444"
+        contract_data = dict(
+            id=contract_id,
+            dateSigned="2020-03-11T13:49:00+02:00",
+        )
+        get_data_mock.return_value = contract_data
+
+        # run
+        with patch("treasury.tasks.TREASURY_INT_START_DATE", "2020-03-12"):
+            check_contract(contract_id)
+
+        # checks
+        get_data_mock.assert_called_once_with(check_contract, contract_id, "contract")
+        get_org_mock.assert_not_called()
+        get_context_mock.assert_not_called()
+        prepare_context_mock.assert_not_called()
+        save_context_mock.assert_not_called()
+        send_contract_xml_mock.delay.assert_not_called()
+
+    @patch("treasury.tasks.send_contract_xml")
+    @patch("treasury.tasks.save_contract_context")
+    @patch("treasury.tasks.prepare_context")
+    @patch("treasury.tasks.get_contract_context")
+    @patch("treasury.tasks.get_organisation")
+    @patch("treasury.tasks.get_public_api_data")
     def test_check_contract_inactive(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
                                      save_context_mock, send_contract_xml_mock):
         contract_id = "4444"
-        get_org_mock.return_value = {"org data"}
         contract_data = dict(
             id=contract_id,
             status="cancelled",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
@@ -229,6 +258,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
@@ -263,6 +293,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             changes=[
                 dict(id="222"),
                 dict(id="333"),
@@ -318,6 +349,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id="1234",
+            dateSigned="2021-03-11T13:49:00+02:00",
             changes=[
                 dict(id="111"),
                 dict(id="222"),

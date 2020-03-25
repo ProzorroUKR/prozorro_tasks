@@ -74,6 +74,7 @@ LIQPAY_TAX_PERCENTAGE = float(os.environ.get("LIQPAY_TAX_PERCENTAGE", 0))
 
 PORTAL_HOST = os.environ.get("PORTAL_HOST", "https://prozorro.gov.ua")
 
+TREASURY_INT_START_DATE = os.environ.get("TREASURY_INT_START_DATE", "2020-03-27")
 TREASURY_WSDL_URL = os.environ.get(
     "TREASURY_WSDL_URL", "http://46.164.148.178:24310/bars.webservices.prozorro/prozorro/prozorroapi.asmx?WSDL")
 TREASURY_USER = os.environ.get("TREASURY_USER", "prozorrouser")
