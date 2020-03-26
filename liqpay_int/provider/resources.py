@@ -1,9 +1,12 @@
+from celery.exceptions import TaskError
 from flask_restx import Namespace, Resource
+from requests.exceptions import RequestException
 
 from app.auth import ip_group_required
-from celery_worker.celery import app as celery_app
+from liqpay_int.exceptions import ProzorroApiError
 from liqpay_int.provider.models import model_payment
 from liqpay_int.responses import model_response_success
+from payments.tasks import process_payment
 
 api = Namespace(
     'provider',
@@ -16,6 +19,7 @@ api.models[model_payment.name] = model_payment
 api.models[model_response_success.name] = model_response_success
 
 
+@api.route('/push', doc=False)
 class PushResource(Resource):
 
     method_decorators = [ip_group_required("payment_providers")]
@@ -23,10 +27,10 @@ class PushResource(Resource):
     @api.marshal_with(model_response_success, code=200)
     @api.expect(model_payment, validate=True)
     def post(self):
-        celery_app.send_task('payments.process_payment', kwargs=dict(
-            payment_data=api.payload
-        ))
+        try:
+            process_payment.apply_async(kwargs=dict(
+                payment_data=api.payload
+            ))
+        except (TaskError, RequestException):
+            raise ProzorroApiError()
         return {"status": "success"}
-
-
-api.add_resource(PushResource, '/push')
