@@ -2,6 +2,7 @@ import logging
 
 from flask import Flask
 from flask.logging import default_handler
+from pythonjsonlogger.jsonlogger import JsonFormatter
 
 from app.views import bp as app_views_bp
 from payments.views import bp as payments_views_bp
@@ -9,7 +10,10 @@ from liqpay_int.api import bp as liqpay_resources_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
-default_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s'))
+default_handler.setFormatter(JsonFormatter(
+    '%(levelname)s %(asctime)s %(module)s %(process)d '
+    '%(message)s %(pathname)s $(lineno)d $(funcName)s'
+))
 
 root = logging.getLogger()
 root.addHandler(default_handler)
