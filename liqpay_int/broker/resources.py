@@ -67,7 +67,7 @@ class CheckoutResource(Resource):
 
         if complaint_payment_found is True:
             params = generate_liqpay_checkout_params(api.payload)
-            sandbox = parser_query.parse_args().get("sandbox", LIQPAY_SANDBOX_BY_DEFAULT_ENABLED)
+            sandbox = parser_query.parse_args().get("sandbox")
             try:
                 resp_json = liqpay_request(params=params, sandbox=sandbox)
             except Exception as ex:
@@ -99,7 +99,7 @@ class ReceiptResource(Resource):
         Receive a receipt.
         """
         params = generate_liqpay_receipt_params(api.payload)
-        sandbox = parser_query.parse_args().get("sandbox", LIQPAY_SANDBOX_BY_DEFAULT_ENABLED)
+        sandbox = parser_query.parse_args().get("sandbox")
         try:
             resp_json = liqpay_request(params=params, sandbox=sandbox)
         except Exception as ex:
