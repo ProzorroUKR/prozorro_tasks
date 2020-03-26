@@ -1,14 +1,18 @@
+from celery.exceptions import TaskError
 from flask_restx import Namespace, Resource
+from requests import RequestException
 
 from app.auth import login_group_required
+from environment_settings import LIQPAY_SANDBOX_BY_DEFAULT_ENABLED
 from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST
 from liqpay_int.broker.models import (
     model_checkout,
     model_receipt,
     model_request,
 )
+from liqpay_int.broker.parsers import parser_query
 from liqpay_int.broker.responses import model_response_checkout
-from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError, PaymentInvalidError
+from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError, PaymentInvalidError, ProzorroApiError
 from liqpay_int.responses import model_response_success, model_response_error, model_response_failure
 from liqpay_int.utils import liqpay_request, generate_liqpay_receipt_params, generate_liqpay_checkout_params
 from payments.tasks import process_payment
@@ -32,6 +36,7 @@ api.models[model_response_failure.name] = model_response_failure
 api.models[model_response_checkout.name] = model_response_checkout
 
 
+@api.route('/checkout')
 class CheckoutResource(Resource):
 
     method_decorators = [login_group_required("brokers")]
@@ -46,21 +51,25 @@ class CheckoutResource(Resource):
         """
         Receive a payment link.
         """
-        complaint_payment_found = process_payment.apply(
-            kwargs=dict(
-                payment_data=dict(
-                    description=api.payload.get("description"),
-                    amount=api.payload.get("amount"),
-                    currency=api.payload.get("currency"),
-                ),
-                check_only=True
-            )
-        ).wait()
+        try:
+            complaint_payment_found = process_payment.apply(
+                kwargs=dict(
+                    payment_data=dict(
+                        description=api.payload.get("description"),
+                        amount=api.payload.get("amount"),
+                        currency=api.payload.get("currency"),
+                    ),
+                    check_only=True
+                )
+            ).wait()
+        except (TaskError, RequestException):
+            raise ProzorroApiError()
 
         if complaint_payment_found is True:
             params = generate_liqpay_checkout_params(api.payload)
+            sandbox = parser_query.parse_args().get("sandbox", LIQPAY_SANDBOX_BY_DEFAULT_ENABLED)
             try:
-                resp_json = liqpay_request(params=params, sandbox=False)
+                resp_json = liqpay_request(params=params, sandbox=sandbox)
             except Exception as ex:
                 raise LiqpayResponseFailureError()
             else:
@@ -74,6 +83,7 @@ class CheckoutResource(Resource):
             raise PaymentInvalidError()
 
 
+@api.route('/receipt')
 class ReceiptResource(Resource):
 
     method_decorators = [login_group_required("brokers")]
@@ -89,8 +99,9 @@ class ReceiptResource(Resource):
         Receive a receipt.
         """
         params = generate_liqpay_receipt_params(api.payload)
+        sandbox = parser_query.parse_args().get("sandbox", LIQPAY_SANDBOX_BY_DEFAULT_ENABLED)
         try:
-            resp_json = liqpay_request(params=params, sandbox=False)
+            resp_json = liqpay_request(params=params, sandbox=sandbox)
         except Exception as ex:
             raise LiqpayResponseFailureError()
         else:
@@ -100,7 +111,3 @@ class ReceiptResource(Resource):
                 raise LiqpayResponseError(
                     liqpay_err_description=resp_json.get("err_description")
                 )
-
-
-api.add_resource(CheckoutResource, "/checkout")
-api.add_resource(ReceiptResource, "/receipt")

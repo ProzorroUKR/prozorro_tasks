@@ -27,6 +27,13 @@ class LiqpayResponseError(HTTPException):
         )
 
 
+class ProzorroApiError(HTTPException):
+    code = 400
+    description = (
+        "Prozorro API request error"
+    )
+
+
 class PaymentInvalidError(HTTPException):
     code = 400
     description = (
