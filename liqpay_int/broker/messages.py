@@ -10,8 +10,6 @@ DESC_CHECKOUT_POST = "" \
 "2. Attach a link to the pay button.\n" \
 "3. When clicking on the button, redirect the client to the link.\n"
 
-DESC_CHECKOUT_AMOUNT = "Payment amount"
-DESC_CHECKOUT_CURR = "Payment currency"
 DESC_CHECKOUT_DESC = "Payment description"
 DESC_CHECKOUT_LANG = "Customer's language ru, uk, en"
 DESC_CHECKOUT_RESULT_URL = "" \
@@ -23,9 +21,6 @@ DESC_CHECKOUT_SERVER_URL = "" \
 "of payment status change. " \
 "Maximum length is 510 symbols. " \
 "Details: https://www.liqpay.ua/documentation/api/callback."
-DESC_CHECKOUT_ORDER_ID = "" \
-"Unique purchase ID in your shop. " \
-"Maximum length is 255 symbols"
 
 DESC_TICKET_POST = "" \
 "# Send a receipt to the specified client's email.\n" \
