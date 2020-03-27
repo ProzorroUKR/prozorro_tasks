@@ -32,7 +32,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(name="payments.process_payment", bind=True)
-def process_payment(self, payment_data, check_only=False):
+def process_payment(self, payment_data, return_value=False):
     """
     Process and validate payment data
 
@@ -46,7 +46,7 @@ def process_payment(self, payment_data, check_only=False):
     ...     "description": "UA-2020-03-17-000090-a.a2-12AD3F12"
     ... }
 
-    :param check_only:
+    :param return_value:
     :param args:
     :param kwargs:
     :return:
@@ -100,7 +100,7 @@ def process_payment(self, payment_data, check_only=False):
                         complaint_pretty_id
                     ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
                     if check_complaint_code(complaint_data, payment_params):
-                        if not check_only:
+                        if not return_value:
                             process_complaint_payment.apply_async(kwargs=dict(
                                 payment_data=payment_data,
                                 complaint_params=complaint_data.get("params"),
@@ -109,8 +109,12 @@ def process_payment(self, payment_data, check_only=False):
                             return process_complaint_payment.apply(kwargs=dict(
                                 payment_data=payment_data,
                                 complaint_params=complaint_data.get("params"),
-                                check_only=check_only,
+                                payment_params=payment_params,
+                                return_value=return_value,
                             )).wait()
+                        logger.info("Valid payment code {} while searching complaint {}".format(
+                            payment_params.get("code"), complaint_pretty_id
+                        ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"})
 
                     else:
                         logger.critical("Invalid payment code {} while searching complaint {}".format(
@@ -120,7 +124,7 @@ def process_payment(self, payment_data, check_only=False):
 
 
 @app.task(name="payments.process_complaint_payment", bind=True)
-def process_complaint_payment(self, complaint_params, payment_data, check_only=False):
+def process_complaint_payment(self, complaint_params, payment_data, payment_params=None, return_value=False):
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
@@ -184,36 +188,42 @@ def process_complaint_payment(self, complaint_params, payment_data, check_only=F
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_STATUS"})
             return
 
-        if not check_complaint_value_amount(complaint_data, payment_data):
+        value = complaint_data.get("value", {})
+
+        if not (value and "amount" in value and "currency" in value):
+            logger.info("Complaint value amount or currency not found for complaint {}.".format(
+                complaint_id
+            ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_COMPLAINT_VALUE"})
+            return
+
+        if not check_complaint_value_amount(complaint_data, payment_data) and not return_value:
             logger.critical("Payment amount doesn't match complaint amount ({} and {}) in complaint {}.".format(
-                payment_data.get("amount"), complaint_data.get("value", {}).get("amount"), complaint_id
+                payment_data.get("amount"), value.get("amount"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_AMOUNT"})
-            if not check_only:
-                process_complaint.apply_async(kwargs=dict(
-                    complaint_params=complaint_params,
-                    data={
-                        "status": "mistaken"
-                    }
-                ))
+            process_complaint.apply_async(kwargs=dict(
+                complaint_params=complaint_params,
+                data={
+                    "status": "mistaken"
+                }
+            ))
             return
 
-        if not check_complaint_value_currency(complaint_data, payment_data):
+        if not check_complaint_value_currency(complaint_data, payment_data) and not return_value:
             logger.critical("Payment currency doesn't match complaint currency ({} and {}) in complaint {}.".format(
-                payment_data.get("currency"), complaint_data.get("value", {}).get("currency"), complaint_id
+                payment_data.get("currency"), value.get("currency"), complaint_id
             ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_CURRENCY"})
-            if not check_only:
-                process_complaint.apply_async(kwargs=dict(
-                    complaint_params=complaint_params,
-                    data={
-                        "status": "mistaken"
-                    }
-                ))
+            process_complaint.apply_async(kwargs=dict(
+                complaint_params=complaint_params,
+                data={
+                    "status": "mistaken"
+                }
+            ))
             return
 
-        logger.info("Valid payment found for complaint {}.".format(
-            complaint_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
-        if not check_only:
+        if not return_value:
+            logger.info("Valid payment found for complaint {}.".format(
+                complaint_id
+            ), extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
             process_complaint.apply_async(kwargs=dict(
                 complaint_params=complaint_params,
                 data={
@@ -221,7 +231,13 @@ def process_complaint_payment(self, complaint_params, payment_data, check_only=F
                 }
             ))
         else:
-            return True
+            logger.info("Valid complaint value found for complaint {}.".format(
+                complaint_id
+            ), extra={"MESSAGE_ID": "PAYMENTS_VALID_COMPLAINT"})
+            return {
+                "payment": payment_params,
+                "value": value
+            }
 
 
 @app.task(name="payments.process_complaint", bind=True)

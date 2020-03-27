@@ -52,21 +52,29 @@ class CheckoutResource(Resource):
         Receive a payment link.
         """
         try:
-            complaint_payment_found = process_payment.apply(
+            complaint_data = process_payment.apply(
                 kwargs=dict(
-                    payment_data=dict(
-                        description=api.payload.get("description"),
-                        amount=api.payload.get("amount"),
-                        currency=api.payload.get("currency"),
-                    ),
-                    check_only=True
+                    payment_data=dict(description=api.payload.get("description")),
+                    return_value=True
                 )
             ).wait()
         except (TaskError, RequestException):
             raise ProzorroApiError()
 
-        if complaint_payment_found is True:
-            params = generate_liqpay_checkout_params(api.payload)
+        if complaint_data:
+            args = api.payload
+            payment_data = complaint_data.get("payment", {})
+            value_data = complaint_data.get("value", {})
+            order_id = "{}-{}".format(
+                payment_data.get("complaint"),
+                payment_data.get("code").upper()
+            )
+            args.update({
+                "order_id": order_id,
+                "amount": value_data.get("amount"),
+                "currency": value_data.get("currency")
+            })
+            params = generate_liqpay_checkout_params(args)
             sandbox = parser_query.parse_args().get("sandbox")
             try:
                 resp_json = liqpay_request(params=params, sandbox=sandbox)
@@ -74,7 +82,10 @@ class CheckoutResource(Resource):
                 raise LiqpayResponseFailureError()
             else:
                 if resp_json.get("result") == "ok":
-                    return {"url_checkout": resp_json.get("url_checkout")}
+                    return {
+                        "url_checkout": resp_json.get("url_checkout"),
+                        "order_id": order_id
+                    }
                 else:
                     raise LiqpayResponseError(
                         liqpay_err_description=resp_json.get("err_description")
