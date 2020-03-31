@@ -9,7 +9,7 @@ from payments.utils import (
     get_payment_params,
     check_complaint_code,
 )
-from tasks_utils.requests import get_request_retry_countdown
+from tasks_utils.requests import get_exponential_request_retry_countdown
 from tasks_utils.settings import (
     CONNECT_TIMEOUT,
     READ_TIMEOUT,
@@ -31,7 +31,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 )
 
 
-@app.task(name="payments.process_payment", bind=True)
+@app.task(bind=True, max_retries=20)
 def process_payment(self, payment_data, return_value=False):
     """
     Process and validate payment data
@@ -86,7 +86,8 @@ def process_payment(self, payment_data, return_value=False):
                 response.status_code, complaint_pretty_id
             ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_CODE_ERROR",
                       "STATUS_CODE": response.status_code})
-            raise self.retry(countdown=get_request_retry_countdown(response))
+            countdown = get_exponential_request_retry_countdown(self, response)
+            raise self.retry(countdown=countdown)
         else:
             complaints_data = response.json()["data"]
             if len(complaints_data) == 0:
@@ -123,7 +124,7 @@ def process_payment(self, payment_data, return_value=False):
                         return
 
 
-@app.task(name="payments.process_complaint_payment", bind=True)
+@app.task(bind=True, max_retries=20)
 def process_complaint_payment(self, complaint_params, payment_data, payment_params=None, return_value=False):
     tender_id = complaint_params.get("tender_id")
 
@@ -153,7 +154,8 @@ def process_complaint_payment(self, complaint_params, payment_data, payment_para
                 response.status_code, tender_id
             ), extra={"MESSAGE_ID": "PAYMENTS_GET_TENDER_CODE_ERROR",
                       "STATUS_CODE": response.status_code})
-            raise self.retry(countdown=get_request_retry_countdown(response))
+            countdown = get_exponential_request_retry_countdown(self, response)
+            raise self.retry(countdown=countdown)
         else:
             logger.info("Successfully retrieved tender {}".format(
                 tender_id
@@ -240,7 +242,7 @@ def process_complaint_payment(self, complaint_params, payment_data, payment_para
             }
 
 
-@app.task(name="payments.process_complaint", bind=True)
+@app.task(bind=True, max_retries=20)
 def process_complaint(self, complaint_params, data):
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
@@ -304,7 +306,8 @@ def process_complaint(self, complaint_params, data):
                     response.status_code, complaint_id, tender_id, data
                 ), extra={"MESSAGE_ID": "PAYMENTS_PATCH_COMPLAINT_CODE_ERROR",
                           "STATUS_CODE": response.status_code})
-                raise self.retry(countdown=get_request_retry_countdown(response))
+                countdown = get_exponential_request_retry_countdown(self, response)
+                raise self.retry(countdown=countdown)
             else:
                 logger.info("Successfully updated complaint {} of tender {}: {}".format(
                     complaint_id, tender_id, data

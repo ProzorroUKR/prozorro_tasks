@@ -15,13 +15,13 @@ from liqpay_int.provider.messages import (
 model_payment_fields = {
     "type": fields.String(description=DESC_PAYMENT_TYPE),
     "date_oper": fields.String(description=DESC_PAYMENT_DATE_OPER),
-    "amount": fields.String(required=True, description=DESC_PAYMENT_AMOUNT),
-    "currency": fields.String(required=True, description=DESC_PAYMENT_CURR),
+    "amount": fields.String(description=DESC_PAYMENT_AMOUNT),
+    "currency": fields.String(description=DESC_PAYMENT_CURR),
     "account": fields.String(description=DESC_PAYMENT_ACC),
     "okpo": fields.String(description=DESC_PAYMENT_OKPO),
     "mfo": fields.String(description=DESC_PAYMENT_MFO),
     "name": fields.String(description=DESC_PAYMENT_NAME),
-    "description": fields.String(required=True, description=DESC_PAYMENT_DESC),
+    "description": fields.String(description=DESC_PAYMENT_DESC),
 }
 
 model_payment = Model(
