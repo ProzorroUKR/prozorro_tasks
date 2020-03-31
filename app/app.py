@@ -1,7 +1,7 @@
 import logging
 import urllib3
 
-from flask import Flask, request_started
+from flask import Flask
 from flask.logging import default_handler
 from pythonjsonlogger.jsonlogger import JsonFormatter
 from werkzeug.middleware.proxy_fix import ProxyFix

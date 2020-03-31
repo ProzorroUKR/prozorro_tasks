@@ -1,3 +1,5 @@
+import logging
+
 from celery.exceptions import TaskError
 from requests import RequestException
 
@@ -12,6 +14,9 @@ from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
 from liqpay_int.broker.models import model_checkout, model_receipt
 from liqpay_int.broker.responses import model_response_checkout
+
+
+logger = logging.getLogger()
 
 
 @api.route('/checkout')
@@ -29,6 +34,10 @@ class CheckoutResource(Resource):
         """
         Receive a payment link.
         """
+        description = api.payload.get("description")
+        logger.info("Checkout requested.", extra={
+            "PAYMENT_DESCRIPTION": description
+        })
         try:
             complaint_data = process_payment.apply(
                 kwargs=dict(
@@ -37,6 +46,9 @@ class CheckoutResource(Resource):
                 )
             ).wait()
         except (TaskError, RequestException):
+            logger.error("Payment processing task failed.", extra={
+                "PAYMENT_DESCRIPTION": description
+            })
             raise ProzorroApiError()
 
         if complaint_data:
@@ -57,6 +69,9 @@ class CheckoutResource(Resource):
             try:
                 resp_json = liqpay_request(params=params, sandbox=sandbox)
             except Exception as ex:
+                logger.error("Liqpay api request failed.", extra={
+                    "PAYMENT_DESCRIPTION": description
+                })
                 raise LiqpayResponseFailureError()
             else:
                 if resp_json.get("result") == "ok":
@@ -65,6 +80,9 @@ class CheckoutResource(Resource):
                         "order_id": order_id
                     }
                 else:
+                    logger.error("Liqpay api request error.", extra={
+                        "PAYMENT_DESCRIPTION": description
+                    })
                     raise LiqpayResponseError(
                         liqpay_err_description=resp_json.get("err_description")
                     )
@@ -87,16 +105,26 @@ class ReceiptResource(Resource):
         """
         Receive a receipt.
         """
+        order_id = api.payload.get("order_id")
+        logger.info("Checkout requested.", extra={
+            "PAYMENT_ORDER_ID": order_id
+        })
         params = generate_liqpay_receipt_params(api.payload)
         sandbox = parser_query.parse_args().get("sandbox")
         try:
             resp_json = liqpay_request(params=params, sandbox=sandbox)
         except Exception as ex:
+            logger.error("Liqpay api request failed.", extra={
+                "PAYMENT_ORDER_ID": order_id
+            })
             raise LiqpayResponseFailureError()
         else:
             if resp_json.get("result") == "ok":
                 return {}
             else:
+                logger.error("Liqpay api request error.", extra={
+                    "PAYMENT_ORDER_ID": order_id
+                })
                 raise LiqpayResponseError(
                     liqpay_err_description=resp_json.get("err_description")
                 )
