@@ -2,9 +2,8 @@ from flask import Blueprint
 from flask_restx import Api
 
 from liqpay_int.representations import output_json
-from liqpay_int.provider.resources import api as provider_ns
-from liqpay_int.broker.resources import api as broker_ns
-
+from liqpay_int.provider.namespaces import api as provider_ns
+from liqpay_int.broker.namespaces import api as broker_ns
 
 API_VERSION_MAJOR = 1
 API_VERSION_MINOR = 0
