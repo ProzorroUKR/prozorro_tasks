@@ -16,6 +16,13 @@ valid_zoned_complaint_str = [
     "UA-2020-03-17-000090-a.a2-12AD3F12 = text",
 ]
 
+valid_zoned_complaint_second_stage_str = [
+    "UA-2020-03-17-000090-a.2.a2-12AD3F12",
+    "ua-2020-03-17-000090-a.2.a2-12ad3f12",
+    "Text - UA-2020-03-17-000090-a.2.a2-12AD3F12",
+    "UA-2020-03-17-000090-a.2.a2-12AD3F12 = text",
+]
+
 valid_not_zoned_complaint_str = [
     "UA-2020-03-17-000090.2-12AD3F12",
     "ua-2020-03-17-000090.2-12ad3f12",
@@ -39,6 +46,20 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                 },
                 {
                     "complaint": "UA-2020-03-17-000090-a.a2".lower(),
+                    "code": "12AD3F12".lower(),
+                }
+            )
+
+    def test_valid_zoned_complaint_second_stage(self):
+        for complaint_str in valid_zoned_complaint_second_stage_str:
+            params = get_payment_params(complaint_str)
+            self.assertEqual(
+                {
+                    "complaint": params["complaint"].lower(),
+                    "code": params["code"].lower(),
+                },
+                {
+                    "complaint": "UA-2020-03-17-000090-a.2.a2".lower(),
                     "code": "12AD3F12".lower(),
                 }
             )

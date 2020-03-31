@@ -7,7 +7,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 PAYMENT_RE = re.compile(
-    r"(?P<complaint>UA-\d{4}-\d{2}-\d{2}-\d{6}(?:-\w)?\.(?:\w)?\d)-(?P<code>[0-9a-f]*)",
+    r"(?P<complaint>UA-\d{4}-\d{2}-\d{2}-\d{6}(?:-\w)?(?:\.\d)?\.(?:\w)?\d)-(?P<code>[0-9a-f]*)",
     re.IGNORECASE
 )
 
