@@ -1,218 +1,243 @@
-from environment_settings import TREASURY_PASSWORD, TREASURY_USER, TREASURY_WSDL_URL
-from treasury.api_requests import (
-    parse_request_response, prepare_request_data, send_request,
-    prepare_get_response_data, parse_response_content, get_request_response,
-    parse_organisations, get_wsdl_client
-)
-from requests.exceptions import ConnectTimeout, SSLError
+from app.tests.base import BaseTestCase
 from zeep import Client
-from unittest.mock import patch, Mock
-import unittest
+from lxml import etree
+from gzip import compress
+from unittest.mock import patch
 import base64
 
 
-class RetryExc(Exception):
-    def __init__(self, **_):
-        pass
+class TestCase(BaseTestCase):
 
+    @patch("treasury.api.methods.save_transaction")
+    def test_unicode_fixture(self, save_transaction_mock):
+        self.maxDiff = None
+        with open("treasury/tests/fixtures/PrTrans_unicode.xml", "rb") as f:
+            xml = f.read()
 
-class HelpersTestCase(unittest.TestCase):
-
-    @patch("treasury.api_requests.Client")
-    def test_wdsl_client_error(self, client_mock):
-        client_mock.side_effect = ConnectTimeout()
-        task = Mock(retry=RetryExc)
-        with self.assertRaises(RetryExc):
-            get_wsdl_client(task)
-
-
-@patch(
-    "treasury.api_requests.Client",
-    lambda _: Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
-)
-class RequestTestCase(unittest.TestCase):
-
-    def test_prepare_request(self):
-        task = Mock()
-        message_id = 13
-        method_name = "TestMe"
-        xml = b"<hello>World</hello>"
-        result = prepare_request_data(task, xml, message_id, method_name)
-        data = base64.b64encode(xml).decode()
-        request = '<soap-env:Envelope xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"><soap-env:Body>'\
-                  '<ns0:SendRequest xmlns:ns0="https://www.unity-bars.com/ws"><ns0:request>' \
-                  f'<ns0:UserLogin>{TREASURY_USER}</ns0:UserLogin>' \
-                  f'<ns0:UserPassword>{TREASURY_PASSWORD}</ns0:UserPassword>' \
-                  f'<ns0:MessageId>{message_id}</ns0:MessageId><ns0:MethodName>{method_name}</ns0:MethodName>' \
-                  f'<ns0:Data>{data}</ns0:Data><ns0:DataSign></ns0:DataSign></ns0:request></ns0:SendRequest>'\
-                  '</soap-env:Body></soap-env:Envelope>'
-        self.assertEqual(result, request.encode())
-
-    def test_parse_response_xml(self):
-        with open("treasury/tests/fixtures/send_request_response.xml", "rb") as f:
-            response = f.read()
-        result = parse_request_response(response)
-        self.assertEqual(result, (0, None))
-
-    def test_parse_response_error_code(self):
-        response = b"<xml><Body><Response>" \
-                   b"<ResultCode>101</ResultCode><ResultMessage>Non-unique</ResultMessage>" \
-                   b"</Response></Body></xml>"
-        result = parse_request_response(response)
-        self.assertEqual(result, (101, "Non-unique"))
-
-    def test_parse_response_non_int_code(self):
-        response = b"<xml><Body><Response>" \
-                   b"<ResultCode>Beep</ResultCode><ResultMessage/>" \
-                   b"</Response></Body></xml>"
-        result = parse_request_response(response)
-        self.assertEqual(result, ("Beep", None))
-
-    def test_send_request(self):
-        task = Mock()
-        xml = b"<tag>Hi</tag>"
-        message_id = 123
-        method_name = "GetRef"
-        with open("treasury/tests/fixtures/send_request_response.xml", "rb") as f:
-            session_mock = Mock(post=Mock(return_value=Mock(status_code=200, content=f.read())))
-
-        with patch("treasury.api_requests.prepare_request_data") as prepare_data_mock:
-            prepare_data_mock.return_value = "<request></request>"
-            with patch("treasury.api_requests.Session", lambda: session_mock):
-                result = send_request(task, xml, message_id, method_name=method_name)
-
-        prepare_data_mock.assert_called_once_with(
-            task, xml, message_id, method_name
+        response = self.client.post(
+            '/treasury',
+            data=xml,
+            headers={"Content-Type": "application/xml"}
         )
-        session_mock.post.assert_called_once_with(
-            TREASURY_WSDL_URL,
-            data='<request></request>',
-            headers={'content-type': 'text/xml'}
-        )
-        self.assertEqual(result, (0, None))
-
-    def test_send_request_exception(self):
-        task = Mock(retry=RetryExc)
-        session_mock = Mock(post=Mock(side_effect=SSLError("Unsafe bla bla")))
-        with patch("treasury.api_requests.Session", lambda: session_mock):
-            with self.assertRaises(RetryExc):
-                send_request(task, b"", 1, method_name="GetRef")
-
-    def test_send_request_error(self):
-        task = Mock(retry=RetryExc)
-        task.request.retries = 0
-
-        session_mock = Mock(post=Mock(return_value=Mock(status_code=500, content=b"Internal error")))
-        with patch("treasury.api_requests.Session", lambda: session_mock):
-            with self.assertRaises(RetryExc):
-                send_request(task, b"", 1, method_name="GetRef")
-
-    def test_send_request_unsuccessful_code(self):
-        task = Mock(retry=RetryExc)
-        task.request.retries = 0
-
-        session_mock = Mock(post=Mock(return_value=Mock(status_code=200, content=b"<spam></spam>")))
-        with patch("treasury.api_requests.TREASURY_SKIP_REQUEST_VERIFY", True):
-            with patch("treasury.api_requests.Session", lambda: session_mock):
-                with patch("treasury.api_requests.parse_request_response",
-                           lambda _: (100, "Duplicate msg_id")):   # this will cause retry, should it?
-                    with self.assertRaises(RetryExc):
-                        send_request(task, b"", 1, method_name="GetRef")
-        self.assertIs(session_mock.verify, False, "TREASURY_SKIP_REQUEST_VERIFY is True")
-
-
-@patch(
-    "treasury.api_requests.Client",
-    lambda _: Client("file://./treasury/tests/fixtures/wdsl.xml")
-)
-class ResponseTestCase(unittest.TestCase):
-
-    def test_prepare_request(self):
-        task = Mock()
-        message_id = 131313
-        result = prepare_get_response_data(task, message_id)
+        # self.assertEqual(response.status_code, 200)
+        print("AAAAAA")
+        print(response.data)
         self.assertEqual(
-            result,
-            '<soap-env:Envelope xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"><soap-env:Body>'
-            '<ns0:GetResponse xmlns:ns0="https://www.unity-bars.com/ws">'
-            f'<ns0:request><ns0:UserLogin>{TREASURY_USER}</ns0:UserLogin>'
-            f'<ns0:UserPassword>{TREASURY_PASSWORD}</ns0:UserPassword>'
-            f'<ns0:MessageId>{message_id}</ns0:MessageId>'
-            '</ns0:request></ns0:GetResponse></soap-env:Body></soap-env:Envelope>'.encode()
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>0</ResultCode>'
+            b'<ResultMessage>Sent to processing</ResultMessage>'
+            b'</Response></Body></xml>'
         )
-
-    def test_parse_response_content_empty(self):
-        with open("treasury/tests/fixtures/get_response_empty.xml", "rb") as f:
-            response = f.read()
-        result = parse_response_content(response)
-        self.assertEqual(result, None)
-
-    def test_parse_response_content(self):
-        with open("treasury/tests/fixtures/get_response_org_list.xml", "rb") as f:
-            response = f.read()
-        result = parse_response_content(response)
-
-        self.assertTrue(
-            result.startswith(
-                b'<?xml version="1.0" encoding="windows-1251"?>'
-                b'<root ref="sngl_reg_orgs" rec_count="71030" date=""> <record'
-            )
-        )
-
-        # and test parse_organisations
-        records = list(parse_organisations(result))
-        self.assertEqual(len(records), 2374)
-        self.assertEqual(
-            records[0],
-            {
-                'status_id': '2', 'unit_name': '-', 'code_area': '26', 'budget_type': '1',
-                'budget_name': 'Державний бюджет', 'edrpou_code': '5417986', 'parent_edrpou': '21195',
-                'parent_name': 'Центральне правління Українського Товариства сліпих', 'kvk_code': '250',
-                'long_name': 'Підприємство об"єднання громадян '
-                             '"Київське учбово - виробниче підприємство №4 Українського товариства сліпих"',
-                'short_name': 'ПОГ "Київське УВП №4 УТОС"', 'zip_code': '2160', 'address': 'м.Київ, вул. Фанерна, 4',
-                'phone_code': '044', 'dku_code': '2604', 'dku_name': 'УДКСУ у Дніпровському районі', 'dpi_code': '53',
-                'dpi_name': 'ДПI У ДНIПРОВСЬКОМУ РАЙОНI ГУ ДФС У М.КИЄВI', 'upd_date': '2018-05-23T10:27:24'
+        save_transaction_mock.delay.assert_called_once_with(
+            source='<?xml version="1.0" encoding="windows-1251"?><root method_name="PRTrans">'
+                   '<record><ref>22</ref><doc_sq>11619.6</doc_sq>'
+                   '<doc_datd>2020-03-11T00:00:00+03:00</doc_datd>'
+                   '<doc_nam_a></doc_nam_a>'
+                   '<doc_iban_a>UA678201720355110002000080850</doc_iban_a>'
+                   '<doc_nam_b></doc_nam_b>'
+                   '<doc_iban_b>UA098201720355179002000014715</doc_iban_b>'
+                   '<msrprd_date>2020-03-11T00:00:00+03:00</msrprd_date>'
+                   '<id_contract>11C2E7D03AF649668BF9FFB1D0EF767D</id_contract>'
+                   '<doc_status>0</doc_status></record></root>',
+            transaction={
+                'contract_id': '11c2e7d03af649668bf9ffb1d0ef767d',
+                'transaction_id': '22',
+                'data': {
+                    'date': '2020-03-11T00:00:00+03:00',
+                    'value': {'amount': '11619.6'},
+                    'payer': {'id': 'UA678201720355110002000080850', 'name': 'Тест'},
+                    'payee': {'id': 'UA098201720355179002000014715',
+                              'name': 'йцукенгшщзхїфівапролджєячсмитьбю'},
+                    'status': '0'
+                }
             }
         )
 
-    def test_get_request_response(self):
-        message_id = "947b248c181049868602f0f50285f464"
-        with open("treasury/tests/fixtures/get_response_org_list.xml", "rb") as f:
-            raw_response = f.read()
-            session_mock = Mock(post=Mock(return_value=Mock(status_code=200, content=raw_response)))
-        task = Mock()
+    @patch("treasury.api.methods.save_transaction")
+    def test_fixture_request(self, save_transaction_mock):
+        with open("treasury/tests/fixtures/PrTrans_id_181.xml", "rb") as f:
+            xml = f.read()
 
-        with patch("treasury.api_requests.parse_response_content", Mock(return_value=3)) as parse_res_mock:
-            with patch("treasury.api_requests.prepare_get_response_data") as prepare_data_mock:
-                prepare_data_mock.return_value = "<req_res></req_res>"
-                with patch("treasury.api_requests.Session", lambda: session_mock):
-                    result = get_request_response(task, message_id)
-
-        prepare_data_mock.assert_called_once_with(task, message_id)
-        session_mock.post.assert_called_once_with(
-            TREASURY_WSDL_URL,
-            data=prepare_data_mock.return_value,
-            headers={'content-type': 'text/xml'}
+        response = self.client.post(
+            '/treasury',
+            data=xml,
+            headers={"Content-Type": "application/xml"}
         )
-        parse_res_mock.assert_called_once_with(raw_response)
-        self.assertEqual(result, 3)
 
-    def test_get_response_exception(self):
-        task = Mock(retry=RetryExc)
-        session_mock = Mock(post=Mock(side_effect=SSLError("Unsafe bla bla")))
-        with patch("treasury.api_requests.Session", lambda: session_mock):
-            with self.assertRaises(RetryExc):
-                get_request_response(task, 1)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>0</ResultCode>'
+            b'<ResultMessage>Sent to processing</ResultMessage>'
+            b'</Response></Body></xml>'
+        )
+        save_transaction_mock.delay.assert_called_once_with(
+            source='<?xml version="1.0" encoding="windows-1251"?><root method_name="PRTrans"><record><ref>2</ref><doc_sq>11619.6</doc_sq><doc_datd>2020-03-11T00:00:00+02:00</doc_datd><doc_nam_a>Test</doc_nam_a><doc_iban_a>UA678201720355110002000080850</doc_iban_a><doc_nam_b>Test</doc_nam_b><doc_iban_b>UA098201720355179002000014715</doc_iban_b><msrprd_date>2020-03-11T00:00:00+02:00</msrprd_date><id_contract>11C2E7D03AF649668BF9FFB1D0EF767D</id_contract><doc_status>0</doc_status></record><record><ref>2</ref><doc_sq>11619.6</doc_sq><doc_datd>2020-03-11T00:00:00+02:00</doc_datd><doc_nam_a>Test</doc_nam_a><doc_iban_a>UA678201720355110002000080850</doc_iban_a><doc_nam_b>Test</doc_nam_b><doc_iban_b>UA098201720355179002000014715</doc_iban_b><msrprd_date>2020-03-11T00:00:00+02:00</msrprd_date><id_contract>11C2E7D03AF649668BF9FFB1D0EF767D</id_contract><doc_status>-1</doc_status></record></root>',
+            transaction=dict(
+                contract_id='11c2e7d03af649668bf9ffb1d0ef767d',
+                data={
+                    'date': '2020-03-11T00:00:00+02:00',
+                    'value': {'amount': '11619.6'},
+                    'payer': {'id': 'UA678201720355110002000080850', 'name': 'Test'},
+                    'payee': {'id': 'UA098201720355179002000014715', 'name': 'Test'},
+                    'status': '0'
+                },
+                transaction_id='2'
+            )
+        )
 
-    def test_get_response_error(self):
-        task = Mock(retry=RetryExc)
-        task.request.retries = 0
+    @staticmethod
+    def prepare_request(xml, message_id=1, method_name="PRTrans",
+                        login="prozorrouser", password="111111",
+                        should_compress=True, should_encode=True):
+        client = Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
+        factory = client.type_factory("ns0")
+        if should_compress:
+            xml = compress(xml)
+        if should_encode:
+            xml = base64.b64encode(xml)
+        message = factory.RequestMessage(
+            UserLogin=login,
+            UserPassword=password,
+            MessageId=message_id,
+            MethodName=method_name,
+            Data=xml,
+            DataSign=b"",
+        )
+        message_node = client.create_message(client.service, 'SendRequest', message)
+        return etree.tostring(message_node)
 
-        session_mock = Mock(post=Mock(return_value=Mock(status_code=500, content=b"Internal error")))
-        self.assertIsNot(session_mock.verify, False, "TREASURY_SKIP_REQUEST_VERIFY is True")
-        with patch("treasury.api_requests.TREASURY_SKIP_REQUEST_VERIFY", True):
-            with patch("treasury.api_requests.Session", lambda: session_mock):
-                with self.assertRaises(RetryExc):
-                    get_request_response(task, 1)
-        self.assertIs(session_mock.verify, False, "TREASURY_SKIP_REQUEST_VERIFY is True")
+    @patch("treasury.api.methods.save_transaction")
+    def test_required_fields(self, save_transaction_mock):
+        xml = b"""<?xml version="1.0" encoding="windows-1251"?>
+<root method_name="PRTrans">
+  <record>
+    <ref>1</ref>
+    <doc_sq>18.44</doc_sq>
+    <doc_datd>2020-03-11T00:00:00+02:00</doc_datd>
+    <doc_nam_a>Test</doc_nam_a>
+    <doc_iban_a>UA678201720355110002000080850</doc_iban_a>
+    <doc_nam_b>Test</doc_nam_b>
+    <doc_iban_b>UA098201720355179002000014715</doc_iban_b>
+    <msrprd_date>2020-03-11T00:00:00+02:00</msrprd_date>
+    <id_contract>11C2E7D03AF649668BF9FFB1D0EF767D</id_contract>
+  </record>
+</root>"""
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(xml),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b"<xml><Body><Response>"
+            b"<ResultCode>30</ResultCode>"
+            b"<ResultMessage>'doc_status' is required</ResultMessage>"
+            b"</Response></Body></xml>"
+        )
+        self.assertEqual(response.status_code, 400)
+        save_transaction_mock.assert_not_called()
+
+    @patch("treasury.api.methods.save_transaction")
+    def test_without_compressing(self, save_transaction_mock):
+        xml = b"""<?xml version="1.0" encoding="windows-1251"?>
+    <root method_name="PRTrans">
+      <record>
+        <ref>1</ref>
+        <doc_sq>18.44</doc_sq>
+        <doc_datd>2020-03-11T00:00:00+02:00</doc_datd>
+        <doc_nam_a>Test</doc_nam_a>
+        <doc_iban_a>UA678201720355110002000080850</doc_iban_a>
+        <doc_nam_b>Test</doc_nam_b>
+        <doc_iban_b>UA098201720355179002000014715</doc_iban_b>
+        <msrprd_date>2020-03-11T00:00:00+02:00</msrprd_date>
+        <id_contract>11C2E7D03AF649668BF9FFB1D0EF767D</id_contract>
+        <doc_status>-1</doc_status>
+      </record>
+    </root>"""
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(xml, should_compress=False),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>0</ResultCode>'
+            b'<ResultMessage>Sent to processing</ResultMessage></Response></Body></xml>'
+        )
+        self.assertEqual(response.status_code, 200)
+        save_transaction_mock.delay.assert_called_once()
+
+    @patch("treasury.api.methods.save_transaction")
+    def test_invalid_xml(self, save_transaction_mock):
+        xml = b"<test>Hello, xml!<test>"
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(xml),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b"<xml><Body><Response>"
+            b"<ResultCode>80</ResultCode>"
+            b"<ResultMessage>Invalid request xml: EndTag: '&lt;/' not found, line 1,"
+            b" column 24 (&lt;string&gt;, line 1)</ResultMessage>"
+            b"</Response></Body></xml>"
+        )
+        self.assertEqual(response.status_code, 400)
+        save_transaction_mock.delay.assert_not_called()
+
+    @patch("treasury.api.methods.save_transaction")
+    def test_invalid_bas64(self, save_transaction_mock):
+        xml = b"abc"
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(xml, should_encode=False, should_compress=False),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>80</ResultCode>'
+            b'<ResultMessage>Data base64 error: Incorrect padding</ResultMessage>'
+            b'</Response></Body></xml>'
+        )
+        self.assertEqual(response.status_code, 400)
+        save_transaction_mock.delay.assert_not_called()
+
+    @patch("treasury.api.methods.save_transaction")
+    def test_invalid_password(self, save_transaction_mock):
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(b"", password="eee"),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>10</ResultCode>'
+            b'<ResultMessage>Invalid login or password</ResultMessage></Response>'
+            b'</Body></xml>'
+        )
+        self.assertEqual(response.status_code, 403)
+        save_transaction_mock.assert_not_called()
+
+    @patch("treasury.api.methods.save_transaction")
+    def test_invalid_method(self, save_transaction_mock):
+        response = self.client.post(
+            '/treasury',
+            data=self.prepare_request(b"", method_name="eee"),
+            headers={"Content-Type": "application/xml"}
+        )
+        self.assertEqual(
+            response.data,
+            b'<xml><Body><Response>'
+            b'<ResultCode>40</ResultCode>'
+            b'<ResultMessage>Invalid method: eee</ResultMessage>'
+            b'</Response></Body></xml>'
+        )
+        self.assertEqual(response.status_code, 400)
+        save_transaction_mock.assert_not_called()

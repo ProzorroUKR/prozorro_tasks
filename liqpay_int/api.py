@@ -1,3 +1,5 @@
+import sys
+
 from flask import Blueprint
 from flask_restx import Api
 
@@ -11,7 +13,9 @@ API_VERSION_MAJOR = 1
 API_VERSION_MINOR = 0
 API_PREFIX = "/api/v{}".format(API_VERSION_MAJOR)
 
-init_indexes()
+
+if "test" not in sys.argv[0]:  # pragma: no cover
+    init_indexes()
 
 bp = Blueprint('payments_resources', __name__)
 api = Api(

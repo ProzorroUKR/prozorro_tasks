@@ -6,12 +6,14 @@ from treasury.templates import render_contract_xml, render_change_xml, render_ca
     prepare_context, prepare_contract_context
 from treasury.api_requests import send_request, get_request_response, parse_organisations
 from environment_settings import TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES, \
-    TREASURY_INT_START_DATE
+    TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN
 from celery.utils.log import get_task_logger
-from tasks_utils.requests import get_public_api_data
+from tasks_utils.requests import get_public_api_data, get_request_retry_countdown, ds_upload, get_json_or_retry
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
 from tasks_utils.datetime import get_now
 from datetime import timedelta
 from uuid import uuid4
+import requests
 
 
 logger = get_task_logger(__name__)
@@ -101,9 +103,6 @@ def send_contract_xml(self, contract_id):
     # building request
     document = render_contract_xml(context)
 
-    # with open(f"contract-{contract_id}.xml", "wb") as f:  # TODO remove
-    #     f.write(document)
-
     # sending changes
     message_id = uuid4().hex
     send_request(self, document, message_id=message_id, method_name="PrContract")
@@ -175,3 +174,83 @@ def receive_org_catalog(self, message_id):
     )
     logger.info(f"Updated org catalog: {result}",
                 extra={"MESSAGE_ID": "TREASURY_ORG_CATALOG_UPDATE"})
+
+
+@app.task(bind=True, max_retries=1000)
+def save_transaction(self, source, transaction):
+    document = ds_upload(
+        self,
+        file_name=f"Transaction_{transaction['transaction_id']}_{transaction['data']['status']}.xml",
+        file_content=source
+    )
+    document["documentType"] = "dataSource"
+    transaction["data"]["documents"] = [document]
+    put_transaction.delay(**transaction)
+
+
+@app.task(bind=True, max_retries=1000)
+def put_transaction(self, contract_id, transaction_id, data):
+    url = f"{API_HOST}/api/{API_VERSION}/contract/{contract_id}/transactions/{transaction_id}"
+    session = requests.Session()
+    log_context = {
+        "CONTRACT_ID": contract_id,
+        "TRANSACTION_ID": transaction_id,
+    }
+    try:
+        get_response = session.head(
+            url,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+            }
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.warning(
+            "Request exception",
+            extra={
+                "MESSAGE_ID": "TREASURY_TRANS_EXCEPTION",
+                "EXC": exc,
+                **log_context
+            }
+        )
+        raise self.retry(exc=exc)
+    else:
+        log_context["HEAD_RESPONSE_STATUS"] = get_response.status_code
+        if get_response.status_code == 200:  # update
+            request_method = session.patch
+            json_resp = get_json_or_retry(self, get_response)
+            docs_len = len(json_resp.get("data", {}).get("documents", ""))
+            data["documents"] = [{} for _ in range(docs_len)] + data["documents"]
+        else:  # create
+            request_method = session.put
+
+        try:
+            response = request_method(
+                url,
+                json={'data': data},
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'Authorization': 'Bearer {}'.format(API_TOKEN)},
+            )
+        except RETRY_REQUESTS_EXCEPTIONS as exc:
+            logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_TRANS_EXCEPTION", **log_context})
+            raise self.retry(exc=exc)
+        else:
+            log_context["RESPONSE_STATUS"] = response.status_code
+            if response.status_code == 422:
+                logger.error(
+                    "Incorrect data",
+                    extra={"MESSAGE_ID": "TREASURY_TRANS_ERROR", **log_context}
+                )
+            elif response.status_code not in (201, 200):
+                logger.error(
+                    "Unexpected status",
+                    extra={
+                        "MESSAGE_ID": "TREASURY_TRANS_UNSUCCESSFUL_STATUS",
+                        "RESPONSE_TEXT": response.text, **log_context
+                    })
+                raise self.retry(countdown=get_request_retry_countdown(response))
+            else:
+                logger.info(
+                    "Transaction successfully saved",
+                    extra={"MESSAGE_ID": "TREASURY_TRANS_SUCCESSFUL", **log_context}
+                )

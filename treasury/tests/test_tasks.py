@@ -1,5 +1,7 @@
-from treasury.tasks import check_contract, send_contract_xml, send_change_xml, request_org_catalog, receive_org_catalog
+from treasury.tasks import check_contract, send_contract_xml, send_change_xml, request_org_catalog, receive_org_catalog, save_transaction, put_transaction
+from environment_settings import API_HOST, API_VERSION, API_TOKEN
 from celery.exceptions import Retry
+from requests.exceptions import ConnectionError
 from unittest.mock import patch, Mock, call
 from datetime import datetime
 import unittest
@@ -487,3 +489,202 @@ class CheckTestCase(unittest.TestCase):
         prepare_documents_mock.assert_not_called()
         render_xml_mock.assert_not_called()
         send_mock.assert_not_called()
+
+
+class TransactionsCheckTestCase(unittest.TestCase):
+
+    @patch("treasury.tasks.ds_upload")
+    @patch("treasury.tasks.put_transaction")
+    def test_save_transaction(self, put_transaction_mock, ds_upload_mock):
+        ds_upload_mock.return_value = {
+            "url": "http://whatever",
+        }
+        source = b"abc"
+        transaction = dict(
+            transaction_id="1234",
+            data=dict(
+                status=-1,
+                something="test 1 2",
+            ))
+
+        save_transaction(source, transaction)
+
+        ds_upload_mock.assert_called_once_with(
+            save_transaction,
+            file_content=b'abc',
+            file_name='Transaction_1234_-1.xml'
+        )
+        put_transaction_mock.delay.assert_called_once_with(
+            data={
+                'status': -1,
+                'something': "test 1 2",
+                'documents': [
+                    {
+                        'url': ds_upload_mock.return_value["url"],
+                        'documentType': 'dataSource'
+                    }
+                ]
+            },
+            transaction_id='1234'
+        )
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction(self, session_mock):
+        session_mock.return_value.head.return_value = Mock(
+            status_code=404,
+        )
+        session_mock.return_value.put.return_value = Mock(
+            status_code=201,
+        )
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {
+            "a": "b",
+            "documents": [
+                {"url": "http://example"}
+            ]
+        }
+
+        # run
+        put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once_with(
+            f'{API_HOST}/api/{API_VERSION}/contract/{contract_id}/transactions/{transaction_id}',
+            headers={'Authorization': f'Bearer {API_TOKEN}'},
+            timeout=(5.0, 30.0)
+        )
+        session_mock.return_value.put.assert_called_once_with(
+            f'{API_HOST}/api/{API_VERSION}/contract/{contract_id}/transactions/{transaction_id}',
+            json={'data': {
+                'a': 'b',
+                'documents': [{'url': 'http://example'}]
+            }},
+            headers={'Authorization': f'Bearer {API_TOKEN}'},
+            timeout=(5.0, 30.0)
+        )
+        session_mock.return_value.patch.assert_not_called()
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction_patch(self, session_mock):
+        session_mock.return_value.head.return_value = Mock(
+            status_code=200,
+            json=lambda: {
+                "data": {
+                    "documents": [
+                        {}, {}
+                    ]
+                }
+            }
+        )
+        session_mock.return_value.patch.return_value = Mock(
+            status_code=200,
+        )
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {
+            "a": "b",
+            "documents": [
+                {"url": "http://example"}
+            ]
+        }
+
+        # run
+        put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once()
+        session_mock.return_value.patch.assert_called_once_with(
+            f'{API_HOST}/api/{API_VERSION}/contract/{contract_id}/transactions/{transaction_id}',
+            json={
+                'data': {
+                    'a': 'b',
+                    'documents': [{}, {}, {'url': 'http://example'}]
+                }
+            },
+            headers={'Authorization': f'Bearer {API_TOKEN}'},
+            timeout=(5.0, 30.0)
+        )
+        session_mock.return_value.put.assert_not_called()
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction_head_exc(self, session_mock):
+        session_mock.return_value.head.side_effect = ConnectionError()
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {
+            "a": "b",
+            "documents": [
+                {"url": "http://example"}
+            ]
+        }
+
+        # run
+        with patch("treasury.tasks.put_transaction.retry", Retry):
+            with self.assertRaises(Retry):
+                put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once()
+        session_mock.return_value.patch.assert_not_called()
+        session_mock.return_value.put.assert_not_called()
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction_put_exc(self, session_mock):
+        session_mock.return_value.head.return_value = Mock(status_code=404)
+        session_mock.return_value.put.side_effect = ConnectionError()
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {}
+
+        class RetryExc(Exception):
+            def __init__(self, **_):
+                pass
+
+        # run
+        with patch("treasury.tasks.put_transaction.retry", RetryExc):
+            with self.assertRaises(RetryExc):
+                put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once()
+        session_mock.return_value.patch.assert_not_called()
+        session_mock.return_value.put.assert_called_once()
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction_retry(self, session_mock):
+        session_mock.return_value.head.return_value = Mock(status_code=404)
+        session_mock.return_value.put.return_value = Mock(status_code=500)
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {}
+
+        class RetryExc(Exception):
+            def __init__(self, **_):
+                pass
+
+        # run
+        with patch("treasury.tasks.put_transaction.retry", RetryExc):
+            with self.assertRaises(RetryExc):
+                put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once()
+        session_mock.return_value.patch.assert_not_called()
+        session_mock.return_value.put.assert_called_once()
+
+    @patch("treasury.tasks.requests.Session")
+    def test_put_transaction_error_code(self, session_mock):
+        session_mock.return_value.head.return_value = Mock(status_code=404)
+        session_mock.return_value.put.return_value = Mock(status_code=422)
+        contract_id = "12345"
+        transaction_id = "567"
+        data = {}
+
+        # run
+        put_transaction(contract_id, transaction_id, data)
+
+        # checks
+        session_mock.return_value.head.assert_called_once()
+        session_mock.return_value.patch.assert_not_called()
+        session_mock.return_value.put.assert_called_once()
