@@ -1,45 +1,23 @@
 from celery.exceptions import TaskError
-from flask_restx import Namespace, Resource
 from requests import RequestException
 
 from app.auth import login_group_required
-from environment_settings import LIQPAY_SANDBOX_BY_DEFAULT_ENABLED
-from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST
-from liqpay_int.broker.models import (
-    model_checkout,
-    model_receipt,
-    model_request,
-)
-from liqpay_int.broker.parsers import parser_query
-from liqpay_int.broker.responses import model_response_checkout
+from payments.tasks import process_payment
 from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError, PaymentInvalidError, ProzorroApiError
+from liqpay_int.resources import Resource
 from liqpay_int.responses import model_response_success, model_response_error, model_response_failure
 from liqpay_int.utils import liqpay_request, generate_liqpay_receipt_params, generate_liqpay_checkout_params
-from payments.tasks import process_payment
-
-authorizations = {"basicAuth": {"type": "basic"}}
-
-api = Namespace(
-    "broker",
-    description="Brokers related operations.",
-    path="/",
-    authorizations=authorizations
-)
-
-api.models[model_checkout.name] = model_checkout
-api.models[model_receipt.name] = model_receipt
-api.models[model_request.name] = model_request
-
-api.models[model_response_success.name] = model_response_success
-api.models[model_response_error.name] = model_response_error
-api.models[model_response_failure.name] = model_response_failure
-api.models[model_response_checkout.name] = model_response_checkout
+from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST
+from liqpay_int.broker.namespaces import api
+from liqpay_int.broker.parsers import parser_query
+from liqpay_int.broker.models import model_checkout, model_receipt
+from liqpay_int.broker.responses import model_response_checkout
 
 
 @api.route('/checkout')
 class CheckoutResource(Resource):
 
-    method_decorators = [login_group_required("brokers")]
+    dispatch_decorators = [login_group_required("brokers")]
 
     @api.doc(description=DESC_CHECKOUT_POST, security="basicAuth")
     @api.marshal_with(model_response_checkout, code=200)
@@ -97,7 +75,7 @@ class CheckoutResource(Resource):
 @api.route('/receipt')
 class ReceiptResource(Resource):
 
-    method_decorators = [login_group_required("brokers")]
+    dispatch_decorators = [login_group_required("brokers")]
 
     @api.doc(description=DESC_TICKET_POST, security="basicAuth")
     @api.marshal_with(model_response_success, code=200)

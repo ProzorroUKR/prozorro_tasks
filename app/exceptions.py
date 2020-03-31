@@ -15,7 +15,7 @@ class UnauthorizedError(HTTPException):
     def get_headers(self, environ=None):
         headers = super(UnauthorizedError, self).get_headers(environ=environ)
         if self.scheme and self.realm:
-            headers.append(('WWW-Authenticate', self.authenticate_header()))
+            headers.append(("WWW-Authenticate", self.authenticate_header()))
         return headers
 
     def authenticate_header(self):
