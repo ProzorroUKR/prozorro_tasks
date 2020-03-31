@@ -173,7 +173,8 @@ def process_complaint_payment(self, complaint_params, payment_data, payment_para
                 logger.critical("No {} with id {} found in tender {}".format(
                     item_type, item_id,  tender_id
                 ), extra={"MESSAGE_ID": "PAYMENTS_ITEM_NOT_FOUND"})
-                return
+                countdown = get_exponential_request_retry_countdown(self, response)
+                raise self.retry(countdown=countdown)
             complaint_data =  get_item_data(item_data, "complaints", complaint_id)
         else:
             complaint_data = get_item_data(tender_data, "complaints", complaint_id)
@@ -182,7 +183,8 @@ def process_complaint_payment(self, complaint_params, payment_data, payment_para
             logger.critical("No complaints with id found {} in tender {}".format(
                 complaint_id, tender_id
             ), extra={"MESSAGE_ID": "PAYMENTS_COMPLAINT_NOT_FOUND"})
-            return
+            countdown = get_exponential_request_retry_countdown(self, response)
+            raise self.retry(countdown=countdown)
 
         if not check_complaint_status(complaint_data):
             logger.critical("Complaint status is not valid: {}.".format(
