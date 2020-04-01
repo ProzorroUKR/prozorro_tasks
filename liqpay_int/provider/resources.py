@@ -4,6 +4,7 @@ from celery.exceptions import TaskError
 from requests.exceptions import RequestException
 
 from app.auth import ip_group_required
+from app.logging import app_logging_extra
 from liqpay_int.exceptions import ProzorroApiError
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
@@ -24,16 +25,16 @@ class PushResource(Resource):
     @api.expect(model_payment, validate=True)
     def post(self):
         description = api.payload.get("description")
-        logger.info("Push requested.", extra={
+        logger.info("Push requested.", extra=app_logging_extra({
             "PAYMENT_DESCRIPTION": description
-        })
+        }))
         try:
             process_payment.apply_async(kwargs=dict(
                 payment_data=api.payload
             ))
         except (TaskError, RequestException):
-            logger.error("Payment processing task failed.", extra={
+            logger.error("Payment processing task failed.", extra=app_logging_extra({
                 "PAYMENT_DESCRIPTION": description
-            })
+            }))
             raise ProzorroApiError()
         return {"status": "success"}
