@@ -136,6 +136,8 @@ services:
       - LIQPAY_PRIVATE_KEY=
       - LIQPAY_SANDBOX_PUBLIC_KEY=
       - LIQPAY_SANDBOX_PRIVATE_KEY=
+      - LIQPAY_SANDBOX_BY_DEFAULT_ENABLED=1
+      - LIQPAY_TAX_COEF=1.0275
     command: python runserver.py
     volumes:
         - .:/app

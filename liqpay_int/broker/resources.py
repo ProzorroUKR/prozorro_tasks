@@ -5,6 +5,7 @@ from requests import RequestException
 
 from app.auth import login_group_required
 from app.logging import app_logging_extra
+from environment_settings import LIQPAY_TAX_COEF
 from payments.tasks import process_payment
 from liqpay_int.exceptions import LiqpayResponseError, LiqpayResponseFailureError, PaymentInvalidError, ProzorroApiError
 from liqpay_int.resources import Resource
@@ -62,7 +63,7 @@ class CheckoutResource(Resource):
             )
             args.update({
                 "order_id": order_id,
-                "amount": value_data.get("amount"),
+                "amount": float(value_data.get("amount")) * LIQPAY_TAX_COEF,
                 "currency": value_data.get("currency")
             })
             params = generate_liqpay_checkout_params(args)
