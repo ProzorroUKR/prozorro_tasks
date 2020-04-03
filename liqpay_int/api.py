@@ -1,7 +1,6 @@
 from flask import Blueprint
 from flask_restx import Api
 
-from liqpay_int.representations import output_json
 from liqpay_int.provider.namespaces import api as provider_ns
 from liqpay_int.broker.namespaces import api as broker_ns
 
@@ -19,9 +18,7 @@ api = Api(
     description='Liqpay integration api.'
 )
 
-api.representations = {
-    "application/json": output_json,
-}
-
 api.add_namespace(broker_ns, path=None)
 api.add_namespace(provider_ns, path=None)
+
+import liqpay_int.representations
