@@ -37,7 +37,7 @@ class CheckoutResource(Resource):
         Receive a payment link.
         """
         description = api.payload.get("description")
-        logger.info("Checkout requested.", extra=app_logging_extra({
+        logger.info("Payment checkout requested.", extra=app_logging_extra({
             "PAYMENT_DESCRIPTION": description
         }))
         try:
@@ -108,7 +108,7 @@ class ReceiptResource(Resource):
         Receive a receipt.
         """
         order_id = api.payload.get("order_id")
-        logger.info("Checkout requested.", extra=app_logging_extra({
+        logger.info("Payment receipt requested.", extra=app_logging_extra({
             "PAYMENT_ORDER_ID": order_id
         }))
         params = generate_liqpay_receipt_params(api.payload)
