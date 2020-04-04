@@ -37,6 +37,11 @@ def check_complaint_status(complaint_data):
     return complaint_data.get("status") in ALLOWED_COMPLAINT_PAYMENT_STATUSES
 
 
+def check_complaint_value(complaint_data):
+    value = complaint_data.get("value", {})
+    return value and "amount" in value and "currency" in value
+
+
 def check_complaint_value_amount(complaint_data, payment_data):
     complaint_value_data = complaint_data.get("value", {})
     if "amount" in payment_data and "amount" in complaint_value_data:
