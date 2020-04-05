@@ -40,7 +40,7 @@ def login_group_required(g):
             res = auth.login_required(f)(*args, **kwargs)
             if hasattr(res, "status_code") and res.status_code == 401:
                 raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
-            if users[auth.username()]["group"] != g:
+            if g not in users[auth.username()]["groups"]:
                 raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
             return f(*args, **kwargs)
         return decorated

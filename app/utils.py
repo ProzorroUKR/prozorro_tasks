@@ -4,11 +4,20 @@ from app.settings import APP_AUIP_HEADER
 
 
 def get_auth_users(config):
-    return {
-        username: dict(password=password, group=group)
-        for group in config.sections()
-        for username, password in config.items(group)
-    }
+    users = {}
+    for group in config.sections():
+        for username, password in config.items(group):
+            groups = get_auth_user_groups(config, username, password)
+            users.update({username: dict(password=password, groups=groups)})
+    return users
+
+
+def get_auth_user_groups(config, username, password):
+    return [
+        group for group in config.sections()
+        for u, p in config.items(group)
+        if u == username and p == password
+    ]
 
 
 def get_auth_ips(config):
