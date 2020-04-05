@@ -10,7 +10,7 @@ from flask import request
 from six import text_type
 
 from app.exceptions import UnauthorizedError, NotAllowedIPError
-from app.utils import get_auth_users, get_auth_ips, get_remote_addr, generate_auth_id
+from app.utils import get_auth_users, get_auth_ips, generate_auth_id
 from environment_settings import APP_AUTH_FILE, APP_AUIP_FILE, APP_AUIP_ENABLED
 
 auth = HTTPBasicAuth()
@@ -63,12 +63,10 @@ def ip_group_required(group):
         def decorated(*args, **kwargs):
 
             if APP_AUIP_ENABLED:
-                remote_addr = get_remote_addr(request)
-
                 for network_id, network_data in IPS.items():
                     network = network_data.get("network")
 
-                    if ip_address(remote_addr) not in ip_network(network):
+                    if ip_address(request.remote_addr) not in ip_network(network):
                         continue
                     if group in network_data.get("groups"):
                         break

@@ -1,12 +1,8 @@
 from ipaddress import ip_network
 
-from flask import request
-
-from environment_settings import APP_AUIP_HEADER
-
-
 DEFAULT_CONFIG_VALUE_SEPARATOR = ","
 DEFAULT_AUTH_ID_SEPARATOR = "_"
+DEFAULT_X_FORWARDED_SEPARATOR = ","
 
 
 def split_config_value(value, separator=DEFAULT_CONFIG_VALUE_SEPARATOR):
@@ -61,9 +57,3 @@ def get_auth_ip_groups(config, network, username):
             if key == username and network in split_config_value(value):
                 groups.append(group)
     return groups
-
-
-def get_remote_addr(req):
-    if APP_AUIP_HEADER:
-        return req.headers.get(APP_AUIP_HEADER, request.remote_addr)
-    return request.remote_addr
