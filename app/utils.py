@@ -1,35 +1,63 @@
 from flask import request
 
-from app.settings import APP_AUIP_HEADER
+from environment_settings import APP_AUIP_HEADER
+
+
+DEFAULT_CONFIG_VALUE_SEPARATOR = ","
+DEFAULT_AUTH_ID_SEPARATOR = "_"
+
+
+def split_config_value(value, separator=DEFAULT_CONFIG_VALUE_SEPARATOR):
+    return [item.strip() for item in value.split(separator)]
+
+
+def generate_auth_id(username, password_hash):
+    return DEFAULT_AUTH_ID_SEPARATOR.join([username, password_hash])
 
 
 def get_auth_users(config):
     users = {}
     for group in config.sections():
-        for username, password in config.items(group):
-            groups = get_auth_user_groups(config, username, password)
-            users.update({username: dict(password=password, groups=groups)})
+        for key, value in config.items(group):
+            user_id = generate_auth_id(key, value)
+            if user_id not in users:
+                groups = get_auth_user_groups(config, key, value)
+                user_data = dict(username=key, password=value, groups=groups)
+                users[user_id] = user_data
     return users
 
 
 def get_auth_user_groups(config, username, password):
-    return [
-        group for group in config.sections()
-        for u, p in config.items(group)
-        if u == username and p == password
-    ]
+    groups = []
+    for group in config.sections():
+        for key, value in config.items(group):
+            if key == username and value == password:
+                groups.append(group)
+    return groups
 
 
 def get_auth_ips(config):
-    return {
-        ip: dict(username=username, group=group)
-        for group in config.sections()
-        for username, ips in config.items(group)
-        for ip in ips.split(",")
-    }
+    ips = {}
+    for group in config.sections():
+        for key, value in config.items(group):
+            for network in split_config_value(value):
+                network_id = generate_auth_id(key, network)
+                groups = get_auth_ip_groups(config, network, key)
+                network_data = dict(username=key, network=network, groups=groups)
+                ips[network_id] = network_data
+    return ips
+
+
+def get_auth_ip_groups(config, network, username):
+    groups = []
+    for group in config.sections():
+        for key, value in config.items(group):
+            if key == username and network in split_config_value(value):
+                groups.append(group)
+    return groups
 
 
 def get_remote_addr(req):
     if APP_AUIP_HEADER:
-        return req.headers.get(APP_AUIP_HEADER)
+        return req.headers.get(APP_AUIP_HEADER, request.remote_addr)
     return request.remote_addr

@@ -1,3 +1,4 @@
+from flask import request
 from werkzeug.exceptions import HTTPException
 
 
@@ -5,6 +6,7 @@ class UnauthorizedError(HTTPException):
     def __init__(self, description=None, response=None, scheme=None, realm=None):
         self.scheme = scheme
         self.realm = realm
+        request.data  # Clear TCP receive buffer of any pending data
         super(UnauthorizedError, self).__init__(description=description, response=response)
 
     code = 401

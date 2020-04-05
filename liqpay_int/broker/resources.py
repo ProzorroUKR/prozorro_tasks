@@ -107,6 +107,7 @@ class CheckoutResource(Resource):
                 "url_checkout": resp_json.get("url_checkout"),
                 "order_id": params.get("order_id")
             }
+        return {}
 
 
 @api.route('/receipt')
