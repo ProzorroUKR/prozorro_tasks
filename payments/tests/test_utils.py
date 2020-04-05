@@ -40,7 +40,7 @@ valid_not_zoned_complaint_str = [
 
 class GetPaymentParamsTestCase(unittest.TestCase):
     """
-    Test utils.get_complaint_params
+    Test utils.get_payment_params
     """
 
     def test_valid_zoned_complaint(self):

@@ -1,3 +1,5 @@
+from ipaddress import ip_network
+
 from flask import request
 
 from environment_settings import APP_AUIP_HEADER
@@ -8,7 +10,7 @@ DEFAULT_AUTH_ID_SEPARATOR = "_"
 
 
 def split_config_value(value, separator=DEFAULT_CONFIG_VALUE_SEPARATOR):
-    return [item.strip() for item in value.split(separator)]
+    return [item.strip() for item in value.split(separator) if item.strip()]
 
 
 def generate_auth_id(username, password_hash):
@@ -41,6 +43,10 @@ def get_auth_ips(config):
     for group in config.sections():
         for key, value in config.items(group):
             for network in split_config_value(value):
+                try:
+                    ip_network(network)
+                except ValueError:
+                    raise
                 network_id = generate_auth_id(key, network)
                 groups = get_auth_ip_groups(config, network, key)
                 network_data = dict(username=key, network=network, groups=groups)
