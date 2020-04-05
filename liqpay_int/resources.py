@@ -1,11 +1,8 @@
-import logging
-
 from flask_restx import resource
-from werkzeug.exceptions import HTTPException
 
-from app.logging import app_logging_extra
+from app.logging import getLogger
 
-logger = logging.getLogger()
+logger = getLogger()
 
 
 class Resource(resource.Resource):
@@ -17,16 +14,3 @@ class Resource(resource.Resource):
         for decorator in self.dispatch_decorators:
             meth = decorator(meth)
         return meth(*args, **kwargs)
-
-    def validate_payload(self, *args, **kwargs):
-        try:
-            super(Resource, self).validate_payload(*args, **kwargs)
-        except HTTPException as e:
-            if hasattr(e, "data"):
-                logger.info("%s %s" % (
-                    e.data.get("message", ""),
-                    str(e.data.get("errors", {}))
-                ), extra=app_logging_extra())
-            elif hasattr(e, "description"):
-                logger.info(e.description, extra=app_logging_extra())
-            raise

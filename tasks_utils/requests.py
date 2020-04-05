@@ -10,15 +10,15 @@ def get_filename_from_response(response):
             return file_name[0]
 
 
-def get_request_retry_countdown(request):
+def get_request_retry_countdown(request=None):
     try:
         countdown = float(request.headers.get('Retry-After'))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):
         countdown = DEFAULT_RETRY_AFTER
     return countdown
 
 
-def get_exponential_request_retry_countdown(task, request):
+def get_exponential_request_retry_countdown(task, request=None):
     countdown = get_request_retry_countdown(request)
     retries = task.request.retries
     if retries:

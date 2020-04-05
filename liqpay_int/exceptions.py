@@ -37,5 +37,33 @@ class ProzorroApiError(HTTPException):
 class PaymentInvalidError(HTTPException):
     code = 400
     description = (
-        "Invalid payment data"
+        "Payment not recognized according to description provided"
+    )
+
+
+class PaymentComplaintNotFoundError(HTTPException):
+    code = 400
+    description = (
+        "Payment complaint not found"
+    )
+
+
+class PaymentComplaintInvalidCodeError(HTTPException):
+    code = 400
+    description = (
+        "Payment complaint invalid code"
+    )
+
+
+class PaymentComplaintInvalidValueError(HTTPException):
+    code = 400
+    description = (
+        "Payment complaint invalid value"
+    )
+
+
+class PaymentComplaintInvalidStatusError(HTTPException):
+    code = 400
+    description = (
+        "Payment complaint invalid status"
     )
