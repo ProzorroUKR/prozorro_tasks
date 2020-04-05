@@ -4,7 +4,6 @@ import flask
 from flask import request
 
 from app.auth import auth
-from app.utils import get_remote_addr
 
 
 class AppLoggerAdapter(logging.LoggerAdapter):
@@ -18,10 +17,13 @@ class AppLoggerAdapter(logging.LoggerAdapter):
             custom_extra["USER"] = auth.username()
             custom_extra["CURRENT_URL"] = request.url
             custom_extra["CURRENT_PATH"] = request.path
-            custom_extra["REMOTE_ADDR"] = get_remote_addr(request)
+            custom_extra["REMOTE_ADDR"] = request.remote_addr
             custom_extra["USER_AGENT"] = request.user_agent
             custom_extra["REQUEST_METHOD"] = request.method
             custom_extra["CLIENT_REQUEST_ID"] = request.headers.get("X-Client-Request-ID", "")
+            custom_extra["HTTP_X_FORWARDED_FOR"] = request.environ['HTTP_X_FORWARDED_FOR']
+            custom_extra["HTTP_X_FORWARDED_PROTO"] = request.environ['HTTP_X_FORWARDED_PROTO']
+            custom_extra["HTTP_X_FORWARDED_HOST"] = request.environ['HTTP_X_FORWARDED_HOST']
 
         extra = kwargs.setdefault("extra", self.extra or {})
         for key in custom_extra: extra.setdefault(key, custom_extra[key])
