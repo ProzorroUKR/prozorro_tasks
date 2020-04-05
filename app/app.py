@@ -25,7 +25,7 @@ logger_root.setLevel(logging.INFO)
 
 app.config.SWAGGER_UI_DOC_EXPANSION = "list"
 
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2)
 
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
