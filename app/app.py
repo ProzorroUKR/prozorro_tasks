@@ -7,6 +7,7 @@ from pythonjsonlogger.jsonlogger import JsonFormatter
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.views import bp as app_views_bp
+from environment_settings import APP_X_FORWARDED_NUMBER
 from payments.views import bp as payments_views_bp
 from liqpay_int.api import bp as liqpay_resources_bp
 
@@ -25,7 +26,7 @@ logger_root.setLevel(logging.INFO)
 
 app.config.SWAGGER_UI_DOC_EXPANSION = "list"
 
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=APP_X_FORWARDED_NUMBER)
 
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
