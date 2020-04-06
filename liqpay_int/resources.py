@@ -21,6 +21,7 @@ class Resource(resource.Resource):
         try:
             super(Resource, self).validate_payload(*args, **kwargs)
         except HTTPException as e:
-            e.data["code"] = CODE_VALIDATION_ERROR
-            logger.info("%s %s" % (e.data.get("message"), e.data.get("errors")))
+            if hasattr(e, "data"):
+                e.data["code"] = CODE_VALIDATION_ERROR
+                logger.info("%s %s" % (e.data.get("message"), e.data.get("errors")))
             raise
