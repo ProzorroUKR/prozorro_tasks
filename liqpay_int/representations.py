@@ -11,8 +11,4 @@ def output_json(data, code, headers=None):
         data["status"] = "failure"
     elif code >= 400:
         data["status"] = "error"
-        message = data.get("message", "")
-        if "errors" in data:
-            message += " %s" % str(data.get("errors", {}))
-        logger.info(message)
     return representations.output_json(data, code, headers=headers)

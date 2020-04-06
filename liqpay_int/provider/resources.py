@@ -7,19 +7,27 @@ from liqpay_int.exceptions import ProzorroApiError
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
 from liqpay_int.resources import Resource
-from liqpay_int.responses import model_response_success
+from liqpay_int.responses import (
+    model_response_success,
+    model_response_detailed_error,
+    model_response_error,
+    model_response_failure,
+)
 from payments.tasks import process_payment_data
 
 
 logger = getLogger()
 
 
-@api.route('/push', doc=False)
+@api.route('/push')
 class PushResource(Resource):
 
     dispatch_decorators = [ip_group_required("payment_providers")]
 
     @api.marshal_with(model_response_success, code=200)
+    @api.response(400, 'Bad Request', model_response_detailed_error)
+    @api.response(401, 'Unauthorized', model_response_error)
+    @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_payment, validate=True)
     def post(self):
         description = api.payload.get("description")

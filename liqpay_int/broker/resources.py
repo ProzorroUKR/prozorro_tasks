@@ -15,13 +15,21 @@ from liqpay_int.exceptions import (
     PaymentComplaintInvalidStatusError,
 )
 from liqpay_int.resources import Resource
-from liqpay_int.responses import model_response_success, model_response_error, model_response_failure
+from liqpay_int.responses import (
+    model_response_success,
+    model_response_error,
+    model_response_failure,
+)
 from liqpay_int.utils import generate_liqpay_receipt_params, generate_liqpay_checkout_params
 from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST
 from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
 from liqpay_int.broker.models import model_checkout, model_receipt
-from liqpay_int.broker.responses import model_response_checkout
+from liqpay_int.broker.responses import (
+    model_response_checkout,
+    model_response_checkout_error,
+    model_response_receipt_error,
+)
 from liqpay_int.tasks import process_liqpay_request
 from payments.utils import check_complaint_code, check_complaint_value, check_complaint_status
 
@@ -35,13 +43,15 @@ class CheckoutResource(Resource):
 
     @api.doc(description=DESC_CHECKOUT_POST, security="basicAuth")
     @api.marshal_with(model_response_checkout, code=200)
-    @api.response(400, 'Bad Request', model_response_error)
+    @api.response(400, 'Bad Request', model_response_checkout_error)
     @api.response(401, 'Unauthorized', model_response_error)
     @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_checkout, validate=True)
     def post(self):
         """
         Receive a payment link.
+
+        :raises ProzorroApiError: In case of something
         """
         description = api.payload.get("description")
 
@@ -89,7 +99,9 @@ class CheckoutResource(Resource):
             raise ProzorroApiError()
 
         sandbox = parser_query.parse_args().get("sandbox")
-        params = generate_liqpay_checkout_params(api.payload, payment_params, complaint_data, sandbox=sandbox)
+        params = generate_liqpay_checkout_params(
+            api.payload, payment_params, complaint_data, sandbox=sandbox
+        )
 
         try:
             resp_json = process_liqpay_request.apply(
@@ -101,13 +113,14 @@ class CheckoutResource(Resource):
 
         if resp_json.get("result") != "ok":
             logger.error("Liqpay api request error.", extra=extra)
-            raise LiqpayResponseError(liqpay_err_description=resp_json.get("err_code"))
-        else:
-            return {
-                "url_checkout": resp_json.get("url_checkout"),
-                "order_id": params.get("order_id")
-            }
-        return {}
+            raise LiqpayResponseError(
+                liqpay_err_description=resp_json.get("err_code")
+            )
+
+        return {
+            "url_checkout": resp_json.get("url_checkout"),
+            "order_id": params.get("order_id")
+        }
 
 
 @api.route('/receipt')
@@ -117,7 +130,7 @@ class ReceiptResource(Resource):
 
     @api.doc(description=DESC_TICKET_POST, security="basicAuth")
     @api.marshal_with(model_response_success, code=200)
-    @api.response(400, 'Bad Request', model_response_error)
+    @api.response(400, 'Bad Request', model_response_receipt_error)
     @api.response(401, 'Unauthorized', model_response_error)
     @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_receipt, validate=True)
