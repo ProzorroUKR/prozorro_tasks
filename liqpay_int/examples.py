@@ -5,3 +5,5 @@ EXAMPLE_RESPONSE_ERROR_MESSAGE = "Error message"
 
 EXAMPLE_RESPONSE_FAILURE_STATUS = "failure"
 EXAMPLE_RESPONSE_FAILURE_MESSAGE = "Something went wrong"
+
+EXAMPLE_RESPONSE_ERROR = "Validation error description"
