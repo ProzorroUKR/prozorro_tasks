@@ -111,6 +111,10 @@ class CheckoutResource(Resource):
             logger.error("Liqpay api request failed.", extra=extra)
             raise LiqpayResponseFailureError()
 
+        if not resp_json:
+            logger.error("Liqpay api request failed.", extra=extra)
+            raise LiqpayResponseFailureError()
+
         if resp_json.get("result") != "ok":
             logger.error("Liqpay api request error.", extra=extra)
             raise LiqpayResponseError(
@@ -151,6 +155,10 @@ class ReceiptResource(Resource):
                 kwargs=dict(params=params, sandbox=sandbox)
             ).wait()
         except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
+            logger.error("Liqpay api request failed.", extra=extra)
+            raise LiqpayResponseFailureError()
+
+        if not resp_json:
             logger.error("Liqpay api request failed.", extra=extra)
             raise LiqpayResponseFailureError()
 
