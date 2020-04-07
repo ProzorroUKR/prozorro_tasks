@@ -1,7 +1,7 @@
 from celery.exceptions import TaskError
 from requests.exceptions import RequestException
 
-from app.auth import ip_group_required
+from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
 from liqpay_int.exceptions import ProzorroApiError
 from liqpay_int.provider.models import model_payment
@@ -13,6 +13,7 @@ from liqpay_int.responses import (
     model_response_error,
     model_response_failure,
 )
+from payments.results_db import save_payment_item
 from payments.tasks import process_payment_data
 
 
@@ -30,6 +31,7 @@ class PushResource(Resource):
     @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_payment, validate=True)
     def post(self):
+        save_payment_item(api.payload, (get_network_data() or {}).get("username"))
         description = api.payload.get("description")
         amount = api.payload.get("amount")
         currency = api.payload.get("currency")

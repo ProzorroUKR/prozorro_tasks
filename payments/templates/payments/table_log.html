@@ -1,0 +1,12 @@
+<table class="table table-borderless table-striped table-payments">
+    {% for message in row.messages %}
+        <tr class="table-{{ message|payment_message_status or 'default' }}">
+            <td>
+                {{ message.message_id }}
+            </td>
+            <td>
+                {{ message.message }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+{{ super() }}
+
+<style type="text/css">
+    .table-payments {
+        font-size: .75rem;
+    }
+    .table-payments td {
+        padding: .4rem .4rem;
+    }
+    .table-payments td {
+        overflow: hidden;
+        word-break: break-all;
+    }
+    .table-payments .cell-name {
+        width: 7rem;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+    <h1>Оплата</h1>
+    {% include 'payments/table_info.html' %}
+    <h2 class="mt-4">Події</h2>
+    {% include 'payments/table_log.html' %}
+{% endblock %}
