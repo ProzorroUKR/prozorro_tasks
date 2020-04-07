@@ -32,18 +32,11 @@ class PushResource(Resource):
     @api.expect(model_payment, validate=True)
     def post(self):
         save_payment_item(api.payload, (get_network_data() or {}).get("username"))
-        description = api.payload.get("description")
-        amount = api.payload.get("amount")
-        currency = api.payload.get("currency")
-        extra = {"PAYMENT_DESCRIPTION": description}
+        extra = {"PAYMENT_DESCRIPTION": api.payload.get("description")}
         logger.info("Payment push received.", extra=extra)
         try:
             process_payment_data.apply_async(kwargs=dict(
-                payment_data=dict(
-                    description=description,
-                    amount=amount,
-                    currency=currency,
-                )
+                payment_data=api.payload
             ))
         except (TaskError, RequestException):
             logger.error("Payment processing task failed.", extra=extra)
