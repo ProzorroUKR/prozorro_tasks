@@ -81,8 +81,8 @@ def payment_primary_message(payment):
     primary_list.extend(PAYMENTS_SUCCESS_MESSAGE_ID_LIST)
     primary_list.extend(PAYMENTS_DANGER_MESSAGE_ID_LIST)
     primary_list.extend(PAYMENTS_WARNING_MESSAGE_ID_LIST)
-    for message in payment.get("messages", []):
-        for primary in primary_list:
+    for primary in primary_list:
+        for message in payment.get("messages", []):
             if message.get("message_id") == primary:
                 return message
 
@@ -95,7 +95,7 @@ def payment_message_status(message):
     if message_id in PAYMENTS_SUCCESS_MESSAGE_ID_LIST:
         return "success"
     elif message_id in PAYMENTS_DANGER_MESSAGE_ID_LIST:
-        return "danger"
-    elif message_id in PAYMENTS_WARNING_MESSAGE_ID_LIST:
         return "warning"
+    elif message_id in PAYMENTS_WARNING_MESSAGE_ID_LIST:
+        return "danger"
     return None
