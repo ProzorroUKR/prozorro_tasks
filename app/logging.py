@@ -30,5 +30,9 @@ class AppLoggerAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
 
+def adaptLogger(logger, adapter):
+    return adapter(logger)
+
+
 def getLogger(name=None):
-    return AppLoggerAdapter(logging.getLogger(name))
+    return adaptLogger(logging.getLogger(name), AppLoggerAdapter)

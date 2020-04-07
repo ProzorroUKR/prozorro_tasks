@@ -1,0 +1,20 @@
+<table class="table table-borderless table-striped table-payments mb-0">
+    {% for payment_key in row.payment %}
+        <tr>
+            <td class="cell-name">
+                {% if payment_key=="description" %}
+                    Призначення:
+                {% elif payment_key=="amount" %}
+                    Сума:
+                {% elif payment_key=="currency" %}
+                    Валюта:
+                {% else %}
+                    {{ payment_key|capitalize }}
+                {% endif %}
+            </td>
+            <td>
+                {{ row.payment[payment_key] }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>

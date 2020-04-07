@@ -3,7 +3,11 @@ from requests import ConnectionError, Timeout
 
 from app.auth import login_group_required
 from app.logging import getLogger
-from payments.tasks import process_payment_data, process_payment_complaint_search, process_payment_complaint_data
+from payments.tasks import (
+    process_payment_data,
+    process_payment_complaint_search,
+    process_payment_complaint_data,
+)
 from liqpay_int.exceptions import (
     LiqpayResponseError,
     LiqpayResponseFailureError,

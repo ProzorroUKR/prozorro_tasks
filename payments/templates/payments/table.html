@@ -1,0 +1,26 @@
+<!-- shows the table of contents -->
+<!-- requires headers and rows to be in the context -->
+<div class="table-responsive">
+    <table class="table table-striped table-payments">
+        <tr class="thead-dark">
+            <th>Оплата</th>
+            <th>Отримано</th>
+            <th>Ініціатор</th>
+            <th>Повт.</th>
+            <th>Інф.</th>
+        </tr>
+        {% for row in rows %}
+            <tr>
+                <td class="p-0">{% include "payments/table_info.html" %}</td>
+                <td>{{ row.createdAt }}</td>
+                <td>{{ row.user or ""}}</td>
+                <td class="bg-info text-white cell-action">
+                    <a href="/payments/{{row._id}}/retry"><span class="oi oi-reload"></span></a>
+                </td>
+                <td class="text-white cell-action bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
+                    <a href="/payments/{{row._id}}"><span class="oi oi-info"></span></a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>

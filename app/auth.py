@@ -27,6 +27,13 @@ USERS = get_auth_users(config)
 IPS = get_auth_ips(ip_config)
 
 
+def get_network_data():
+    for network_id, network_data in IPS.items():
+        network = network_data.get("network")
+        if ip_address(request.remote_addr) in ip_network(network):
+            return network_data
+
+
 @auth.verify_password
 def verify_password(username, password):
     user_id = generate_auth_id(username, auth.hash_password_callback(password))
@@ -63,17 +70,8 @@ def ip_group_required(group):
         def decorated(*args, **kwargs):
 
             if APP_AUIP_ENABLED:
-                for network_id, network_data in IPS.items():
-                    network = network_data.get("network")
-
-                    if ip_address(request.remote_addr) not in ip_network(network):
-                        continue
-                    if group in network_data.get("groups"):
-                        break
-                    else:
-                        raise NotAllowedIPError()
-
-                else:
+                network_data = get_network_data()
+                if not network_data or (network_data and group not in network_data.get("groups")):
                     raise NotAllowedIPError()
 
             return func(*args, **kwargs)

@@ -2,9 +2,30 @@ import requests
 
 from uuid import uuid4
 
+from app.logging import adaptLogger, AppLoggerAdapter
 from celery_worker.celery import app
 from celery.utils.log import get_task_logger
 
+from payments.logging import PaymentResultsLoggerAdapter
+from payments.message_ids import (
+    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
+    PAYMENTS_INVALID_STATUS,
+    PAYMENTS_INVALID_COMPLAINT_VALUE,
+    PAYMENTS_INVALID_PATTERN,
+    PAYMENTS_SEARCH_INVALID_COMPLAINT,
+    PAYMENTS_SEARCH_INVALID_CODE,
+    PAYMENTS_SEARCH_EXCEPTION,
+    PAYMENTS_SEARCH_CODE_ERROR,
+    PAYMENTS_GET_TENDER_EXCEPTION,
+    PAYMENTS_GET_TENDER_CODE_ERROR,
+    PAYMENTS_ITEM_NOT_FOUND,
+    PAYMENTS_COMPLAINT_NOT_FOUND,
+    PAYMENTS_INVALID_AMOUNT,
+    PAYMENTS_INVALID_CURRENCY,
+    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+)
 from payments.utils import (
     get_item_data,
     check_complaint_status,
@@ -27,6 +48,8 @@ from environment_settings import (
 )
 
 logger = get_task_logger(__name__)
+logger = adaptLogger(logger, AppLoggerAdapter)
+logger = adaptLogger(logger, PaymentResultsLoggerAdapter)
 
 RETRY_REQUESTS_EXCEPTIONS = (
     requests.exceptions.Timeout,
@@ -57,7 +80,7 @@ def process_payment_data(self, payment_data):
     if not payment_params:
         logger.warning("No valid pattern found for \"{}\"".format(
             description
-        ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_PATTERN"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_PATTERN})
         return
 
     if self.request.is_eager:
@@ -90,11 +113,11 @@ def process_payment_complaint_search(self, payment_data, payment_params):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(str(exc), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_SEARCH_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
         if self.request.retries >= self.max_retries:
-            logger.exception(exc, extra={
-                "MESSAGE_ID": "PAYMENTS_SEARCH_EXCEPTION",
-                "CDB_CLIENT_REQUEST_ID": client_request_id,
-            })
             if not self.request.is_eager:
                 return
         countdown = get_exponential_request_retry_countdown(self)
@@ -103,8 +126,8 @@ def process_payment_complaint_search(self, payment_data, payment_params):
     if response.status_code != 200:
         logger.warning("Unexpected status code {} while searching complaint {}".format(
             response.status_code, complaint_pretty_id
-        ), extra={
-            "MESSAGE_ID": "PAYMENTS_SEARCH_CODE_ERROR",
+        ), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_SEARCH_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
         countdown = get_exponential_request_retry_countdown(self)
@@ -115,13 +138,13 @@ def process_payment_complaint_search(self, payment_data, payment_params):
     if len(search_complaints_data) == 0:
         logger.warning("Invalid payment complaint {}".format(
             complaint_pretty_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_INVALID_COMPLAINT"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT})
         return
 
     for search_complaint_data in search_complaints_data:
         logger.info("Successfully retrieved complaint {} params".format(
             complaint_pretty_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
 
         if self.request.is_eager:
             return search_complaint_data
@@ -129,12 +152,12 @@ def process_payment_complaint_search(self, payment_data, payment_params):
         if not check_complaint_code(search_complaint_data, payment_params):
             logger.info("Invalid payment code {} while searching complaint {}".format(
                 payment_params.get("code"), complaint_pretty_id
-            ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_INVALID_CODE"})
+            ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_CODE})
             return
 
         logger.info("Valid payment code {} while searching complaint {}".format(
             payment_params.get("code"), complaint_pretty_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"})
 
         complaint_params = search_complaint_data.get("params")
 
@@ -163,8 +186,8 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         if self.request.retries >= self.max_retries:
-            logger.exception(exc, extra={
-                "MESSAGE_ID": "PAYMENTS_GET_TENDER_EXCEPTION",
+            logger.exception(str(exc), payment_data=payment_data, extra={
+                "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
                 "CDB_CLIENT_REQUEST_ID": client_request_id,
             })
             if not self.request.is_eager:
@@ -175,8 +198,8 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
     if response.status_code != 200:
         logger.warning("Unexpected status code {} while getting tender {}".format(
             response.status_code, tender_id
-        ), extra={
-            "MESSAGE_ID": "PAYMENTS_GET_TENDER_CODE_ERROR",
+        ), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_GET_TENDER_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
         countdown = get_exponential_request_retry_countdown(self)
@@ -184,7 +207,7 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
     else:
         logger.info("Successfully retrieved tender {}".format(
             tender_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_GET_TENDER_SUCCESS"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_GET_TENDER_SUCCESS"})
 
     tender_data = response.json()["data"]
 
@@ -197,7 +220,7 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
         if not item_data:
             logger.warning("No {} with id {} found in tender {}".format(
                 item_type, item_id,  tender_id
-            ), extra={"MESSAGE_ID": "PAYMENTS_ITEM_NOT_FOUND"})
+            ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_ITEM_NOT_FOUND})
             countdown = get_exponential_request_retry_countdown(self)
             raise self.retry(countdown=countdown)
         complaint_data =  get_item_data(item_data, "complaints", complaint_id)
@@ -207,26 +230,26 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
     if not complaint_data:
         logger.warning("No complaints with id found {} in tender {}".format(
             complaint_id, tender_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_COMPLAINT_NOT_FOUND"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_COMPLAINT_NOT_FOUND})
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)
 
     if self.request.is_eager:
         logger.info("Valid complaint value found for complaint {}.".format(
             complaint_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_VALID_COMPLAINT"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_VALID_COMPLAINT"})
         return complaint_data
 
     if not check_complaint_status(complaint_data):
         logger.warning("Complaint status is not valid: {}.".format(
             complaint_data["status"]
-        ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_STATUS"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_STATUS})
         return
 
     if not check_complaint_value(complaint_data):
         logger.info("Complaint value amount or currency not found for complaint {}.".format(
             complaint_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_COMPLAINT_VALUE"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_COMPLAINT_VALUE})
         return
 
     value = complaint_data.get("value", {})
@@ -234,8 +257,9 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
     if not check_complaint_value_amount(complaint_data, payment_data):
         logger.warning("Payment amount doesn't match complaint amount ({} and {}) in complaint {}.".format(
             payment_data.get("amount"), value.get("amount"), complaint_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_AMOUNT"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_AMOUNT})
         process_payment_complaint_patch.apply_async(kwargs=dict(
+            payment_data=payment_data,
             complaint_params=complaint_params,
             complaint_patch_data={
                 "status": "mistaken"
@@ -246,8 +270,9 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
     if not check_complaint_value_currency(complaint_data, payment_data):
         logger.warning("Payment currency doesn't match complaint currency ({} and {}) in complaint {}.".format(
             payment_data.get("currency"), value.get("currency"), complaint_id
-        ), extra={"MESSAGE_ID": "PAYMENTS_INVALID_CURRENCY"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_CURRENCY})
         process_payment_complaint_patch.apply_async(kwargs=dict(
+            payment_data=payment_data,
             complaint_params=complaint_params,
             complaint_patch_data={
                 "status": "mistaken"
@@ -257,9 +282,10 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
 
     logger.info("Valid payment found for complaint {}.".format(
         complaint_id
-    ), extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
+    ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
 
     process_payment_complaint_patch.apply_async(kwargs=dict(
+        payment_data=payment_data,
         complaint_params=complaint_params,
         complaint_patch_data={
             "status": "pending"
@@ -268,7 +294,7 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
 
 
 @app.task(bind=True, max_retries=20)
-def process_payment_complaint_patch(self, complaint_params, complaint_patch_data):
+def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data):
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
@@ -291,11 +317,11 @@ def process_payment_complaint_patch(self, complaint_params, complaint_patch_data
             }
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(str(exc), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
         if self.request.retries >= self.max_retries:
-            logger.exception(exc, extra={
-                "MESSAGE_ID": "PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION",
-                "CDB_CLIENT_REQUEST_ID": client_request_id,
-            })
             if not self.request.is_eager:
                 return
         countdown = get_exponential_request_retry_countdown(self)
@@ -316,11 +342,11 @@ def process_payment_complaint_patch(self, complaint_params, complaint_patch_data
             cookies=cookies,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(str(exc), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
         if self.request.retries >= self.max_retries:
-            logger.exception(exc, extra={
-                "MESSAGE_ID": "PAYMENTS_PATCH_COMPLAINT_EXCEPTION",
-                "CDB_CLIENT_REQUEST_ID": client_request_id,
-            })
             if not self.request.is_eager:
                 return
         countdown = get_exponential_request_retry_countdown(self)
@@ -332,11 +358,17 @@ def process_payment_complaint_patch(self, complaint_params, complaint_patch_data
     if response.status_code != 200:
         logger.warning("Unexpected status code {} while patching complaint {} of tender {}: {}".format(
             response.status_code, complaint_id, tender_id, complaint_patch_data
-        ), extra={"MESSAGE_ID": "PAYMENTS_PATCH_COMPLAINT_CODE_ERROR",
-                  "STATUS_CODE": response.status_code})
+        ), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+            "STATUS_CODE": response.status_code
+        })
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)
     else:
+        if complaint_patch_data.get("status") == "pending":
+            message_id = PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
+        else:
+            message_id = PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
         logger.info("Successfully updated complaint {} of tender {}: {}".format(
             complaint_id, tender_id, complaint_patch_data
-        ), extra={"MESSAGE_ID": "PAYMENTS_PATCH_COMPLAINT_SUCCESS"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": message_id})
