@@ -77,11 +77,10 @@ PAYMENTS_WARNING_MESSAGE_ID_LIST = [
 
 @bp.app_template_filter("payment_primary_message")
 def payment_primary_message(payment):
-    primary_list = \
-        PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
-        PAYMENTS_DANGER_MESSAGE_ID_LIST + \
-        PAYMENTS_WARNING_MESSAGE_ID_LIST
-
+    primary_list = []
+    primary_list.extend(PAYMENTS_SUCCESS_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_DANGER_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_WARNING_MESSAGE_ID_LIST)
     for message in payment.get("messages", []):
         for primary in primary_list:
             if message.get("message_id") == primary:
