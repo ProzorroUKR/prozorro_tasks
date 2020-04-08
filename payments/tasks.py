@@ -26,6 +26,7 @@ from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
 )
+from payments.results_db import set_payment_params
 from payments.utils import (
     get_item_data,
     check_complaint_status,
@@ -97,7 +98,7 @@ def process_payment_complaint_search(self, payment_data, payment_params):
     complaint_pretty_id = payment_params.get("complaint")
 
     url = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}".format(
-        host=PUBLIC_API_HOST,
+        host=API_HOST,
         version=API_VERSION,
         complaint_pretty_id=complaint_pretty_id
     )
@@ -141,34 +142,39 @@ def process_payment_complaint_search(self, payment_data, payment_params):
         ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT})
         return
 
-    for search_complaint_data in search_complaints_data:
-        logger.info("Successfully retrieved complaint {} params".format(
-            complaint_pretty_id
-        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
+    search_complaint_data = search_complaints_data[0]
 
-        if self.request.is_eager:
-            return search_complaint_data
+    complaint_params = search_complaint_data.get("params")
 
-        if not check_complaint_code(search_complaint_data, payment_params):
-            logger.info("Invalid payment code {} while searching complaint {}".format(
-                payment_params.get("code"), complaint_pretty_id
-            ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_CODE})
-            return
+    set_payment_params(payment_data, complaint_params)
 
-        logger.info("Valid payment code {} while searching complaint {}".format(
+    logger.info("Successfully retrieved complaint {} params".format(
+        complaint_pretty_id
+    ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"})
+
+    set_payment_params(payment_data, complaint_params)
+
+    if self.request.is_eager:
+        return search_complaint_data
+
+    if not check_complaint_code(search_complaint_data, payment_params):
+        logger.info("Invalid payment code {} while searching complaint {}".format(
             payment_params.get("code"), complaint_pretty_id
-        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"})
+        ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_CODE})
+        return
 
-        complaint_params = search_complaint_data.get("params")
+    logger.info("Valid payment code {} while searching complaint {}".format(
+        payment_params.get("code"), complaint_pretty_id
+    ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"})
 
-        process_payment_complaint_data.apply_async(kwargs=dict(
-            payment_data=payment_data,
-            complaint_params=complaint_params,
-        ))
+    process_payment_complaint_data.apply_async(kwargs=dict(
+        complaint_params=complaint_params,
+        payment_data=payment_data,
+    ))
 
 
 @app.task(bind=True, max_retries=20)
-def process_payment_complaint_data(self, payment_data, complaint_params):
+def process_payment_complaint_data(self, complaint_params, payment_data):
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
@@ -224,6 +230,9 @@ def process_payment_complaint_data(self, payment_data, complaint_params):
             countdown = get_exponential_request_retry_countdown(self)
             raise self.retry(countdown=countdown)
         complaint_data =  get_item_data(item_data, "complaints", complaint_id)
+        logger.info("Successfully retrieved {} {}".format(
+            item_type, item_id
+        ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_VALID_ITEM"})
     else:
         complaint_data = get_item_data(tender_data, "complaints", complaint_id)
 

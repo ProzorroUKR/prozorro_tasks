@@ -1,0 +1,28 @@
+{% if data %}
+    <table class="table table-borderless table-striped table-payments mb-0">
+        {% for field in data %}
+            <tr>
+                <td>
+                    {{ field }}
+                </td>
+                {% if data[field]|is_dict %}
+                    <td>
+                        {% with data=data[field] %}
+                            {% include 'payments/table_complaint.html' %}
+                        {% endwith %}
+                    </td>
+                {% else %}
+                    <td>
+                        {{ data[field] }}
+                    </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <table class="table table-striped table-payments">
+        <tr>
+            <td>Дані відсутні</td>
+        </tr>
+    </table>
+{% endif %}

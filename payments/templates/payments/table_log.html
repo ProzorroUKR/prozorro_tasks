@@ -1,18 +1,28 @@
-<table class="table table-borderless table-striped table-payments">
-    {% if row.messages %}
-        {% for message in row.messages %}
-            <tr class="table-{{ message|payment_message_status or 'default' }}">
-                <td>
-                    {{ message.message_id }}
-                </td>
-                <td>
-                    {{ message.message }}
-                </td>
+{% if row.messages %}
+    <table class="table table-borderless table-striped table-payments mb-0">
+        {% if row.messages %}
+            {% for message in row.messages %}
+                <tr>
+                    <td class="table-cell-bg">
+                        <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
+                        <div class="table-content">{{ message.message_id }}</div>
+                    </td>
+                    <td class="table-cell-bg">
+                        <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
+                        <div class="table-content">{{ message.message }}</div>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td>Дані відсутні</td>
             </tr>
-        {% endfor %}
-    {% else %}
+        {% endif %}
+    </table>
+{% else %}
+    <table class="table table-striped table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>
-    {% endif %}
-</table>
+    </table>
+{% endif %}

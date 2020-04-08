@@ -1,6 +1,6 @@
 import logging
 
-from payments.results_db import message_payment_item
+from payments.results_db import push_payment_message
 
 
 class PaymentResultsLoggerAdapter(logging.LoggerAdapter):
@@ -12,5 +12,5 @@ class PaymentResultsLoggerAdapter(logging.LoggerAdapter):
         message_id = extra.get("MESSAGE_ID")
         payment_data = kwargs.pop("payment_data")
         if payment_data and message_id:
-            message_payment_item(payment_data, message_id, msg)
+            push_payment_message(payment_data, message_id, msg)
         return msg, kwargs

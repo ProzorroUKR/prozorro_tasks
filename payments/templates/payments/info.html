@@ -1,30 +1,18 @@
-{% extends "base.html" %}
-
-{% block head %}
-
-{{ super() }}
-
-<style type="text/css">
-    .table-payments {
-        font-size: .75rem;
-    }
-    .table-payments td {
-        padding: .4rem .4rem;
-    }
-    .table-payments td {
-        overflow: hidden;
-        word-break: break-all;
-    }
-    .table-payments .cell-name {
-        width: 7rem;
-    }
-</style>
-
-{% endblock %}
+{% extends "payments/base.html" %}
 
 {% block content %}
     <h1>Оплата</h1>
-    {% include 'payments/table_info.html' %}
+    <div class="table-responsive mb-2">
+        {% include 'payments/table_info.html' %}
+    </div>
     <h2 class="mt-4">Події</h2>
-    {% include 'payments/table_log.html' %}
+    <div class="table-responsive mb-2">
+        {% include 'payments/table_log.html' %}
+    </div>
+    <h2 class="mt-4">Скарга</h2>
+    <div class="table-responsive mb-2">
+        {% with data=complaint %}
+            {% include 'payments/table_complaint.html' %}
+        {% endwith %}
+    </div>
 {% endblock %}

@@ -1,28 +1,16 @@
+import requests
 from flask import Blueprint, render_template, redirect, url_for
 
 from app.auth import login_group_required
-from payments.message_ids import (
-    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
-    PAYMENTS_INVALID_STATUS,
-    PAYMENTS_INVALID_COMPLAINT_VALUE,
-    PAYMENTS_INVALID_PATTERN,
-    PAYMENTS_SEARCH_INVALID_COMPLAINT,
-    PAYMENTS_SEARCH_INVALID_CODE,
-    PAYMENTS_SEARCH_EXCEPTION,
-    PAYMENTS_SEARCH_CODE_ERROR,
-    PAYMENTS_GET_TENDER_EXCEPTION,
-    PAYMENTS_GET_TENDER_CODE_ERROR,
-    PAYMENTS_ITEM_NOT_FOUND,
-    PAYMENTS_COMPLAINT_NOT_FOUND,
-    PAYMENTS_INVALID_AMOUNT,
-    PAYMENTS_INVALID_CURRENCY,
-    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
-    PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
-    PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
-)
+from environment_settings import PUBLIC_API_HOST, API_VERSION
+from payments.filters import payment_message_status, payment_primary_message, is_dict
 from payments.results_db import get_payment_list, get_payment_item, retry_payment_item
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
+
+bp.add_app_template_filter(payment_message_status, "payment_message_status")
+bp.add_app_template_filter(payment_primary_message, "payment_primary_message")
+bp.add_app_template_filter(is_dict, "is_dict")
 
 
 @bp.route("/", methods=["GET"])
@@ -36,8 +24,26 @@ def index():
 @login_group_required("accountants")
 def info(uid):
     row = get_payment_item(uid)
-    return render_template("payments/info.html", row=row)
+    complaint = None
+    params = row.get("params", None)
+    if params:
+        if params.get("item_type"):
+            url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
+        else:
+            url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
+        url = url_pattern.format(
+            host=PUBLIC_API_HOST,
+            version=API_VERSION,
+            **params
+        )
+        try:
+            response = requests.get(url)
+        except Exception as exc:
+            pass
+        else:
+            complaint = response.json()["data"]
 
+    return render_template("payments/info.html", row=row, params=params, complaint=complaint)
 
 
 @bp.route("/<uid>/retry", methods=["GET"])
@@ -47,55 +53,4 @@ def retry(uid):
     return redirect(url_for("payments_views.info", uid=uid))
 
 
-PAYMENTS_SUCCESS_MESSAGE_ID_LIST = [
-    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
-]
 
-PAYMENTS_DANGER_MESSAGE_ID_LIST = [
-    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
-]
-
-PAYMENTS_WARNING_MESSAGE_ID_LIST = [
-    PAYMENTS_INVALID_PATTERN,
-    PAYMENTS_SEARCH_INVALID_COMPLAINT,
-    PAYMENTS_SEARCH_INVALID_CODE,
-    PAYMENTS_INVALID_STATUS,
-    PAYMENTS_INVALID_AMOUNT,
-    PAYMENTS_INVALID_CURRENCY,
-    PAYMENTS_INVALID_COMPLAINT_VALUE,
-    PAYMENTS_SEARCH_EXCEPTION,
-    PAYMENTS_SEARCH_CODE_ERROR,
-    PAYMENTS_GET_TENDER_EXCEPTION,
-    PAYMENTS_GET_TENDER_CODE_ERROR,
-    PAYMENTS_ITEM_NOT_FOUND,
-    PAYMENTS_COMPLAINT_NOT_FOUND,
-    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
-    PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
-    PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
-]
-
-
-@bp.app_template_filter("payment_primary_message")
-def payment_primary_message(payment):
-    primary_list = []
-    primary_list.extend(PAYMENTS_SUCCESS_MESSAGE_ID_LIST)
-    primary_list.extend(PAYMENTS_DANGER_MESSAGE_ID_LIST)
-    primary_list.extend(PAYMENTS_WARNING_MESSAGE_ID_LIST)
-    for primary in primary_list:
-        for message in payment.get("messages", []):
-            if message.get("message_id") == primary:
-                return message
-
-
-@bp.app_template_filter("payment_message_status")
-def payment_message_status(message):
-    if message is None:
-        return None
-    message_id = message.get("message_id")
-    if message_id in PAYMENTS_SUCCESS_MESSAGE_ID_LIST:
-        return "success"
-    elif message_id in PAYMENTS_DANGER_MESSAGE_ID_LIST:
-        return "warning"
-    elif message_id in PAYMENTS_WARNING_MESSAGE_ID_LIST:
-        return "danger"
-    return None
