@@ -1,5 +1,5 @@
 {% if 'params' in row %}
-    <table class="table table-borderless table-striped table-payments mb-0">
+    <table class="table table-bordered table-striped table-payments">
         {% with href=row['params']|prozorro_api_tender_path|prozorro_api_url %}
             <tr><td><a href="{{ href }}">{{ href }}</a></td></tr>
         {% endwith %}
@@ -13,7 +13,7 @@
         {% endwith %}
     </table>
 {% else %}
-    <table class="table table-striped table-payments">
+    <table class="table table-bordered table-striped table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>

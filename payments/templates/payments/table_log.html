@@ -1,5 +1,5 @@
 {% if row.messages %}
-    <table class="table table-bordered table-striped table-payments mb-0">
+    <table class="table table-bordered table-striped table-payments">
         {% if row.messages %}
             {% for message in row.messages %}
                 <tr>
@@ -26,7 +26,7 @@
         {% endif %}
     </table>
 {% else %}
-    <table class="table table-bordered table-payments">
+    <table class="table table-bordered table-striped table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>

@@ -1,5 +1,5 @@
 {% if data %}
-    <table class="table table-bordered table-striped table-payments mb-0">
+    <table class="table table-bordered table-striped table-payments">
         {% for field in data %}
             <tr>
                 <td>
@@ -28,7 +28,7 @@
         {% endfor %}
     </table>
 {% else %}
-    <table class="table table-bordered table-payments">
+    <table class="table table-bordered table-striped table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>
