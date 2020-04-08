@@ -1,5 +1,5 @@
 {% if tender %}
-    <table class="table table-borderless table-striped table-payments mb-0">
+    <table class="table table-bordered table-striped table-payments">
         <tr>
             <td>
                 {% with href=tender['tenderID']|prozorro_portal_tender_path|prozorro_portal_url %}
@@ -9,7 +9,7 @@
         </tr>
     </table>
 {% else %}
-    <table class="table table-striped table-payments">
+    <table class="table table-bordered table-striped table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>
