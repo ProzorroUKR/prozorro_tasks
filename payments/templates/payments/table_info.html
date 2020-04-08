@@ -1,5 +1,5 @@
 {% if row.payment %}
-    <table class="table table-borderless table-striped table-payments mb-0">
+    <table class="table table-bordered table-striped table-payments mb-0">
         {% for payment_key in row.payment %}
             <tr>
                 <td class="cell-name">
@@ -22,7 +22,7 @@
         {% endfor %}
     </table>
 {% else %}
-    <table class="table table-striped table-payments">
+    <table class="table table-bordered table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>

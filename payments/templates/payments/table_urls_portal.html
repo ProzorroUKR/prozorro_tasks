@@ -2,9 +2,9 @@
     <table class="table table-borderless table-striped table-payments mb-0">
         <tr>
             <td>
-                <a href="{{ portal_host }}/tender/{{ tender['tenderID'] }}">
-                    {{ portal_host }}/tenders/{{ tender['tenderID'] }}
-                </a>
+                {% with href=tender['tenderID']|prozorro_portal_tender_path|prozorro_portal_url %}
+                    <a href="{{ href }}">{{ href }}</a>
+                {% endwith %}
             </td>
         </tr>
     </table>
