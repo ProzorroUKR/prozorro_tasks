@@ -54,8 +54,6 @@ class CheckoutResource(Resource):
     def post(self):
         """
         Receive a payment link.
-
-        :raises ProzorroApiError: In case of something
         """
         description = api.payload.get("description")
 
