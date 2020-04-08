@@ -71,7 +71,7 @@ def retry_payment_item(uid):
         return doc
 
 
-def message_payment_item(data, message_id, message):
+def push_payment_message(data, message_id, message):
     uid = args_to_uid(data.values())
     collection = get_mongodb_collection()
     try:
@@ -85,7 +85,7 @@ def message_payment_item(data, message_id, message):
             }}
         )
     except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION"})
     else:
         return doc
 
@@ -102,5 +102,20 @@ def save_payment_item(data, user):
         })
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION"})
+    else:
+        return uid
+
+
+def set_payment_params(data, params):
+    uid = args_to_uid(data.values())
+    collection = get_mongodb_collection()
+    try:
+        collection.update(
+            {"_id": uid},
+            {'$set': {
+                'params': params
+            }})
+    except PyMongoError as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION"})
     else:
         return uid

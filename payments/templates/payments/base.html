@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+{{ super() }}
+
+<style type="text/css">
+    .table-payments {
+        font-size: .75rem;
+    }
+
+    .table-payments > tbody > tr > td {
+        padding: .4rem .4rem;
+        overflow: hidden;
+        word-break: break-all;
+        min-width: 7rem;
+        position: relative;
+    }
+
+    .table-payments > tbody > tr > td.cell-name {
+        width: 7rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-action {
+        opacity: 0.7;
+        text-align: center;
+        vertical-align: middle;
+        width: 0.7rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-action:hover {
+        opacity: 0.9;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .table-payments > tbody > tr > td.cell-action > a {
+        margin: -10em;
+        padding: 10em;
+        height:100%;
+        width:100%;
+        color: white;
+    }
+
+    .table-payments > tbody > tr > td.table-cell-bg {
+        position: relative;
+    }
+
+    .table-payments > tbody > tr > td.table-cell-bg > .table-bg {
+        opacity: 0.5;
+        margin: -0.4rem;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+
+    .table-payments > tbody > tr > td.table-cell-bg > .table-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+</style>
+
+{% endblock %}

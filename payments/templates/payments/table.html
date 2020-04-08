@@ -1,6 +1,4 @@
-<!-- shows the table of contents -->
-<!-- requires headers and rows to be in the context -->
-<div class="table-responsive">
+{% if rows %}
     <table class="table table-striped table-payments">
         <tr class="thead-dark">
             <th>Оплата</th>
@@ -9,18 +7,24 @@
             <th>Повт.</th>
             <th>Інф.</th>
         </tr>
-        {% for row in rows %}
-            <tr>
-                <td class="p-0">{% include "payments/table_info.html" %}</td>
-                <td>{{ row.createdAt }}</td>
-                <td>{{ row.user or ""}}</td>
-                <td class="bg-info text-white cell-action">
-                    <a href="/payments/{{row._id}}/retry"><span class="oi oi-reload"></span></a>
-                </td>
-                <td class="text-white cell-action bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
-                    <a href="/payments/{{row._id}}"><span class="oi oi-info"></span></a>
-                </td>
-            </tr>
-        {% endfor %}
+            {% for row in rows %}
+                <tr>
+                    <td class="pl-0">{% include "payments/table_info.html" %}</td>
+                    <td>{{ row.createdAt }}</td>
+                    <td>{{ row.user or ""}}</td>
+                    <td class="text-white cell-action border-0 bg-primary">
+                        <a href="/payments/{{row._id}}/retry"><span class="oi oi-reload"></span></a>
+                    </td>
+                    <td class="text-white cell-action border-0 bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
+                        <a href="/payments/{{row._id}}"><span class="oi oi-info"></span></a>
+                    </td>
+                </tr>
+            {% endfor %}
     </table>
-</div>
+{% else %}
+    <table class="table table-striped table-payments">
+        <tr>
+            <td>Дані відсутні</td>
+        </tr>
+    </table>
+{% endif %}

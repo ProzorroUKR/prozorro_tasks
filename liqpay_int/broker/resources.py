@@ -85,8 +85,8 @@ class CheckoutResource(Resource):
 
             complaint_params = search_complaint_data.get("params")
             complaint_data = process_payment_complaint_data.apply(kwargs=dict(
-                payment_data=payment_data,
                 complaint_params=complaint_params,
+                payment_data=payment_data,
             )).wait()
 
             if not complaint_data:
