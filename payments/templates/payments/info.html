@@ -5,11 +5,19 @@
     <div class="table-responsive mb-2">
         {% include 'payments/table_info.html' %}
     </div>
-    <h2 class="mt-4">Події</h2>
+    <h4 class="mt-4">Події</h4>
     <div class="table-responsive mb-2">
         {% include 'payments/table_log.html' %}
     </div>
-    <h2 class="mt-4">Скарга</h2>
+    <h4 class="mt-4">Посилання на API</h4>
+    <div class="table-responsive mb-2">
+        {% include 'payments/table_urls_api.html' %}
+    </div>
+    <h4 class="mt-4">Посилання на портал</h4>
+    <div class="table-responsive mb-2">
+        {% include 'payments/table_urls_portal.html' %}
+    </div>
+    <h4 class="mt-4">Скарга</h4>
     <div class="table-responsive mb-2">
         {% with data=complaint %}
             {% include 'payments/table_complaint.html' %}

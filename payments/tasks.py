@@ -231,7 +231,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data):
             raise self.retry(countdown=countdown)
         complaint_data =  get_item_data(item_data, "complaints", complaint_id)
         logger.info("Successfully retrieved {} {}".format(
-            item_type, item_id
+            item_type[:-1], item_id
         ), payment_data=payment_data, extra={"MESSAGE_ID": "PAYMENTS_VALID_ITEM"})
     else:
         complaint_data = get_item_data(tender_data, "complaints", complaint_id)

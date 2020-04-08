@@ -29,13 +29,23 @@ def init_db_index():
     return "success"
 
 
-def get_payment_list():
+def get_payment_count():
     collection = get_mongodb_collection()
     try:
-        doc = collection.find().sort("createdAt", DESCENDING)
+        doc = collection.find().sort("createdAt", DESCENDING).count()
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
-        raise
+    else:
+        return doc
+
+
+def get_payment_list(page, limit):
+    skip = page * limit - limit
+    collection = get_mongodb_collection()
+    try:
+        doc = collection.find().sort("createdAt", DESCENDING).skip(skip).limit(limit)
+    except PyMongoError as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
         return doc
 

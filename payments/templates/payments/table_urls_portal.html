@@ -1,0 +1,17 @@
+{% if tender %}
+    <table class="table table-borderless table-striped table-payments mb-0">
+        <tr>
+            <td>
+                <a href="{{ portal_host }}/tender/{{ tender['tenderID'] }}">
+                    {{ portal_host }}/tenders/{{ tender['tenderID'] }}
+                </a>
+            </td>
+        </tr>
+    </table>
+{% else %}
+    <table class="table table-striped table-payments">
+        <tr>
+            <td>Дані відсутні</td>
+        </tr>
+    </table>
+{% endif %}

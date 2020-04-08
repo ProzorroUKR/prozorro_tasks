@@ -60,6 +60,45 @@
         height: 100%;
     }
 
+    .pagination-page-info {
+        font-size: .75rem;
+        padding-bottom: 1rem;
+    }
+
+    .pagination {
+        margin-top: 1rem;
+    }
+
+    .pagination > .page-item  > .page-link {
+        border: 0;
+        margin: 0;
+        background-color: rgba(0,0,0,.05);
+    }
+
+    .pagination > .page-item:last-child > .page-link {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .pagination > .page-item:first-child > .page-link {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .pagination > .page-item > .page-link {
+        color: #343a40;
+    }
+
+    .pagination > .page-item.active > .page-link {
+        background-color: #343a40;
+        border-color: #343a40;
+        color: #ffffff;
+    }
+
+    .pagination > .page-item.disabled > .page-link {
+        color: #aaaaaa;
+    }
+
 </style>
 
 {% endblock %}

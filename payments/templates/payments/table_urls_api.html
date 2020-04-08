@@ -1,0 +1,41 @@
+{% if 'params' in row %}
+    {% set tender_sub_path='/tenders/' + row['params']['tender_id'] %}
+    {% if row['params']['item_type'] %}
+        {% set item_sub_path=tender_sub_path + '/' + row['params']['item_type'] + '/' + row['params']['item_id'] %}
+        {% set complaint_sub_path=item_sub_path + '/complaints/' + row['params']['complaint_id'] %}
+    {% else %}
+        {% set item_sub_path=None %}
+        {% set complaint_sub_path=tender_sub_path + '/complaints/' + row['params']['complaint_id'] %}
+    {% endif %}
+    <table class="table table-borderless table-striped table-payments mb-0">
+        <tr>
+            <td>
+                <a href="{{ api_host }}{{ tender_sub_path }}">
+                    {{ api_host }}{{ tender_sub_path }}
+                </a>
+            </td>
+        </tr>
+        {% if item_sub_path %}
+            <tr>
+                <td>
+                    <a href="{{ api_host }}{{ tender_sub_path }}">
+                        {{ api_host }}{{ item_sub_path }}
+                    </a>
+                </td>
+            </tr>
+        {% endif %}
+        <tr>
+            <td>
+                <a href="{{ api_host }}{{ complaint_sub_path }}">
+                    {{ api_host }}{{ complaint_sub_path }}
+                </a>
+            </td>
+        </tr>
+    </table>
+{% else %}
+    <table class="table table-striped table-payments">
+        <tr>
+            <td>Дані відсутні</td>
+        </tr>
+    </table>
+{% endif %}
