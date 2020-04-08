@@ -84,7 +84,7 @@ def retry_payment_item(uid):
 
 
 def push_payment_message(data, message_id, message):
-    uid = args_to_uid(data.values())
+    uid = args_to_uid(sorted(data.values()))
     collection = get_mongodb_collection()
     try:
         doc = collection.update(
@@ -104,7 +104,7 @@ def push_payment_message(data, message_id, message):
 
 
 def save_payment_item(data, user):
-    uid = args_to_uid(data.values())
+    uid = args_to_uid(sorted(data.values()))
     collection = get_mongodb_collection()
     try:
         collection.insert({
@@ -120,7 +120,7 @@ def save_payment_item(data, user):
 
 
 def set_payment_params(data, params):
-    uid = args_to_uid(data.values())
+    uid = args_to_uid(sorted(data.values()))
     collection = get_mongodb_collection()
     try:
         collection.update(
