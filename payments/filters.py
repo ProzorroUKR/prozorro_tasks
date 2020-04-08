@@ -1,5 +1,6 @@
 import typing
 
+from environment_settings import TIMEZONE
 from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
     PAYMENTS_INVALID_STATUS,
@@ -74,3 +75,7 @@ def payment_message_status(message):
 
 def is_dict(item):
     return isinstance(item, typing.Dict)
+
+
+def localize(dt):
+    return dt.astimezone(TIMEZONE)
