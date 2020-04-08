@@ -1,5 +1,7 @@
 from datetime import datetime
 from celery.utils.log import get_task_logger
+from pymongo import DESCENDING
+
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
 from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure
@@ -30,7 +32,7 @@ def init_db_index():
 def get_payment_list():
     collection = get_mongodb_collection()
     try:
-        doc = collection.find()
+        doc = collection.find().sort("createdAt", DESCENDING)
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
         raise
