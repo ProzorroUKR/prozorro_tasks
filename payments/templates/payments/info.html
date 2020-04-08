@@ -20,7 +20,13 @@
     <h4 class="mt-4">Скарга</h4>
     <div class="table-responsive mb-2">
         {% with data=complaint %}
-            {% include 'payments/table_complaint.html' %}
+            {% include 'payments/table_dict.html' %}
+        {% endwith %}
+    </div>
+    <h4 class="mt-4">Закупівля</h4>
+    <div class="table-responsive mb-2">
+        {% with data=tender %}
+            {% include 'payments/table_dict.html' %}
         {% endwith %}
     </div>
 {% endblock %}

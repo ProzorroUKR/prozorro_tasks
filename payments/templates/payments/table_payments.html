@@ -1,5 +1,5 @@
 {% if rows %}
-    <table class="table table-striped table-payments">
+    <table class="table table-bordered table-striped table-payments">
         <tr class="thead-dark">
             <th>Оплата</th>
             <th>Отримано</th>
@@ -9,8 +9,8 @@
         </tr>
             {% for row in rows %}
                 <tr>
-                    <td class="pl-0">{% include "payments/table_info.html" %}</td>
-                    <td>{{ row.createdAt|localize }}</td>
+                    <td>{% include "payments/table_info.html" %}</td>
+                    <td>{{ row.createdAt|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}</td>
                     <td>{{ row.user or ""}}</td>
                     <td class="text-white cell-action border-0 bg-primary">
                         <a href="/payments/{{row._id}}/retry"><span class="oi oi-reload"></span></a>
@@ -22,7 +22,7 @@
             {% endfor %}
     </table>
 {% else %}
-    <table class="table table-striped table-payments">
+    <table class="table table-bordered table-payments">
         <tr>
             <td>Дані відсутні</td>
         </tr>

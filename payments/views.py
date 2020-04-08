@@ -92,9 +92,7 @@ def info(uid):
         "payments/info.html",
         row=row,
         complaint=complaint,
-        tender=tender,
-        api_host=PUBLIC_API_HOST,
-        portal_host=PORTAL_HOST,
+        tender=tender
     )
 
 

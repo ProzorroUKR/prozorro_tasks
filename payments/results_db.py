@@ -92,7 +92,8 @@ def push_payment_message(data, message_id, message):
             {'$push': {
                 'messages': {
                     "message_id": message_id,
-                    "message": message
+                    "message": message,
+                    "createdAt": datetime.utcnow()
                 }
             }}
         )
