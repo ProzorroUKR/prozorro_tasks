@@ -79,7 +79,7 @@ def process_payment_data(self, payment_data):
     payment_params = get_payment_params(description)
 
     if not payment_params:
-        logger.warning("No valid pattern found for \"{}\"".format(
+        logger.warning("Invalid pattern for \"{}\"".format(
             description
         ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_INVALID_PATTERN})
         return
@@ -140,7 +140,10 @@ def process_payment_complaint_search(self, payment_data, payment_params):
         logger.warning("Invalid payment complaint {}".format(
             complaint_pretty_id
         ), payment_data=payment_data, extra={"MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT})
-        return
+        if self.request.retries >= self.max_retries:
+            return
+        countdown = get_exponential_request_retry_countdown(self)
+        raise self.retry(countdown=countdown)
 
     search_complaint_data = search_complaints_data[0]
 
