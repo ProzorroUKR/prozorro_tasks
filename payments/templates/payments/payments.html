@@ -1,0 +1,8 @@
+{% extends "payments/base.html" %}
+
+{% block content %}
+<div class="table-responsive">
+    {% include 'payments/partials/table_payments.html' %}
+</div>
+{{ pagination.links }}
+{% endblock %}

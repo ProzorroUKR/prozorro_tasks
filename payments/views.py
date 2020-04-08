@@ -36,7 +36,7 @@ def index():
     )
 
     return render_template(
-        "payments/index.html",
+        "payments/payments.html",
         rows=list(get_payment_list(**kwargs)),
         pagination=Pagination(
             bs_version=4,
