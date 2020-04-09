@@ -2,4 +2,28 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
+
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text input-payment" id="generateDateInfo">Дата</span>
+    </div>
+    <input type="text" placeholder="yyyy-mm-dd" class="form-control input-payment" id="generateDate"
+           aria-describedby="generateDateInfo" data-toggle="datepicker">
+</div>
+
+<button type="button" class="btn btn-info btn-payment btn-sm btn-block mt-3">Сгенерувати</button>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    $(function () {
+        $('[data-toggle="datepicker"]').datepicker({
+            format: 'yyyy-mm-dd',
+            autoPick: true,
+            date: new Date(Date.now() - 864e5)
+        });
+    });
+</script>
 {% endblock %}

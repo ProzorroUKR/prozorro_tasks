@@ -1,15 +1,17 @@
 {% extends "payments/base.html" %}
 
 {% block content %}
+<a href="{{ request.url }}" class="btn btn-info btn-payment btn-sm btn-block mb-2">
+    <i class="fas fa-redo-alt mr-2"></i> Оновити
+</a>
+{% with path='/payments/' + row._id + '/retry' %}
+    <a href="path" class="btn btn-primary btn-payment btn-sm btn-block mb-2" data-toggle="modal" data-target="#modalRetry">
+        <i class="fas fa-play-circle mr-2"></i> Повторити обробку оплати
+    </a>
+{% endwith %}
 <h1>Оплата</h1>
 <div class="table-responsive mb-2">
     {% include 'payments/partials/table_info.html' %}
-</div>
-<div class="table-responsive mb-2">
-    {% include 'payments/partials/table_update.html' %}
-</div>
-<div class="table-responsive mb-2">
-    {% include 'payments/partials/table_retry.html' %}
 </div>
 <h4 class="mt-4">Події</h4>
 <div class="table-responsive mb-2">
