@@ -14,11 +14,17 @@
         </td>
         <td>{{ row.createdAt|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}</td>
         <td>{{ row.user or ""}}</td>
-        <td class="text-white cell-action border-0 bg-primary">
-            <a href="/payments/{{row._id}}/retry"><span class="oi oi-reload"></span></a>
+        <td class="text-white cell-action cell-lg border-0 bg-primary">
+            {% with path='/payments/' + row._id + '/retry' %}
+            <a href="{{ path }}" data-toggle="modal" data-target="#modalRetry">
+                <i class="fas fa-play-circle"></i>
+            </a>
+            {% endwith %}
         </td>
-        <td class="text-white cell-action border-0 bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
-            <a href="/payments/{{row._id}}"><span class="oi oi-info"></span></a>
+        <td class="text-white cell-action cell-lg border-0 bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
+            <a href="/payments/{{row._id}}">
+                <i class="fas fa-info-circle"></i>
+            </a>
         </td>
     </tr>
     {% endfor %}

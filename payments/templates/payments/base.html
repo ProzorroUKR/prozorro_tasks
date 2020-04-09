@@ -5,6 +5,35 @@
 {{ super() }}
 
 <style type="text/css">
+    .modal-payment > .modal-dialog > .modal-content {
+        border-radius: 0;
+        border: 0;
+    }
+    .modal-payment > .modal-dialog > .modal-content > .modal-body {
+        font-size: .75rem;
+    }
+
+    .btn-payment {
+        border-radius: 0;
+    }
+
+    .nav-payments {
+        margin-bottom: 1rem;
+    }
+
+    .nav-payments > .nav-item > .nav-link {
+        color: #343a40;
+        border-radius: 0;
+        background-color: rgba(0, 0, 0, .05);
+        border: 1px solid #dee2e6;
+    }
+
+    .nav-payments > .nav-item > .nav-link.active {
+        color: #ffffff;
+        background-color: #343a40;
+        border: 1px solid #343a40;
+    }
+
     .table-payments {
         font-size: .75rem;
         margin-bottom: 0;
@@ -33,6 +62,11 @@
         width: 0.7rem;
     }
 
+    .table-payments > tbody > tr > td.cell-action.cell-lg {
+        font-size: 24px;
+        min-width: 4rem;
+    }
+
     .table-payments > tbody > tr > td.cell-action:hover {
         opacity: 0.9;
         cursor: pointer;
@@ -40,11 +74,11 @@
     }
 
     .table-payments > tbody > tr > td.cell-action > a {
-        margin: -10em;
-        padding: 10em;
+        margin: -100em;
+        padding: 100em;
         height: 100%;
         width: 100%;
-        color: white;
+        color: #ffffff;
     }
 
     .table-payments > tbody > tr > td.table-cell-bg {

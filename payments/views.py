@@ -4,7 +4,13 @@ from flask_paginate import Pagination
 
 from app.auth import login_group_required
 from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
-from payments.filters import payment_message_status, payment_primary_message
+from payments.filters import (
+    payment_message_status, payment_primary_message, PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
+    PAYMENTS_WARNING_MESSAGE_ID_LIST,
+    PAYMENTS_DANGER_MESSAGE_ID_LIST,
+    PAYMENTS_ERROR_MESSAGE_ID_LIST,
+    PAYMENTS_MESSAGE_IDS,
+)
 from payments.results_db import get_payment_list, get_payment_item, retry_payment_item, get_payment_count
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
@@ -19,7 +25,7 @@ DEFAULT_LIMIT = 10
 
 @bp.route("/", methods=["GET"])
 @login_group_required("accountants")
-def index():
+def payments():
     try:
         page = int(request.args.get('page', DEFAULT_PAGE))
     except ValueError:
@@ -38,6 +44,7 @@ def index():
     return render_template(
         "payments/payments.html",
         rows=list(get_payment_list(**kwargs)),
+        message_ids=PAYMENTS_MESSAGE_IDS,
         pagination=Pagination(
             bs_version=4,
             link_size="sm",
@@ -48,6 +55,13 @@ def index():
             page_parameter="page",
             **kwargs
         )
+    )
+
+@bp.route("/reports", methods=["GET"])
+@login_group_required("accountants")
+def reports():
+    return render_template(
+        "payments/reports.html"
     )
 
 
@@ -92,7 +106,8 @@ def info(uid):
         "payments/info.html",
         row=row,
         complaint=complaint,
-        tender=tender
+        tender=tender,
+        message_ids=PAYMENTS_MESSAGE_IDS
     )
 
 
