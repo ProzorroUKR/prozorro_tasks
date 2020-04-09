@@ -194,11 +194,11 @@ def process_payment_complaint_data(self, complaint_params, payment_data):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(str(exc), payment_data=payment_data, extra={
+            "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
         if self.request.retries >= self.max_retries:
-            logger.exception(str(exc), payment_data=payment_data, extra={
-                "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
-                "CDB_CLIENT_REQUEST_ID": client_request_id,
-            })
             if not self.request.is_eager:
                 return
         countdown = get_exponential_request_retry_countdown(self)
