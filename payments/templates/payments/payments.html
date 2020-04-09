@@ -2,9 +2,9 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
-<div class="table-responsive mb-3">
-    {% include 'payments/partials/table_update.html' %}
-</div>
+<a href="{{ request.url }}" class="btn btn-info btn-payment btn-sm btn-block mb-3">
+    <i class="fas fa-redo-alt mr-2"></i> Оновити
+</a>
 <div class="table-responsive">
     {% include 'payments/partials/table_payments.html' %}
 </div>
