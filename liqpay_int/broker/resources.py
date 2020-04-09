@@ -1,3 +1,6 @@
+from binascii import Error as ASCIIError
+from json import JSONDecodeError
+
 from celery.exceptions import TaskError, MaxRetriesExceededError
 from requests import ConnectionError, Timeout
 
@@ -9,14 +12,16 @@ from payments.tasks import (
     process_payment_complaint_data,
 )
 from liqpay_int.exceptions import (
-    LiqpayResponseError,
-    LiqpayResponseFailureError,
-    PaymentInvalidError,
-    ProzorroApiError,
-    PaymentComplaintInvalidCodeError,
-    PaymentComplaintInvalidValueError,
-    PaymentComplaintNotFoundError,
-    PaymentComplaintInvalidStatusError,
+    LiqpayResponseHTTPException,
+    LiqpayResponseFailureHTTPException,
+    PaymentInvalidHTTPException,
+    ProzorroApiHTTPException,
+    PaymentComplaintInvalidCodeHTTPException,
+    PaymentComplaintInvalidValueHTTPException,
+    PaymentComplaintNotFoundHTTPException,
+    PaymentComplaintInvalidStatusHTTPException,
+    Base64DecodeHTTPException,
+    JSONDecodeHTTPException,
 )
 from liqpay_int.resources import Resource
 from liqpay_int.responses import (
@@ -24,15 +29,16 @@ from liqpay_int.responses import (
     model_response_error,
     model_response_failure,
 )
-from liqpay_int.utils import generate_liqpay_receipt_params, generate_liqpay_checkout_params
-from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST
+from liqpay_int.utils import generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign, liqpay_decode
+from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST, DESC_SIGNATURE_POST
 from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
-from liqpay_int.broker.models import model_checkout, model_receipt
+from liqpay_int.broker.models import model_checkout, model_receipt, model_sign
 from liqpay_int.broker.responses import (
     model_response_checkout,
     model_response_checkout_error,
     model_response_receipt_error,
+    model_response_sign,
 )
 from liqpay_int.tasks import process_liqpay_request
 from payments.utils import check_complaint_code, check_complaint_value, check_complaint_status
@@ -68,7 +74,7 @@ class CheckoutResource(Resource):
             ).wait()
 
             if not payment_params:
-                raise PaymentInvalidError()
+                raise PaymentInvalidHTTPException()
 
             search_complaint_data = process_payment_complaint_search.apply(kwargs=dict(
                 payment_data=payment_data,
@@ -76,10 +82,10 @@ class CheckoutResource(Resource):
             )).wait()
 
             if not search_complaint_data:
-                raise PaymentComplaintNotFoundError()
+                raise PaymentComplaintNotFoundHTTPException()
 
             if not check_complaint_code(search_complaint_data, payment_params):
-                raise PaymentComplaintInvalidCodeError()
+                raise PaymentComplaintInvalidCodeHTTPException()
 
             complaint_params = search_complaint_data.get("params")
             complaint_data = process_payment_complaint_data.apply(kwargs=dict(
@@ -88,17 +94,17 @@ class CheckoutResource(Resource):
             )).wait()
 
             if not complaint_data:
-                raise PaymentComplaintNotFoundError()
+                raise PaymentComplaintNotFoundHTTPException()
 
             if not check_complaint_status(complaint_data):
-                raise PaymentComplaintInvalidStatusError()
+                raise PaymentComplaintInvalidStatusHTTPException()
 
             if not check_complaint_value(complaint_data):
-                raise PaymentComplaintInvalidValueError()
+                raise PaymentComplaintInvalidValueHTTPException()
 
         except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
             logger.error("Payment processing task failed.", extra=extra)
-            raise ProzorroApiError()
+            raise ProzorroApiHTTPException()
 
         sandbox = parser_query.parse_args().get("sandbox")
         params = generate_liqpay_checkout_params(
@@ -111,15 +117,15 @@ class CheckoutResource(Resource):
             ).wait()
         except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
             logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureError()
+            raise LiqpayResponseFailureHTTPException()
 
         if not resp_json:
             logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureError()
+            raise LiqpayResponseFailureHTTPException()
 
         if resp_json.get("result") != "ok":
             logger.error("Liqpay api request error.", extra=extra)
-            raise LiqpayResponseError(
+            raise LiqpayResponseHTTPException(
                 liqpay_err_description=resp_json.get("err_code")
             )
 
@@ -158,16 +164,43 @@ class ReceiptResource(Resource):
             ).wait()
         except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
             logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureError()
+            raise LiqpayResponseFailureHTTPException()
 
         if not resp_json:
             logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureError()
+            raise LiqpayResponseFailureHTTPException()
 
         if resp_json.get("result") != "ok":
             logger.error("Liqpay api request error.", extra=extra)
-            raise LiqpayResponseError(
+            raise LiqpayResponseHTTPException(
                 liqpay_err_description=resp_json.get("err_code")
             )
 
         return {}
+
+
+@api.route('/signature')
+class SignatureResource(Resource):
+
+    dispatch_decorators = [login_group_required("brokers")]
+
+    @api.doc(description=DESC_SIGNATURE_POST, security="basicAuth")
+    @api.marshal_with(model_response_sign, code=200)
+    @api.response(400, 'Bad Request', model_response_error)
+    @api.response(401, 'Unauthorized', model_response_error)
+    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.expect(model_sign, validate=True)
+    def post(self):
+        """
+        Receive a signature.
+        """
+        logger.info("Payment signature requested.")
+        sandbox = parser_query.parse_args().get("sandbox")
+        try:
+            data = liqpay_decode(api.payload.get("data"), sandbox=sandbox)
+        except ASCIIError:
+            raise Base64DecodeHTTPException()
+        except JSONDecodeError:
+            raise JSONDecodeHTTPException()
+        signature = liqpay_sign(data, sandbox=sandbox)
+        return {'signature': signature}

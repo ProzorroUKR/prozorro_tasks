@@ -24,6 +24,10 @@ model_response_checkout_fields = {
     "order_id": fields.String(required=True, example=EXAMPLE_CHECKOUT_RESPONSE_ORDER_ID),
 }
 
+model_response_sign_fields = {
+    "signature": fields.String(required=True),
+}
+
 model_response_error_checkout_fields = {
     "code": fields.String(example=CODE_VALIDATION_ERROR, enum=[
         CODE_VALIDATION_ERROR,
@@ -48,6 +52,10 @@ model_response_error_receipt_fields = {
 
 model_response_checkout = model_response_success.clone(
     "ResponseCheckout", model_response_checkout_fields
+)
+
+model_response_sign = model_response_success.clone(
+    "ResponseSign", model_response_sign_fields
 )
 
 model_response_checkout_error = model_response_detailed_error.clone(

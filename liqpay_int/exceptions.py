@@ -12,7 +12,7 @@ from liqpay_int.codes import (
 )
 
 
-class LiqpayResponseFailureError(HTTPException):
+class LiqpayResponseFailureHTTPException(HTTPException):
     code = 400
     description = "Liqpay response failure"
 
@@ -23,7 +23,7 @@ class LiqpayResponseFailureError(HTTPException):
 
 
 
-class LiqpayResponseError(HTTPException):
+class LiqpayResponseHTTPException(HTTPException):
     code = 400
     description = "Liqpay response error"
 
@@ -35,16 +35,16 @@ class LiqpayResponseError(HTTPException):
     def __init__(self, description=None, response=None, liqpay_err_description=None):
         if liqpay_err_description is not None:
             description = "{}: {}".format(
-                description or LiqpayResponseError.description,
+                description or LiqpayResponseHTTPException.description,
                 liqpay_err_description
             )
-        super(LiqpayResponseError, self).__init__(
+        super(LiqpayResponseHTTPException, self).__init__(
             description=description,
             response=response
         )
 
 
-class ProzorroApiError(HTTPException):
+class ProzorroApiHTTPException(HTTPException):
     code = 400
     description = "Prozorro API request error"
 
@@ -54,7 +54,7 @@ class ProzorroApiError(HTTPException):
     )
 
 
-class PaymentInvalidError(HTTPException):
+class PaymentInvalidHTTPException(HTTPException):
     code = 400
     description = "Payment not recognized according to description provided"
 
@@ -64,7 +64,7 @@ class PaymentInvalidError(HTTPException):
     )
 
 
-class PaymentComplaintNotFoundError(HTTPException):
+class PaymentComplaintNotFoundHTTPException(HTTPException):
     code = 400
     description = "Payment complaint not found"
 
@@ -74,7 +74,7 @@ class PaymentComplaintNotFoundError(HTTPException):
     )
 
 
-class PaymentComplaintInvalidCodeError(HTTPException):
+class PaymentComplaintInvalidCodeHTTPException(HTTPException):
     code = 400
     description = "Payment complaint invalid code"
 
@@ -84,7 +84,7 @@ class PaymentComplaintInvalidCodeError(HTTPException):
     )
 
 
-class PaymentComplaintInvalidValueError(HTTPException):
+class PaymentComplaintInvalidValueHTTPException(HTTPException):
     code = 400
     description = "Payment complaint invalid value"
 
@@ -94,11 +94,29 @@ class PaymentComplaintInvalidValueError(HTTPException):
     )
 
 
-class PaymentComplaintInvalidStatusError(HTTPException):
+class PaymentComplaintInvalidStatusHTTPException(HTTPException):
     code = 400
     description = "Payment complaint invalid status"
 
     data = dict(
         message=description,
         code=CODE_PAYMENT_COMPLAINT_INVALID_STATUS
+    )
+
+
+class Base64DecodeHTTPException(HTTPException):
+    code = 400
+    description = "BASE64 decode error"
+
+    data = dict(
+        message=description
+    )
+
+
+class JSONDecodeHTTPException(HTTPException):
+    code = 400
+    description = "JSON decode error"
+
+    data = dict(
+        message=description
     )

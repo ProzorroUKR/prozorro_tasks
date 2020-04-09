@@ -9,6 +9,7 @@ from liqpay_int.broker.examples import (
     EXAMPLE_TICKET_ORDER_ID,
     EXAMPLE_TICKET_LANG,
     EXAMPLE_TICKET_STAMP,
+    EXAMPLE_SIGN_DATA,
 )
 from liqpay_int.broker.messages import (
     DESC_CHECKOUT_DESC,
@@ -40,6 +41,10 @@ model_receipt_fields = {
     "stamp": fields.Boolean(description=DESC_TICKET_STAMP, example=EXAMPLE_TICKET_STAMP),
 }
 
+model_sign_fields = {
+    "data": fields.String(required=True, example=EXAMPLE_SIGN_DATA),
+}
+
 model_request = Model(
     "ModelRequest", model_request_fields
 )
@@ -50,4 +55,8 @@ model_checkout = Model(
 
 model_receipt = Model(
     "ModelReceipt", model_receipt_fields
+)
+
+model_sign = Model(
+    "ModelSign", model_sign_fields
 )

@@ -3,7 +3,7 @@ from requests.exceptions import RequestException
 
 from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
-from liqpay_int.exceptions import ProzorroApiError
+from liqpay_int.exceptions import ProzorroApiHTTPException
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
 from liqpay_int.resources import Resource
@@ -40,5 +40,5 @@ class PushResource(Resource):
             ))
         except (TaskError, RequestException):
             logger.error("Payment processing task failed.", extra=extra)
-            raise ProzorroApiError()
+            raise ProzorroApiHTTPException()
         return {"status": "success"}
