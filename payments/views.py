@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_paginate import Pagination
 
 from app.auth import login_group_required
@@ -71,6 +71,8 @@ def info(uid):
     row = get_payment_item(uid)
     complaint = None
     tender = None
+    if not row:
+        abort(404)
     params = row.get("params", None)
     if params:
         if params.get("item_type"):
@@ -115,6 +117,8 @@ def info(uid):
 @login_group_required("accountants")
 def retry(uid):
     row = retry_payment_item(uid)
+    if not row:
+        abort(404)
     return redirect(url_for("payments_views.info", uid=uid))
 
 
