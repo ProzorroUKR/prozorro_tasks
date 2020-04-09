@@ -26,7 +26,7 @@ class PushResource(Resource):
 
     @api.marshal_with(model_response_success, code=200)
     @api.response(400, 'Bad Request', model_response_detailed_error)
-    @api.response(401, 'Unauthorized', model_response_error)
+    @api.response(403, 'Forbidden', model_response_error)
     @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_payment, validate=True)
     def post(self):
