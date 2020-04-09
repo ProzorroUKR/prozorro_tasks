@@ -72,14 +72,10 @@ def retry_payment_item(uid):
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
         from payments.tasks import process_payment_data
-        if doc and doc.get("payment", {}):
-            payment = doc.get("payment", {})
+        if doc and doc.get("payment", None):
+            payment_data = doc.get("payment", {})
             process_payment_data.apply_async(kwargs=dict(
-                payment_data=dict(
-                    description=payment.get("description"),
-                    amount=payment.get("amount"),
-                    currency=payment.get("currency"),
-                )
+                payment_data=doc.get("payment")
             ))
         return doc
 
