@@ -47,3 +47,15 @@ def liqpay_request(data=None, sandbox=False):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
     liqpay = LiqPay(public_key, private_key)
     return liqpay.api("/api/request", data)
+
+
+def liqpay_decode(data=None, sandbox=False):
+    public_key, private_key = get_liqpay_keys(sandbox=sandbox)
+    liqpay = LiqPay(public_key, private_key)
+    return liqpay.decode_data_from_str(data)
+
+
+def liqpay_sign(data=None, sandbox=False):
+    public_key, private_key = get_liqpay_keys(sandbox=sandbox)
+    liqpay = LiqPay(public_key, private_key)
+    return liqpay.cnb_signature(data)
