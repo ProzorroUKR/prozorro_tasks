@@ -1,0 +1,30 @@
+{% if row.payment %}
+<table class="table table-bordered table-striped table-payments">
+    {% for payment_key in row.payment %}
+    <tr>
+        <td class="cell-name">
+            {% if payment_key=="description" %}
+            Призначення:
+            {% elif payment_key=="amount" %}
+            Сума:
+            {% elif payment_key=="currency" %}
+            Валюта:
+            {% elif payment_key=="date_oper" %}
+            Дата операції:
+            {% else %}
+            {{ payment_key|capitalize }}
+            {% endif %}
+        </td>
+        <td>
+            {{ row.payment[payment_key] }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<table class="table table-bordered table-striped table-payments">
+    <tr>
+        <td>Дані відсутні</td>
+    </tr>
+</table>
+{% endif %}

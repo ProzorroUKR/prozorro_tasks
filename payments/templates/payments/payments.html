@@ -1,0 +1,17 @@
+{% extends "payments/base.html" %}
+
+{% block content %}
+{% include 'payments/partials/nav_tabs.html' %}
+<div class="table-responsive mb-3">
+    {% include 'payments/partials/table_update.html' %}
+</div>
+<div class="table-responsive">
+    {% include 'payments/partials/table_payments.html' %}
+</div>
+{{ pagination.links }}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'payments/partials/modal_retry.html' %}
+{% endblock %}

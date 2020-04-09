@@ -1,32 +1,43 @@
 {% extends "payments/base.html" %}
 
 {% block content %}
-    <h1>Оплата</h1>
-    <div class="table-responsive mb-2">
-        {% include 'payments/table_info.html' %}
-    </div>
-    <h4 class="mt-4">Події</h4>
-    <div class="table-responsive mb-2">
-        {% include 'payments/table_log.html' %}
-    </div>
-    <h4 class="mt-4">Посилання на API</h4>
-    <div class="table-responsive mb-2">
-        {% include 'payments/table_urls_api.html' %}
-    </div>
-    <h4 class="mt-4">Посилання на портал</h4>
-    <div class="table-responsive mb-2">
-        {% include 'payments/table_urls_portal.html' %}
-    </div>
-    <h4 class="mt-4">Скарга</h4>
-    <div class="table-responsive mb-2">
-        {% with data=complaint %}
-            {% include 'payments/table_dict.html' %}
-        {% endwith %}
-    </div>
-    <h4 class="mt-4">Закупівля</h4>
-    <div class="table-responsive mb-2">
-        {% with data=tender %}
-            {% include 'payments/table_dict.html' %}
-        {% endwith %}
-    </div>
+<h1>Оплата</h1>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_info.html' %}
+</div>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_update.html' %}
+</div>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_retry.html' %}
+</div>
+<h4 class="mt-4">Події</h4>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_log.html' %}
+</div>
+<h4 class="mt-4">Посилання на API</h4>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_urls_api.html' %}
+</div>
+<h4 class="mt-4">Посилання на портал</h4>
+<div class="table-responsive mb-2">
+    {% include 'payments/partials/table_urls_portal.html' %}
+</div>
+<h4 class="mt-4">Скарга</h4>
+<div class="table-responsive mb-2">
+    {% with data=complaint %}
+    {% include 'payments/partials/table_dict.html' %}
+    {% endwith %}
+</div>
+<h4 class="mt-4">Закупівля</h4>
+<div class="table-responsive mb-2">
+    {% with data=tender %}
+    {% include 'payments/partials/table_dict.html' %}
+    {% endwith %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'payments/partials/modal_retry.html' %}
 {% endblock %}

@@ -1,0 +1,18 @@
+<ul class="nav nav-pills nav-fill nav-payments">
+    <li class="nav-item">
+        {% with endpoint='payments_views.payments' %}
+        <a class="nav-link{% if request.url_rule.endpoint == endpoint %} active{% endif %}"
+           href="{{ url_for(endpoint) }}">
+            Оплати
+        </a>
+        {% endwith %}
+    </li>
+    <li class="nav-item">
+        {% with endpoint='payments_views.reports' %}
+        <a class="nav-link{% if request.url_rule.endpoint == endpoint %} active{% endif %}"
+           href="{{ url_for(endpoint) }}">
+            Звіти
+        </a>
+        {% endwith %}
+    </li>
+</ul>
