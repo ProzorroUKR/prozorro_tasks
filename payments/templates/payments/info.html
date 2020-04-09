@@ -5,7 +5,7 @@
     <i class="fas fa-redo-alt mr-2"></i> Оновити
 </a>
 {% with path='/payments/' + row._id + '/retry' %}
-    <a href="path" class="btn btn-primary btn-payment btn-sm btn-block mb-2" data-toggle="modal" data-target="#modalRetry">
+    <a href="{{ path }}" class="btn btn-primary btn-payment btn-sm btn-block mb-2" data-toggle="modal" data-target="#modalRetry">
         <i class="fas fa-play-circle mr-2"></i> Повторити обробку оплати
     </a>
 {% endwith %}
