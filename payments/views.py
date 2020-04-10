@@ -1,23 +1,25 @@
 import requests
+import urllib.parse as urlparse
 from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_paginate import Pagination
 
 from app.auth import login_group_required
-from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
+from environment_settings import PUBLIC_API_HOST, API_VERSION
 from payments.filters import (
-    payment_message_status, payment_primary_message, PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
-    PAYMENTS_WARNING_MESSAGE_ID_LIST,
-    PAYMENTS_DANGER_MESSAGE_ID_LIST,
-    PAYMENTS_ERROR_MESSAGE_ID_LIST,
+    payment_message_status,
+    payment_primary_message,
     PAYMENTS_MESSAGE_IDS,
 )
-from payments.results_db import get_payment_list, get_payment_item, retry_payment_item, get_payment_count
+from payments.tasks import process_payment_data
+from payments.results_db import get_payment_list, get_payment_item, get_payment_count
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
 
 bp.add_app_template_filter(payment_message_status, "payment_message_status")
 bp.add_app_template_filter(payment_primary_message, "payment_primary_message")
 
+CONNECT_TIMEOUT = 2.0
+READ_TIMEOUT = 2.0
 
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
@@ -25,7 +27,7 @@ DEFAULT_LIMIT = 10
 
 @bp.route("/", methods=["GET"])
 @login_group_required("accountants")
-def payments():
+def payment_list():
     try:
         page = int(request.args.get('page', DEFAULT_PAGE))
     except ValueError:
@@ -36,21 +38,37 @@ def payments():
     except ValueError:
         limit = DEFAULT_LIMIT
 
+    payment_type = request.args.get('type', None)
+    query = request.args.get('query', None)
+
     kwargs = dict(
         limit=limit,
-        page=page
+        page=page,
+        payment_type=payment_type,
+        search=query,
     )
 
+    def url_for_search(endpoint, exclude=None, include=None):
+        encoding = "utf-8"
+        query_params = urlparse.parse_qs(request.query_string)
+        query_params = {key.decode(encoding): value[0].decode(encoding) for key, value in query_params.items()}
+        if exclude:
+            query_params = {key: value for key, value in query_params.items() if key not in exclude}
+        if include:
+            query_params.update(**include)
+        return url_for(endpoint, **query_params)
+
     return render_template(
-        "payments/payments.html",
+        "payments/payment_list.html",
         rows=list(get_payment_list(**kwargs)),
         message_ids=PAYMENTS_MESSAGE_IDS,
+        url_for_search=url_for_search,
         pagination=Pagination(
             bs_version=4,
             link_size="sm",
             show_single_page=True,
             record_name="payments",
-            total=get_payment_count(),
+            total=get_payment_count(**kwargs),
             per_page_parameter="limit",
             page_parameter="page",
             **kwargs
@@ -67,7 +85,7 @@ def reports():
 
 @bp.route("/<uid>", methods=["GET"])
 @login_group_required("accountants")
-def info(uid):
+def payment_detail(uid):
     row = get_payment_item(uid)
     complaint = None
     tender = None
@@ -85,7 +103,7 @@ def info(uid):
             **params
         )
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
         except Exception as exc:
             pass
         else:
@@ -95,17 +113,18 @@ def info(uid):
         url = url_pattern.format(
             host=PUBLIC_API_HOST,
             version=API_VERSION,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             **params
         )
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
         except Exception as exc:
             pass
         else:
             tender = response.json()["data"]
 
     return render_template(
-        "payments/info.html",
+        "payments/payment_detail.html",
         row=row,
         complaint=complaint,
         tender=tender,
@@ -115,11 +134,13 @@ def info(uid):
 
 @bp.route("/<uid>/retry", methods=["GET"])
 @login_group_required("accountants")
-def retry(uid):
-    row = retry_payment_item(uid)
+def payment_retry(uid):
+    row = get_payment_item(uid)
     if not row:
         abort(404)
-    return redirect(url_for("payments_views.info", uid=uid))
-
-
-
+    payment = row.get("payment", {})
+    if payment.get("type") == "credit":
+        process_payment_data.apply_async(kwargs=dict(
+            payment_data=payment
+        ))
+    return redirect(url_for("payments_views.payment_detail", uid=uid))

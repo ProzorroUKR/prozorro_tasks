@@ -15,6 +15,11 @@
 
     .btn-payment {
         border-radius: 0;
+        font-size: .75rem;
+    }
+
+    .dropdown-item-payment {
+        font-size: .75rem;
     }
 
     .input-payment {
@@ -73,9 +78,12 @@
     }
 
     .table-payments > tbody > tr > td.cell-action:hover {
+        overflow: hidden;
+    }
+
+    .table-payments > tbody > tr > td.cell-action:not(.cell-action-disabled):hover {
         opacity: 0.9;
         cursor: pointer;
-        overflow: hidden;
     }
 
     .table-payments > tbody > tr > td.cell-action > a {

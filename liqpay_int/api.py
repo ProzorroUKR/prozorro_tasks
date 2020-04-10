@@ -3,13 +3,13 @@ from flask_restx import Api
 
 from liqpay_int.provider.namespaces import api as provider_ns
 from liqpay_int.broker.namespaces import api as broker_ns
-from payments.results_db import init_db_index
+from payments.results_db import init_db_indexes
 
 API_VERSION_MAJOR = 1
 API_VERSION_MINOR = 0
 API_PREFIX = "/api/v{}".format(API_VERSION_MAJOR)
 
-init_db_index()
+init_db_indexes()
 
 bp = Blueprint('payments_resources', __name__)
 api = Api(

@@ -1,0 +1,58 @@
+{% extends "payments/base.html" %}
+
+{% block content %}
+{% include 'payments/partials/nav_tabs.html' %}
+{% include 'payments/partials/btn_refresh.html' %}
+<div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
+    <form action="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'query']) }}" method="GET">
+        <div class="input-group input-group-justified mr-2 mb-2">
+            <div class="input-group-prepend">
+                <div class="input-group-text input-payment" id="searchGroupAddon">Ключове слово</div>
+            </div>
+            <input type="text" name="query" class="form-control input-payment"
+                   value="{{ request.args.get('query') or '' }}"
+                   aria-label="Search"
+                   aria-describedby="searchGroupAddon">
+            <input type="submit" class="btn btn-secondary btn-payment" value="Пошук"/>
+            {% for arg in request.args %}
+            {% if arg not in ['page', 'query'] %}
+            <input type="hidden" name="{{ arg }}" value="{{ request.args.get(arg) }}"/>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </form>
+    {% with type=request.args.get("type") %}
+    <div class="input-group mr-2 mb-2">
+        <div class="input-group-prepend">
+            <div class="input-group-text input-payment" id="typeGroupAddon">Тип операції</div>
+        </div>
+        <div class="btn-group btn-payment" role="group" aria-describedby="typeGroupAddon">
+            <div class="dropdown">
+                <button class="btn btn-secondary btn-payment dropdown-toggle" type="button" id="typeMenuButton"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    {{ type or 'all' }}
+                </button>
+                <div class="dropdown-menu" aria-labelledby="typeMenuButton">
+                    <a class="dropdown-item dropdown-item-payment{% if type==None %} active{% endif %}"
+                       href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'type']) }}">all</a>
+                    <a class="dropdown-item dropdown-item-payment{% if type=='debit' %} active{% endif %}"
+                       href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='debit')) }}">debit</a>
+                    <a class="dropdown-item dropdown-item-payment{% if type=='credit' %} active{% endif %}"
+                       href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='credit')) }}">credit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+</div>
+
+<div class="table-responsive">
+    {% include 'payments/partials/table_payments.html' %}
+</div>
+{{ pagination.links }}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'payments/partials/modal_retry.html' %}
+{% endblock %}

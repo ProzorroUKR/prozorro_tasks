@@ -1,3 +1,4 @@
+import pymongo
 from datetime import datetime
 from celery.utils.log import get_task_logger
 from pymongo import DESCENDING
@@ -14,13 +15,23 @@ get_mongodb_collection = partial(
 )
 
 
-def init_db_index():
-    # https://docs.mongodb.com/manual/tutorial/expire-data/
+DEFAULT_PAGE = 1
+DEFAULT_LIMIT = 10
+
+
+def init_db_indexes():
+    indexes = [
+        dict(keys="createdAt"),
+        dict(keys=[('payment.description', pymongo.TEXT)])
+    ]
+    for kwargs in indexes:
+        init_db_index(**kwargs)
+
+
+def init_db_index(**kwargs):
     try:
-        get_mongodb_collection().create_index(
-            "createdAt",
-            expireAfterSeconds=30 * 3600  # delete index when you"ve changed this
-        )
+        collection = get_mongodb_collection()
+        collection.create_index(**kwargs)
     except OperationFailure as e:
         logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
         return "exists"
@@ -29,21 +40,31 @@ def init_db_index():
     return "success"
 
 
-def get_payment_count():
+def get_payment_count(search=None, payment_type=None, **kwargs):
     collection = get_mongodb_collection()
+    find_filter = dict()
+    if payment_type:
+        find_filter.update({"payment.type": payment_type})
+    if search:
+        find_filter.update({"$text": {"$search": search}})
     try:
-        doc = collection.find().sort("createdAt", DESCENDING).count()
+        count = collection.count_documents(find_filter)
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
-        return doc
+        return count
 
 
-def get_payment_list(page, limit):
+def get_payment_list(search=None, payment_type=None, page=DEFAULT_PAGE, limit=DEFAULT_LIMIT, **kwargs):
     skip = page * limit - limit
     collection = get_mongodb_collection()
+    find_filter = dict()
+    if search:
+        find_filter.update({"$text": {"$search": search}})
+    if payment_type:
+        find_filter.update({"payment.type": payment_type})
     try:
-        doc = collection.find().sort("createdAt", DESCENDING).skip(skip).limit(limit)
+        doc = collection.find(find_filter).sort("createdAt", DESCENDING).skip(skip).limit(limit)
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
@@ -59,24 +80,6 @@ def get_payment_item(uid):
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
-        return doc
-
-
-def retry_payment_item(uid):
-    collection = get_mongodb_collection()
-    try:
-        doc = collection.find_one(
-            {"_id": uid}
-        )
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
-    else:
-        from payments.tasks import process_payment_data
-        if doc and doc.get("payment", None):
-            payment_data = doc.get("payment", {})
-            process_payment_data.apply_async(kwargs=dict(
-                payment_data=doc.get("payment")
-            ))
         return doc
 
 

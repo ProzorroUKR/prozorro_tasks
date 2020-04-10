@@ -40,11 +40,12 @@ class PushResource(Resource):
         except PyMongoError:
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         logger.info("Payment push received.", extra=extra)
-        try:
-            process_payment_data.apply_async(kwargs=dict(
-                payment_data=api.payload
-            ))
-        except (OperationalError):
-            logger.error("Payment send task failed.", extra=extra)
-            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
+        if api.payload.get("type") == "credit":
+            try:
+                process_payment_data.apply_async(kwargs=dict(
+                    payment_data=api.payload
+                ))
+            except (OperationalError):
+                logger.error("Payment send task failed.", extra=extra)
+                abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         return {"status": "success"}
