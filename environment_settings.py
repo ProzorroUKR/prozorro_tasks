@@ -60,6 +60,11 @@ APP_AUIP_ENABLED = os.environ.get("APP_AUIP_ENABLED", False)
 APP_X_FORWARDED_NUMBER = int(os.environ.get("APP_X_FORWARDED_NUMBER", 0))
 
 LIQPAY_API_HOST = os.environ.get("LIQPAY_API_HOST", "https://www.liqpay.ua")
+LIQPAY_API_PROXIES = dict()
+if os.environ.get("LIQPAY_API_HTTP_PROXY"):
+    LIQPAY_API_PROXIES["http"] = os.environ.get("LIQPAY_API_HTTP_PROXY")
+if os.environ.get("LIQPAY_API_HTTPS_PROXY"):
+    LIQPAY_API_PROXIES["https"] = os.environ.get("LIQPAY_API_HTTPS_PROXY")
 LIQPAY_PUBLIC_KEY = os.environ.get("LIQPAY_PUBLIC_KEY", "")
 LIQPAY_PRIVATE_KEY = os.environ.get("LIQPAY_PRIVATE_KEY", "")
 LIQPAY_SANDBOX_PUBLIC_KEY = os.environ.get("LIQPAY_SANDBOX_PUBLIC_KEY", "")
