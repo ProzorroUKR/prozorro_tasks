@@ -20,12 +20,22 @@ DEFAULT_LIMIT = 10
 
 
 def init_db_indexes():
+    drop_db_indexes()
     indexes = [
-        dict(keys="createdAt"),
-        dict(keys=[('payment.description', pymongo.TEXT)])
+        dict(keys="createdAt", name="created_at"),
+        dict(keys=[('payment.description', pymongo.TEXT)], name="payment_description_text")
     ]
     for kwargs in indexes:
         init_db_index(**kwargs)
+
+
+def drop_db_indexes():
+    try:
+        collection = get_mongodb_collection()
+        collection.drop_indexes()
+    except PyMongoError as e:
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
+    return "success"
 
 
 def init_db_index(**kwargs):
