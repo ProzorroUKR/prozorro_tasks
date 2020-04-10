@@ -6,6 +6,7 @@ from environment_settings import (
     LIQPAY_SANDBOX_PUBLIC_KEY,
     LIQPAY_SANDBOX_PRIVATE_KEY,
     LIQPAY_TAX_COEF,
+    LIQPAY_API_HOST,
 )
 
 
@@ -45,17 +46,17 @@ def generate_liqpay_receipt_params(data, sandbox=False):
 
 def liqpay_request(data=None, sandbox=False):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
-    liqpay = LiqPay(public_key, private_key)
+    liqpay = LiqPay(public_key, private_key, host=LIQPAY_API_HOST)
     return liqpay.api("/api/request", data)
 
 
 def liqpay_decode(data=None, sandbox=False):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
-    liqpay = LiqPay(public_key, private_key)
+    liqpay = LiqPay(public_key, private_key, host=LIQPAY_API_HOST)
     return liqpay.decode_data_from_str(data)
 
 
 def liqpay_sign(data=None, sandbox=False):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
-    liqpay = LiqPay(public_key, private_key)
+    liqpay = LiqPay(public_key, private_key, host=LIQPAY_API_HOST)
     return liqpay.cnb_signature(data)

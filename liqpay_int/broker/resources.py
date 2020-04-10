@@ -1,7 +1,7 @@
 from binascii import Error as ASCIIError
 from json import JSONDecodeError
 
-from celery.exceptions import TaskError, MaxRetriesExceededError
+from celery.exceptions import TaskError
 from requests import ConnectionError, Timeout
 
 from app.auth import login_group_required
@@ -102,7 +102,7 @@ class CheckoutResource(Resource):
             if not check_complaint_value(complaint_data):
                 raise PaymentComplaintInvalidValueHTTPException()
 
-        except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
+        except (TaskError, Timeout, ConnectionError):
             logger.error("Payment processing task failed.", extra=extra)
             raise ProzorroApiHTTPException()
 
@@ -115,7 +115,7 @@ class CheckoutResource(Resource):
             resp_json = process_liqpay_request.apply(
                 kwargs=dict(params=params, sandbox=sandbox)
             ).wait()
-        except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
+        except (TaskError, Timeout, ConnectionError):
             logger.error("Liqpay api request failed.", extra=extra)
             raise LiqpayResponseFailureHTTPException()
 
@@ -162,7 +162,7 @@ class ReceiptResource(Resource):
             resp_json = process_liqpay_request.apply(
                 kwargs=dict(params=params, sandbox=sandbox)
             ).wait()
-        except (TaskError, MaxRetriesExceededError, Timeout, ConnectionError):
+        except (TaskError, Timeout, ConnectionError):
             logger.error("Liqpay api request failed.", extra=extra)
             raise LiqpayResponseFailureHTTPException()
 

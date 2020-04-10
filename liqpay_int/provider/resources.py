@@ -1,5 +1,4 @@
-from celery.exceptions import TaskError
-from requests.exceptions import RequestException
+from kombu.exceptions import OperationalError
 
 from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
@@ -27,7 +26,7 @@ class PushResource(Resource):
 
     @api.marshal_with(model_response_success, code=200)
     @api.response(400, 'Bad Request', model_response_detailed_error)
-    @api.response(401, 'Unauthorized', model_response_error)
+    @api.response(403, 'Forbidden', model_response_error)
     @api.response(500, 'Internal Server Error', model_response_failure)
     @api.expect(model_payment, validate=True)
     def post(self):
@@ -38,7 +37,7 @@ class PushResource(Resource):
             process_payment_data.apply_async(kwargs=dict(
                 payment_data=api.payload
             ))
-        except (TaskError, RequestException):
+        except (OperationalError):
             logger.error("Payment processing task failed.", extra=extra)
             raise ProzorroApiHTTPException()
         return {"status": "success"}
