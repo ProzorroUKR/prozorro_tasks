@@ -4,7 +4,7 @@ from pymongo import DESCENDING
 
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
 from functools import partial
-from pymongo.errors import PyMongoError, OperationFailure
+from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 logger = get_task_logger(__name__)
 
@@ -110,8 +110,11 @@ def save_payment_item(data, user):
             "user": user,
             "createdAt": datetime.utcnow(),
         })
+    except DuplicateKeyError:
+        pass
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION"})
+        raise
     else:
         return uid
 

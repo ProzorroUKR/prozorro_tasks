@@ -19,6 +19,7 @@ def process_liqpay_request(self, params, sandbox=False):
     try:
         resp_json = liqpay_request(data=params, sandbox=sandbox)
     except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.error("Liqpay api request failed.")
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
     else:

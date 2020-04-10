@@ -1,7 +1,5 @@
 CODE_VALIDATION_ERROR = "validation_error"
-CODE_LIQPAY_API_FAILURE = "liqpay_api_failure"
 CODE_LIQPAY_API_ERROR = "liqpay_api_error"
-CODE_PROZORRO_API_ERROR = "prozorro_api_error"
 CODE_PAYMENT_INVALID = "payment_invalid"
 CODE_PAYMENT_COMPLAINT_NOT_FOUND = "payment_complaint_not_found"
 CODE_PAYMENT_COMPLAINT_INVALID_CODE = "payment_complaint_invalid_code"

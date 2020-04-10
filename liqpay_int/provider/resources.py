@@ -1,4 +1,5 @@
 from flask_restx import abort
+from flask_restx._http import HTTPStatus
 from kombu.exceptions import OperationalError
 from pymongo.errors import PyMongoError
 
@@ -25,11 +26,11 @@ class PushResource(Resource):
 
     dispatch_decorators = [ip_group_required("payment_providers")]
 
-    @api.marshal_with(model_response_success, code=200)
-    @api.response(400, 'Bad Request', model_response_detailed_error)
-    @api.response(403, 'Forbidden', model_response_error)
-    @api.response(503, 'Service Unavailable', model_response_failure)
-    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.doc_response(HTTPStatus.BAD_REQUEST, model=model_response_detailed_error)
+    @api.doc_response(HTTPStatus.FORBIDDEN, model=model_response_error)
+    @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
+    @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.marshal_with(model_response_success, code=HTTPStatus.OK)
     @api.expect(model_payment, validate=True)
     def post(self):
         extra = {"PAYMENT_DESCRIPTION": api.payload.get("description")}
@@ -37,7 +38,7 @@ class PushResource(Resource):
             save_payment_item(api.payload, (get_network_data() or {}).get("username"))
             logger.error("Payment save failed.", extra=extra)
         except PyMongoError:
-            abort(code=503)
+            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         logger.info("Payment push received.", extra=extra)
         try:
             process_payment_data.apply_async(kwargs=dict(
@@ -45,5 +46,5 @@ class PushResource(Resource):
             ))
         except (OperationalError):
             logger.error("Payment send task failed.", extra=extra)
-            abort(code=503)
+            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         return {"status": "success"}

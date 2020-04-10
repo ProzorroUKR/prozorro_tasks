@@ -8,9 +8,7 @@ from liqpay_int.responses import model_response_success, model_response_detailed
 
 from liqpay_int.codes import (
     CODE_VALIDATION_ERROR,
-    CODE_LIQPAY_API_FAILURE,
     CODE_LIQPAY_API_ERROR,
-    CODE_PROZORRO_API_ERROR,
     CODE_PAYMENT_INVALID,
     CODE_PAYMENT_COMPLAINT_NOT_FOUND,
     CODE_PAYMENT_COMPLAINT_INVALID_CODE,
@@ -31,9 +29,7 @@ model_response_sign_fields = {
 model_response_error_checkout_fields = {
     "code": fields.String(example=CODE_VALIDATION_ERROR, enum=[
         CODE_VALIDATION_ERROR,
-        CODE_LIQPAY_API_FAILURE,
         CODE_LIQPAY_API_ERROR,
-        CODE_PROZORRO_API_ERROR,
         CODE_PAYMENT_INVALID,
         CODE_PAYMENT_COMPLAINT_NOT_FOUND,
         CODE_PAYMENT_COMPLAINT_INVALID_CODE,
@@ -45,7 +41,6 @@ model_response_error_checkout_fields = {
 model_response_error_receipt_fields = {
     "code": fields.String(example=CODE_VALIDATION_ERROR, enum=[
         CODE_VALIDATION_ERROR,
-        CODE_LIQPAY_API_FAILURE,
         CODE_LIQPAY_API_ERROR,
     ]),
 }

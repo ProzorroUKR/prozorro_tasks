@@ -1,9 +1,8 @@
+from flask_restx._http import HTTPStatus
 from werkzeug.exceptions import HTTPException
 
 from liqpay_int.codes import (
-    CODE_LIQPAY_API_FAILURE,
     CODE_LIQPAY_API_ERROR,
-    CODE_PROZORRO_API_ERROR,
     CODE_PAYMENT_INVALID,
     CODE_PAYMENT_COMPLAINT_NOT_FOUND,
     CODE_PAYMENT_COMPLAINT_INVALID_CODE,
@@ -12,19 +11,11 @@ from liqpay_int.codes import (
 )
 
 
-class LiqpayResponseFailureHTTPException(HTTPException):
-    code = 400
-    description = "Liqpay response failure"
-
-    data = dict(
-        message=description,
-        code=CODE_LIQPAY_API_FAILURE
-    )
+class BadRequestHTTPException(HTTPException):
+    code = HTTPStatus.BAD_REQUEST
 
 
-
-class LiqpayResponseHTTPException(HTTPException):
-    code = 400
+class LiqpayResponseErrorHTTPException(BadRequestHTTPException):
     description = "Liqpay response error"
 
     data = dict(
@@ -35,27 +26,16 @@ class LiqpayResponseHTTPException(HTTPException):
     def __init__(self, description=None, response=None, liqpay_err_description=None):
         if liqpay_err_description is not None:
             description = "{}: {}".format(
-                description or LiqpayResponseHTTPException.description,
+                description or LiqpayResponseErrorHTTPException.description,
                 liqpay_err_description
             )
-        super(LiqpayResponseHTTPException, self).__init__(
+        super(LiqpayResponseErrorHTTPException, self).__init__(
             description=description,
             response=response
         )
 
 
-class ProzorroApiHTTPException(HTTPException):
-    code = 400
-    description = "Prozorro API request error"
-
-    data = dict(
-        message=description,
-        code=CODE_PROZORRO_API_ERROR
-    )
-
-
-class PaymentInvalidHTTPException(HTTPException):
-    code = 400
+class PaymentInvalidHTTPException(BadRequestHTTPException):
     description = "Payment not recognized according to description provided"
 
     data = dict(
@@ -64,8 +44,7 @@ class PaymentInvalidHTTPException(HTTPException):
     )
 
 
-class PaymentComplaintNotFoundHTTPException(HTTPException):
-    code = 400
+class PaymentComplaintNotFoundHTTPException(BadRequestHTTPException):
     description = "Payment complaint not found"
 
     data = dict(
@@ -74,8 +53,7 @@ class PaymentComplaintNotFoundHTTPException(HTTPException):
     )
 
 
-class PaymentComplaintInvalidCodeHTTPException(HTTPException):
-    code = 400
+class PaymentComplaintInvalidCodeHTTPException(BadRequestHTTPException):
     description = "Payment complaint invalid code"
 
     data = dict(
@@ -84,8 +62,7 @@ class PaymentComplaintInvalidCodeHTTPException(HTTPException):
     )
 
 
-class PaymentComplaintInvalidValueHTTPException(HTTPException):
-    code = 400
+class PaymentComplaintInvalidValueHTTPException(BadRequestHTTPException):
     description = "Payment complaint invalid value"
 
     data = dict(
@@ -94,8 +71,7 @@ class PaymentComplaintInvalidValueHTTPException(HTTPException):
     )
 
 
-class PaymentComplaintInvalidStatusHTTPException(HTTPException):
-    code = 400
+class PaymentComplaintInvalidStatusHTTPException(BadRequestHTTPException):
     description = "Payment complaint invalid status"
 
     data = dict(
@@ -104,8 +80,7 @@ class PaymentComplaintInvalidStatusHTTPException(HTTPException):
     )
 
 
-class Base64DecodeHTTPException(HTTPException):
-    code = 400
+class Base64DecodeHTTPException(BadRequestHTTPException):
     description = "BASE64 decode error"
 
     data = dict(
@@ -113,8 +88,7 @@ class Base64DecodeHTTPException(HTTPException):
     )
 
 
-class JSONDecodeHTTPException(HTTPException):
-    code = 400
+class JSONDecodeHTTPException(BadRequestHTTPException):
     description = "JSON decode error"
 
     data = dict(
