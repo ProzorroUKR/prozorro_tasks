@@ -14,6 +14,7 @@
         </td>
         <td>{{ row.createdAt|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}</td>
         <td>{{ row.user or ""}}</td>
+        {% if row["payment"] and row["payment"]["type"] == "credit" %}
         <td class="text-white cell-action cell-lg border-0 bg-primary">
             {% with path='/payments/' + row._id + '/retry' %}
             <a href="{{ path }}" data-toggle="modal" data-target="#modalRetry">
@@ -21,7 +22,12 @@
             </a>
             {% endwith %}
         </td>
-        <td class="text-white cell-action cell-lg border-0 bg-{{ row|payment_primary_message|payment_message_status or 'secondary' }}">
+        {% else %}
+        <td class="text-white cell-action cell-action-disabled cell-lg border-0 bg-secondary">
+            <i class="fas fa-sync-alt"></i>
+        </td>
+        {% endif %}
+        <td class="text-white cell-action cell-lg border-0 bg-{{ row|payment_primary_message|payment_message_status or 'dark' }}">
             <a href="/payments/{{row._id}}">
                 <i class="fas fa-info-circle"></i>
             </a>
@@ -30,9 +36,5 @@
     {% endfor %}
 </table>
 {% else %}
-<table class="table table-bordered table-striped table-payments">
-    <tr>
-        <td>Дані відсутні</td>
-    </tr>
-</table>
+    {% include "payments/partials/table_empty.html" %}
 {% endif %}

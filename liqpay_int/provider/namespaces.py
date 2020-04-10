@@ -1,5 +1,4 @@
-from flask_restx import Namespace
-
+from liqpay_int.namespaces import Namespace
 from liqpay_int.provider.models import model_payment
 from liqpay_int.responses import (
     model_response_success,

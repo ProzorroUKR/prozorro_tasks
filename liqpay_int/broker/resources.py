@@ -2,6 +2,8 @@ from binascii import Error as ASCIIError
 from json import JSONDecodeError
 
 from celery.exceptions import TaskError
+from flask_restx import abort
+from flask_restx._http import HTTPStatus
 from requests import ConnectionError, Timeout
 
 from app.auth import login_group_required
@@ -12,10 +14,8 @@ from payments.tasks import (
     process_payment_complaint_data,
 )
 from liqpay_int.exceptions import (
-    LiqpayResponseHTTPException,
-    LiqpayResponseFailureHTTPException,
+    LiqpayResponseErrorHTTPException,
     PaymentInvalidHTTPException,
-    ProzorroApiHTTPException,
     PaymentComplaintInvalidCodeHTTPException,
     PaymentComplaintInvalidValueHTTPException,
     PaymentComplaintNotFoundHTTPException,
@@ -52,10 +52,11 @@ class CheckoutResource(Resource):
     dispatch_decorators = [login_group_required("brokers")]
 
     @api.doc(description=DESC_CHECKOUT_POST, security="basicAuth")
-    @api.marshal_with(model_response_checkout, code=200)
-    @api.response(400, 'Bad Request', model_response_checkout_error)
-    @api.response(401, 'Unauthorized', model_response_error)
-    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.doc_response(HTTPStatus.BAD_REQUEST, model=model_response_checkout_error)
+    @api.doc_response(HTTPStatus.UNAUTHORIZED, model=model_response_error)
+    @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
+    @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.marshal_with(model_response_checkout, code=HTTPStatus.OK)
     @api.expect(model_checkout, validate=True)
     def post(self):
         """
@@ -103,36 +104,28 @@ class CheckoutResource(Resource):
                 raise PaymentComplaintInvalidValueHTTPException()
 
         except (TaskError, Timeout, ConnectionError):
-            logger.error("Payment processing task failed.", extra=extra)
-            raise ProzorroApiHTTPException()
-
-        sandbox = parser_query.parse_args().get("sandbox")
-        params = generate_liqpay_checkout_params(
-            api.payload, payment_params, complaint_data, sandbox=sandbox
-        )
-
-        try:
-            resp_json = process_liqpay_request.apply(
-                kwargs=dict(params=params, sandbox=sandbox)
-            ).wait()
-        except (TaskError, Timeout, ConnectionError):
-            logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureHTTPException()
-
-        if not resp_json:
-            logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureHTTPException()
-
-        if resp_json.get("result") != "ok":
-            logger.error("Liqpay api request error.", extra=extra)
-            raise LiqpayResponseHTTPException(
-                liqpay_err_description=resp_json.get("err_code")
+            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
+        else:
+            sandbox = parser_query.parse_args().get("sandbox")
+            params = generate_liqpay_checkout_params(
+                api.payload, payment_params, complaint_data, sandbox=sandbox
             )
 
-        return {
-            "url_checkout": resp_json.get("url_checkout"),
-            "order_id": params.get("order_id")
-        }
+            try:
+                resp_json = process_liqpay_request.apply(
+                    kwargs=dict(params=params, sandbox=sandbox)
+                ).wait()
+            except (TaskError, Timeout, ConnectionError):
+                abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
+            else:
+                if not resp_json:
+                    raise LiqpayResponseErrorHTTPException()
+                if resp_json.get("result") != "ok":
+                    raise LiqpayResponseErrorHTTPException(liqpay_err_description=resp_json.get("err_code"))
+                return {
+                    "url_checkout": resp_json.get("url_checkout"),
+                    "order_id": params.get("order_id")
+                }
 
 
 @api.route('/receipt')
@@ -141,10 +134,11 @@ class ReceiptResource(Resource):
     dispatch_decorators = [login_group_required("brokers")]
 
     @api.doc(description=DESC_TICKET_POST, security="basicAuth")
-    @api.marshal_with(model_response_success, code=200)
-    @api.response(400, 'Bad Request', model_response_receipt_error)
-    @api.response(401, 'Unauthorized', model_response_error)
-    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.doc_response(HTTPStatus.BAD_REQUEST, model=model_response_receipt_error)
+    @api.doc_response(HTTPStatus.UNAUTHORIZED, model=model_response_error)
+    @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
+    @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.marshal_with(model_response_success, code=HTTPStatus.OK)
     @api.expect(model_receipt, validate=True)
     def post(self):
         """
@@ -164,19 +158,15 @@ class ReceiptResource(Resource):
             ).wait()
         except (TaskError, Timeout, ConnectionError):
             logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureHTTPException()
-
-        if not resp_json:
-            logger.error("Liqpay api request failed.", extra=extra)
-            raise LiqpayResponseFailureHTTPException()
-
-        if resp_json.get("result") != "ok":
-            logger.error("Liqpay api request error.", extra=extra)
-            raise LiqpayResponseHTTPException(
-                liqpay_err_description=resp_json.get("err_code")
-            )
-
-        return {}
+            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
+        else:
+            if not resp_json:
+                logger.error("Liqpay api request error.", extra=extra)
+                raise LiqpayResponseErrorHTTPException()
+            if resp_json.get("result") != "ok":
+                logger.error("Liqpay api request error.", extra=extra)
+                raise LiqpayResponseErrorHTTPException(liqpay_err_description=resp_json.get("err_code"))
+            return {}
 
 
 @api.route('/signature')
@@ -185,10 +175,11 @@ class SignatureResource(Resource):
     dispatch_decorators = [login_group_required("brokers")]
 
     @api.doc(description=DESC_SIGNATURE_POST, security="basicAuth")
-    @api.marshal_with(model_response_sign, code=200)
-    @api.response(400, 'Bad Request', model_response_error)
-    @api.response(401, 'Unauthorized', model_response_error)
-    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.doc_response(HTTPStatus.BAD_REQUEST, model=model_response_error)
+    @api.doc_response(HTTPStatus.UNAUTHORIZED, model=model_response_error)
+    @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
+    @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.marshal_with(model_response_sign, code=HTTPStatus.OK)
     @api.expect(model_sign, validate=True)
     def post(self):
         """

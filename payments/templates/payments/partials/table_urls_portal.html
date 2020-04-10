@@ -9,9 +9,5 @@
     </tr>
 </table>
 {% else %}
-<table class="table table-bordered table-striped table-payments">
-    <tr>
-        <td>Дані відсутні</td>
-    </tr>
-</table>
+    {% include "payments/partials/table_empty.html" %}
 {% endif %}

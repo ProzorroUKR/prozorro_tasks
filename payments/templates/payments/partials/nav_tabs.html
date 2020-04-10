@@ -1,8 +1,8 @@
 <ul class="nav nav-pills nav-fill nav-payments">
     <li class="nav-item">
-        {% with endpoint_payments='payments_views.payments', endpoint_info='payments_views.info' %}
-        <a class="nav-link{% if request.url_rule.endpoint in [endpoint_payments, endpoint_info] %} active{% endif %}"
-           href="{{ url_for(endpoint_payments) }}">
+        {% with endpoint_list='payments_views.payment_list', endpoint_detail='payments_views.payment_detail' %}
+            <a class="nav-link{% if request.url_rule.endpoint in [endpoint_list, endpoint_detail] %} active{% endif %}"
+           href="{{ url_for(endpoint_list) }}">
             Оплати
         </a>
         {% endwith %}

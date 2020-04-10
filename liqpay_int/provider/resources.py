@@ -1,8 +1,10 @@
+from flask_restx import abort
+from flask_restx._http import HTTPStatus
 from kombu.exceptions import OperationalError
+from pymongo.errors import PyMongoError
 
 from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
-from liqpay_int.exceptions import ProzorroApiHTTPException
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
 from liqpay_int.resources import Resource
@@ -24,20 +26,26 @@ class PushResource(Resource):
 
     dispatch_decorators = [ip_group_required("payment_providers")]
 
-    @api.marshal_with(model_response_success, code=200)
-    @api.response(400, 'Bad Request', model_response_detailed_error)
-    @api.response(403, 'Forbidden', model_response_error)
-    @api.response(500, 'Internal Server Error', model_response_failure)
+    @api.doc_response(HTTPStatus.BAD_REQUEST, model=model_response_detailed_error)
+    @api.doc_response(HTTPStatus.FORBIDDEN, model=model_response_error)
+    @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
+    @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.marshal_with(model_response_success, code=HTTPStatus.OK)
     @api.expect(model_payment, validate=True)
     def post(self):
-        save_payment_item(api.payload, (get_network_data() or {}).get("username"))
         extra = {"PAYMENT_DESCRIPTION": api.payload.get("description")}
-        logger.info("Payment push received.", extra=extra)
         try:
-            process_payment_data.apply_async(kwargs=dict(
-                payment_data=api.payload
-            ))
-        except (OperationalError):
-            logger.error("Payment processing task failed.", extra=extra)
-            raise ProzorroApiHTTPException()
+            save_payment_item(api.payload, (get_network_data() or {}).get("username"))
+            logger.error("Payment save failed.", extra=extra)
+        except PyMongoError:
+            abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
+        logger.info("Payment push received.", extra=extra)
+        if api.payload.get("type") == "credit":
+            try:
+                process_payment_data.apply_async(kwargs=dict(
+                    payment_data=api.payload
+                ))
+            except (OperationalError):
+                logger.error("Payment send task failed.", extra=extra)
+                abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         return {"status": "success"}
