@@ -1,0 +1,26 @@
+{% if row %}
+<table class="table table-bordered table-striped table-payments">
+    {% for key in row %}
+    {% if key not in ['_id', 'payment', 'params', 'messages'] %}
+    <tr>
+        <td class="cell-name">
+            {% if payment_key=="description" %}
+            Призначення:
+            {% elif key=="user" %}
+            Інінціатор:
+            {% elif key=="createdAt" %}
+            Отримано:
+            {% else %}
+            {{ key|capitalize }}
+            {% endif %}
+        </td>
+        <td>
+            {{ row[key] }}
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+{% else %}
+    {% include "payments/partials/table_empty.html" %}
+{% endif %}
