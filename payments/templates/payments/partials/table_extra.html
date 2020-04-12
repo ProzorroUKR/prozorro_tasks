@@ -1,21 +1,23 @@
 {% if row %}
 <table class="table table-bordered table-striped table-payments">
     {% for key in row %}
-    {% if key not in ['_id', 'payment', 'params', 'messages'] %}
+    {% if key not in ['_id', 'payment', 'params', 'messages', 'resolution'] %}
     <tr>
         <td class="cell-name">
-            {% if payment_key=="description" %}
-            Призначення:
-            {% elif key=="user" %}
+            {% if key=="user" %}
             Інінціатор:
             {% elif key=="createdAt" %}
-            Отримано:
+            Дата отримання:
             {% else %}
             {{ key|capitalize }}
             {% endif %}
         </td>
         <td>
+            {% if key=="createdAt" %}
+            {{ row[key]|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}
+            {% else %}
             {{ row[key] }}
+            {% endif %}
         </td>
     </tr>
     {% endif %}

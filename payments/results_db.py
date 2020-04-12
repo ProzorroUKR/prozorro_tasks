@@ -1,11 +1,13 @@
 import pymongo
-from datetime import datetime
+from datetime import datetime, timedelta
 from celery.utils.log import get_task_logger
 from pymongo import DESCENDING
 
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
 from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
+
+from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
 
 logger = get_task_logger(__name__)
 
@@ -50,13 +52,9 @@ def init_db_index(**kwargs):
     return "success"
 
 
-def get_payment_count(search=None, payment_type=None, **kwargs):
+def get_payment_count(**kwargs):
     collection = get_mongodb_collection()
-    find_filter = dict()
-    if payment_type:
-        find_filter.update({"payment.type": payment_type})
-    if search:
-        find_filter.update({"$text": {"$search": search}})
+    find_filter = get_payment_filters(**kwargs)
     try:
         count = collection.count_documents(find_filter)
     except PyMongoError as exc:
@@ -65,14 +63,35 @@ def get_payment_count(search=None, payment_type=None, **kwargs):
         return count
 
 
-def get_payment_list(search=None, payment_type=None, page=DEFAULT_PAGE, limit=DEFAULT_LIMIT, **kwargs):
+def get_payment_filters(
+    search=None,
+    payment_type=None,
+    resolution_exists=None,
+    resolution_date=None,
+    resolution_funds=None,
+    **kwargs
+):
+    find_filter = dict()
+    if search is not None:
+        find_filter.update({"$text": {"$search": search}})
+    if payment_type is not None:
+        find_filter.update({"payment.type": payment_type})
+    if resolution_exists is not None:
+        find_filter.update({"resolution": {"$exists": resolution_exists}})
+    if resolution_funds is not None:
+        find_filter.update({"resolution.funds": resolution_funds})
+    if resolution_date is not None:
+        find_filter.update({"resolution.date": {
+            "$gte": resolution_date.isoformat(),
+            "$lt": (resolution_date + timedelta(days=1)).isoformat()
+        }})
+    return find_filter
+
+
+def get_payment_list(page=DEFAULT_PAGE, limit=DEFAULT_LIMIT, **kwargs):
     skip = page * limit - limit
     collection = get_mongodb_collection()
-    find_filter = dict()
-    if search:
-        find_filter.update({"$text": {"$search": search}})
-    if payment_type:
-        find_filter.update({"payment.type": payment_type})
+    find_filter = get_payment_filters(**kwargs)
     try:
         doc = collection.find(find_filter).sort("createdAt", DESCENDING).skip(skip).limit(limit)
     except PyMongoError as exc:
@@ -109,6 +128,7 @@ def push_payment_message(data, message_id, message):
         )
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION"})
+        raise
     else:
         return doc
 
@@ -143,5 +163,55 @@ def set_payment_params(data, params):
             }})
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION"})
+        raise
+    else:
+        return uid
+
+
+def get_payment_item_by_params(params):
+    collection = get_mongodb_collection()
+    try:
+        doc = collection.find({
+            "params": params
+        })
+    except PyMongoError as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_BY_PARAMS_MONGODB_EXCEPTION"})
+        raise
+    else:
+        items = list(doc)
+        if len(items) == 1:
+            return items[0]
+        elif len(items) > 1:
+            return get_payment_item_by_params_and_message_id(
+                params, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
+            )
+
+
+def get_payment_item_by_params_and_message_id(params, message_id):
+    collection = get_mongodb_collection()
+    try:
+        doc = collection.find_one({
+            "params": params,
+            "messages.message_id": message_id
+        })
+    except PyMongoError as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_BY_PARAM_AND_MESSAGE_ID_MONGODB_EXCEPTION"})
+        raise
+    else:
+        return doc
+
+
+def set_payment_resolution(data, resolution):
+    uid = args_to_uid(sorted(data.values()))
+    collection = get_mongodb_collection()
+    try:
+        collection.update(
+            {"_id": uid},
+            {'$set': {
+                'resolution': resolution
+            }})
+    except PyMongoError as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION"})
+        raise
     else:
         return uid

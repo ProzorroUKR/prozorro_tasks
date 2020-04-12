@@ -20,7 +20,7 @@ def datetime_replace_microseconds(dt):
 
 
 def datetime_isoformat(dt):
-    return dt.replace(microsecond=0).isoformat()
+    return dt.isoformat()
 
 
 def prozorro_api_tender_path(tender_params):

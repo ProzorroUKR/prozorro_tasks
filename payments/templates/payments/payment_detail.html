@@ -6,20 +6,36 @@
 
 {% include 'payments/partials/btn_refresh.html' %}
 
-{% if row["payment"] and row["payment"]["type"] == "credit" %}
+{% if row.payment and row.payment.value.type.value == "credit" %}
+{% with data=row %}
 {% include 'payments/partials/btn_retry.html' %}
+{% endwith %}
 {% endif %}
 
-<h1>Оплата</h1>
+<h1>{{ row.payment.title }}</h1>
 <div class="table-responsive mb-2">
+    {% with data=row.payment.value %}
     {% include 'payments/partials/table_info.html' %}
+    {% endwith %}
 </div>
 
-
-<h4 class="mt-4">Додаткова інфоріація</h4>
+{% if row and row.extra %}
+<h4 class="mt-4">{{ row.extra.title }}</h4>
 <div class="table-responsive mb-2">
-    {% include 'payments/partials/table_extra.html' %}
+    {% with data=row.extra.value %}
+    {% include 'payments/partials/table_info.html' %}
+    {% endwith %}
 </div>
+{% endif %}
+
+{% if row and row.resolution %}
+<h4 class="mt-4">{{ row.resolution.title }}</h4>
+<div class="table-responsive mb-2">
+    {% with data=row.resolution.value %}
+    {% include 'payments/partials/table_info.html' %}
+    {% endwith %}
+</div>
+{% endif %}
 
 {% if row and row.messages %}
 <h4 class="mt-4">Події</h4>
