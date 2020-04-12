@@ -1,4 +1,4 @@
-{% with path='/payments/' + row._id + '/retry' %}
+{% with path='/payments/' + data.id.value + '/retry' %}
     <a href="{{ path }}" class="btn btn-primary btn-payment btn-block mb-2" data-toggle="modal" data-target="#modalRetry">
         <i class="fas fa-sync-alt mr-2"></i> Повторити обробку оплати
     </a>

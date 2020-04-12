@@ -1,22 +1,12 @@
-{% if row.payment %}
+{% if data %}
 <table class="table table-bordered table-striped table-payments">
-    {% for payment_key in row.payment %}
+    {% for name, item in data.items() %}
     <tr>
         <td class="cell-name">
-            {% if payment_key=="description" %}
-            Призначення:
-            {% elif payment_key=="amount" %}
-            Сума:
-            {% elif payment_key=="currency" %}
-            Валюта:
-            {% elif payment_key=="date_oper" %}
-            Дата операції:
-            {% else %}
-            {{ payment_key|capitalize }}
-            {% endif %}
+            {{ item.title }}
         </td>
         <td>
-            {{ row.payment[payment_key] }}
+            {{ item.value }}
         </td>
     </tr>
     {% endfor %}

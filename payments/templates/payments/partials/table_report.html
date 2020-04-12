@@ -1,0 +1,22 @@
+{% if rows[1] %}
+<table class="table table-bordered table-striped table-payments">
+    {% for row in rows[0:1] %}
+    <tr class="thead-dark">
+        {% for header in row %}
+        <th>{{ header }}</th>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    {% for row in rows[1:] %}
+    <tr>
+        {% for field in row %}
+            <td>
+                {{ field }}
+            </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+{% include "payments/partials/table_empty.html" %}
+{% endif %}
