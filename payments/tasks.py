@@ -68,7 +68,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 COMPLAINT_NOT_FOUND_MAX_RETRIES = 20
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_payment_data(self, payment_data, *args, **kwargs):
     """
     Process and validate payment data
@@ -103,7 +103,7 @@ def process_payment_data(self, payment_data, *args, **kwargs):
     ))
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_payment_complaint_search(self, payment_data, payment_params, *args, **kwargs):
     complaint_pretty_id = payment_params.get("complaint")
 
@@ -200,7 +200,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
     ))
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_payment_complaint_data(self, complaint_params, payment_data, *args, **kwargs):
     tender_id = complaint_params.get("tender_id")
 
@@ -347,7 +347,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
     ))
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data, *args, **kwargs):
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
@@ -437,7 +437,7 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         })
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
@@ -477,7 +477,12 @@ def process_tender(self, tender_id, *args, **kwargs):
                     "complaint_id": complaint_data["id"],
                     "tender_id": tender_id
                 }
-                process_complaint_params(self, complaint_params, complaint_data)
+                process_complaint_params.apply_async(
+                    kwargs=dict(
+                        complaint_params=complaint_params,
+                        complaint_data=complaint_data
+                    )
+                )
 
         for item_type in ["qualifications", "awards", "cancellations"]:
             for item_data in tender.get(item_type, []):
@@ -489,9 +494,15 @@ def process_tender(self, tender_id, *args, **kwargs):
                             "complaint_id": complaint_data["id"],
                             "tender_id": tender_id
                         }
-                        process_complaint_params(self, complaint_params, complaint_data)
+                        process_complaint_params.apply_async(
+                            kwargs=dict(
+                                complaint_params=complaint_params,
+                                complaint_data=complaint_data
+                            )
+                        )
 
 
+@app.task(bind=True, max_retries=None)
 def process_complaint_params(self, complaint_params, complaint_data):
     try:
         payment = get_payment_item_by_params(complaint_params)
@@ -514,7 +525,7 @@ def process_complaint_params(self, complaint_params, complaint_data):
         })
 
 
-@app.task(bind=True)
+@app.task(bind=True, max_retries=None)
 def process_complaint_resolution(self, payment_data, complaint_data, *args, **kwargs):
     status = complaint_data.get("status")
     reason = complaint_data.get("rejectReason")
