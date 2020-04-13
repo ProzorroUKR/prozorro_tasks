@@ -1,8 +1,8 @@
-import os
-import csv
+import io
+import pandas
 
-from flask import Blueprint, render_template, redirect, url_for, abort, request, send_file
-import dateutil.parser
+from flask import Blueprint, render_template, redirect, url_for, abort, send_file, make_response, request
+from pandas import isna
 
 from app.auth import login_group_required
 from payments.filters import (
@@ -93,8 +93,6 @@ def reports():
         **kwargs
     )
 
-import tempfile
-tempdirectory = tempfile.gettempdir()
 
 @bp.route("/reports/download", methods=["GET"])
 @login_group_required("accountants")
@@ -104,21 +102,25 @@ def reports_download():
     funds = kwargs.get("resolution_funds") or 'all'
     if date:
         rows = list(get_payment_list(resolution_exists=True, **kwargs))
-        data = get_report(rows) if rows else []
-        print(data)
-        filename = "{}_{}_report.csv".format(date.isoformat(), funds)
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as temp_csv:
-            writer = csv.writer(temp_csv)
-            writer.writerows(data)
-            temp_csv.flush()
-            temp_csv.seek(0)
-            response = send_file(
-                temp_csv.name,
-                as_attachment=True,
-                attachment_filename=filename,
-                add_etags=False,
-                cache_timeout=0
-            )
-            return response
-
+        data = get_report(rows)
+        headers = data.pop(0)
+        filename = "{}-{}-report".format(date.date().isoformat(), funds)
+        bytes_io = io.BytesIO()
+        data_frame = pandas.DataFrame(data, columns=headers, index=range(1, len(data) + 1))
+        with pandas.ExcelWriter(bytes_io, engine='xlsxwriter') as writer:
+            data_frame.to_excel(writer, sheet_name=filename)
+            workbook = writer.book
+            worksheet = writer.sheets[filename]
+            format = workbook.add_format({'text_wrap': True})
+            format.set_align('top')
+            for idx, col in enumerate(data_frame):
+                series = data_frame[col]
+                series_max_nen = series.astype(str).map(len).max()
+                name_len = len(str(series.name))
+                max_len = max(series_max_nen, name_len) if not isna(series_max_nen) else name_len
+                worksheet.set_column(idx + 1, idx + 1, min(max_len, 50), cell_format=format)
+        response = make_response(bytes_io.getvalue())
+        response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
+        response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return response
     abort(404)

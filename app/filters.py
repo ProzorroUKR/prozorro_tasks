@@ -29,7 +29,7 @@ def prozorro_api_tender_path(tender_params):
 
 
 def prozorro_api_item_path(item_params):
-    url_pattern = "/tenders/{tender_id}/{item_type}"
+    url_pattern = "/tenders/{tender_id}/{item_type}/{item_id}"
     return url_pattern.format(host=PUBLIC_API_HOST, version=API_VERSION, **item_params)
 
 

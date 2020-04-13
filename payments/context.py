@@ -1,4 +1,4 @@
-import dateutil
+import dateutil.parser
 import jmespath
 import requests
 from flask import request, url_for
@@ -88,7 +88,7 @@ resolution_scheme = {
         "default": "",
     },
     "reason": {
-        "title": "Причина сказування",
+        "title": "Причина",
         "path": "resolution.reason",
         "method": complaint_reject_description,
         "default": "",
