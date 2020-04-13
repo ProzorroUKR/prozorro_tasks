@@ -1,8 +1,8 @@
-import os
-import csv
+import io
 
-from flask import Blueprint, render_template, redirect, url_for, abort, request, send_file
-import dateutil.parser
+from xlsxwriter import Workbook
+
+from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_group_required
 from payments.filters import (
@@ -93,8 +93,6 @@ def reports():
         **kwargs
     )
 
-import tempfile
-tempdirectory = tempfile.gettempdir()
 
 @bp.route("/reports/download", methods=["GET"])
 @login_group_required("accountants")
@@ -104,21 +102,40 @@ def reports_download():
     funds = kwargs.get("resolution_funds") or 'all'
     if date:
         rows = list(get_payment_list(resolution_exists=True, **kwargs))
-        data = get_report(rows) if rows else []
-        print(data)
-        filename = "{}_{}_report.csv".format(date.isoformat(), funds)
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as temp_csv:
-            writer = csv.writer(temp_csv)
-            writer.writerows(data)
-            temp_csv.flush()
-            temp_csv.seek(0)
-            response = send_file(
-                temp_csv.name,
-                as_attachment=True,
-                attachment_filename=filename,
-                add_etags=False,
-                cache_timeout=0
-            )
-            return response
+        data = get_report(rows)
 
+        for index, row in enumerate(data):
+            data[index] = [str(index) if index else " "] + row
+
+        headers = data.pop(0)
+        filename = "{}-{}-report".format(date.date().isoformat(), funds)
+        bytes_io = io.BytesIO()
+
+        workbook = Workbook(bytes_io)
+        worksheet = workbook.add_worksheet()
+
+        properties = {'text_wrap': True}
+        cell_format = workbook.add_format(properties)
+        cell_format.set_align('top')
+
+        worksheet.add_table(0, 0, len(data), len(headers) - 1, {
+            'first_column': True,
+            'header_row': True,
+            'columns': [{"header": header} for header in headers],
+            'data': data
+        })
+
+        for index, header in enumerate(headers):
+            max_len = max(
+                max(map(lambda x: len(x[index]), data)),
+                len(header)
+            )
+            worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+
+        workbook.close()
+
+        response = make_response(bytes_io.getvalue())
+        response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
+        response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return response
     abort(404)
