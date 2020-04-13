@@ -1,8 +1,8 @@
 import io
-import pandas
 
-from flask import Blueprint, render_template, redirect, url_for, abort, send_file, make_response, request
-from pandas import isna
+from xlsxwriter import Workbook
+
+from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_group_required
 from payments.filters import (
@@ -103,22 +103,37 @@ def reports_download():
     if date:
         rows = list(get_payment_list(resolution_exists=True, **kwargs))
         data = get_report(rows)
+
+        for index, row in enumerate(data):
+            data[index] = [str(index) if index else " "] + row
+
         headers = data.pop(0)
         filename = "{}-{}-report".format(date.date().isoformat(), funds)
         bytes_io = io.BytesIO()
-        data_frame = pandas.DataFrame(data, columns=headers, index=range(1, len(data) + 1))
-        with pandas.ExcelWriter(bytes_io, engine='xlsxwriter') as writer:
-            data_frame.to_excel(writer, sheet_name=filename)
-            workbook = writer.book
-            worksheet = writer.sheets[filename]
-            format = workbook.add_format({'text_wrap': True})
-            format.set_align('top')
-            for idx, col in enumerate(data_frame):
-                series = data_frame[col]
-                series_max_nen = series.astype(str).map(len).max()
-                name_len = len(str(series.name))
-                max_len = max(series_max_nen, name_len) if not isna(series_max_nen) else name_len
-                worksheet.set_column(idx + 1, idx + 1, min(max_len, 50), cell_format=format)
+
+        workbook = Workbook(bytes_io)
+        worksheet = workbook.add_worksheet()
+
+        properties = {'text_wrap': True}
+        cell_format = workbook.add_format(properties)
+        cell_format.set_align('top')
+
+        worksheet.add_table(0, 0, len(data), len(headers) - 1, {
+            'first_column': True,
+            'header_row': True,
+            'columns': [{"header": header} for header in headers],
+            'data': data
+        })
+
+        for index, header in enumerate(headers):
+            max_len = max(
+                max(map(lambda x: len(x[index]), data)),
+                len(header)
+            )
+            worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+
+        workbook.close()
+
         response = make_response(bytes_io.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
         response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
