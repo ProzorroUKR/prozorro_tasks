@@ -14,9 +14,11 @@
         {% for name, item in row.items() %}
         {% if item.value|typing_is_dict %}
         <td>
+            {% if not name=='resolution' or item.value.type.value %}
             {% with data=item.value %}
             {% include "payments/partials/table_info.html" %}
             {% endwith %}
+            {% endif %}
         </td>
         {% elif name not in ['id', 'messages', 'params'] %}
         <td>

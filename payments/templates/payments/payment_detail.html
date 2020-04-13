@@ -28,7 +28,7 @@
 </div>
 {% endif %}
 
-{% if row and row.resolution %}
+{% if row and row.resolution.value.type.value %}
 <h4 class="mt-4">{{ row.resolution.title }}</h4>
 <div class="table-responsive mb-2">
     {% with data=row.resolution.value %}
