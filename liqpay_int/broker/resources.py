@@ -7,11 +7,11 @@ from requests import ConnectionError, Timeout
 
 from app.auth import login_group_required
 from app.logging import getLogger
+from liqpay_int.broker.utils import get_cookies
 from payments.tasks import (
     process_payment_data,
     process_payment_complaint_search,
     process_payment_complaint_data,
-    get_cookies,
 )
 from liqpay_int.exceptions import (
     LiqpayResponseErrorHTTPException,
@@ -76,7 +76,6 @@ class CheckoutResource(Resource):
 
             payment_params = process_payment_data.apply(kwargs=dict(
                 payment_data=payment_data,
-                cookies=cookies,
             )).wait()
 
             if not payment_params:
