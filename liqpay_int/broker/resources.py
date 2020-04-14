@@ -12,6 +12,7 @@ from payments.tasks import (
     process_payment_data,
     process_payment_complaint_search,
     process_payment_complaint_data,
+    process_payment_cookies,
 )
 from liqpay_int.exceptions import (
     LiqpayResponseErrorHTTPException,
@@ -29,7 +30,10 @@ from liqpay_int.responses import (
     model_response_error,
     model_response_failure,
 )
-from liqpay_int.utils import generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign, liqpay_decode
+from liqpay_int.utils import (
+    generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign,
+    liqpay_decode, liqpay_request,
+)
 from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST, DESC_SIGNATURE_POST
 from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
@@ -40,7 +44,6 @@ from liqpay_int.broker.responses import (
     model_response_receipt_error,
     model_response_sign,
 )
-from liqpay_int.tasks import process_liqpay_request
 from payments.utils import check_complaint_code, check_complaint_value, check_complaint_status
 
 logger = getLogger()
@@ -70,9 +73,14 @@ class CheckoutResource(Resource):
         payment_data = dict(description=description)
 
         try:
-            payment_params = process_payment_data.apply(
-                kwargs=dict(payment_data=payment_data)
-            ).wait()
+            cookies = process_payment_cookies.apply(kwargs=dict(
+                payment_data=payment_data
+            )).wait()
+
+            payment_params = process_payment_data.apply(kwargs=dict(
+                payment_data=payment_data,
+                cookies=cookies,
+            )).wait()
 
             if not payment_params:
                 raise PaymentInvalidHTTPException()
@@ -80,6 +88,7 @@ class CheckoutResource(Resource):
             search_complaint_data = process_payment_complaint_search.apply(kwargs=dict(
                 payment_data=payment_data,
                 payment_params=payment_params,
+                cookies=cookies,
             )).wait()
 
             if not search_complaint_data:
@@ -92,6 +101,7 @@ class CheckoutResource(Resource):
             complaint_data = process_payment_complaint_data.apply(kwargs=dict(
                 complaint_params=complaint_params,
                 payment_data=payment_data,
+                cookies=cookies,
             )).wait()
 
             if not complaint_data:
@@ -103,19 +113,17 @@ class CheckoutResource(Resource):
             if not check_complaint_value(complaint_data):
                 raise PaymentComplaintInvalidValueHTTPException()
 
-        except (TaskError, Timeout, ConnectionError):
+        except (Timeout, ConnectionError):
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         else:
             sandbox = parser_query.parse_args().get("sandbox")
             params = generate_liqpay_checkout_params(
                 api.payload, payment_params, complaint_data, sandbox=sandbox
             )
-
             try:
-                resp_json = process_liqpay_request.apply(
-                    kwargs=dict(params=params, sandbox=sandbox)
-                ).wait()
-            except (TaskError, Timeout, ConnectionError):
+                resp_json = liqpay_request(data=params, sandbox=sandbox)
+            except (Timeout, ConnectionError):
+                logger.error("Liqpay api request failed.")
                 abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
             else:
                 if not resp_json:
@@ -151,22 +159,20 @@ class ReceiptResource(Resource):
 
         sandbox = parser_query.parse_args().get("sandbox")
         params = generate_liqpay_receipt_params(api.payload, sandbox=sandbox)
-
         try:
-            resp_json = process_liqpay_request.apply(
-                kwargs=dict(params=params, sandbox=sandbox)
-            ).wait()
-        except (TaskError, Timeout, ConnectionError):
-            logger.error("Liqpay api request failed.", extra=extra)
+            resp_json = liqpay_request(data=params, sandbox=sandbox)
+        except (Timeout, ConnectionError):
+            logger.error("Liqpay api request failed.")
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         else:
             if not resp_json:
-                logger.error("Liqpay api request error.", extra=extra)
                 raise LiqpayResponseErrorHTTPException()
             if resp_json.get("result") != "ok":
-                logger.error("Liqpay api request error.", extra=extra)
                 raise LiqpayResponseErrorHTTPException(liqpay_err_description=resp_json.get("err_code"))
-            return {}
+            return {
+                "url_checkout": resp_json.get("url_checkout"),
+                "order_id": params.get("order_id")
+            }
 
 
 @api.route('/signature')
