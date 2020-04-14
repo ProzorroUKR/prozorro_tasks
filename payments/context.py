@@ -4,9 +4,15 @@ from flask import request, url_for
 from flask_paginate import Pagination
 
 from environment_settings import PUBLIC_API_HOST, API_VERSION
-from payments.schemes import payment_scheme, resolution_scheme, full_scheme, get_scheme_value, get_scheme_data
+from payments.schemes import (
+    get_scheme_value,
+    get_scheme_data,
+    ROOT_SCHEME,
+    REPORT_SCHEME,
+)
 from payments.message_ids import (
-    PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+    PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
+    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
     PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
     PAYMENTS_INVALID_PATTERN,
     PAYMENTS_SEARCH_INVALID_COMPLAINT,
@@ -171,7 +177,7 @@ def get_payments(rows):
     return [get_payment(row) for row in rows]
 
 def get_payment(row):
-    data = get_scheme_data(row, full_scheme)
+    data = get_scheme_data(row, ROOT_SCHEME)
     data["messages"] = row.get("messages", [])
     data["params"] = row.get("params", {})
     return data
@@ -181,17 +187,12 @@ def get_report(rows):
     data = []
     headers = []
 
-    for key, value in payment_scheme.items():
-        headers.append(value["title"])
-    for key, value in resolution_scheme.items():
+    for key, value in REPORT_SCHEME.items():
         headers.append(value["title"])
 
     for row in rows:
         item = []
-        for key, scheme in payment_scheme.items():
-            value = get_scheme_value(row, scheme)
-            item.append(value)
-        for key, scheme in resolution_scheme.items():
+        for key, scheme in REPORT_SCHEME.items():
             value = get_scheme_value(row, scheme)
             item.append(value)
         data.append(item)
