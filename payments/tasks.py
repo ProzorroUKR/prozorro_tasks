@@ -558,7 +558,7 @@ def process_complaint_resolution(self, payment_data, complaint_data, *args, **kw
     if status in ["mistaken"]:
         date = complaint_data.get("date")
 
-        if reason in ["incorrectPayment", "complaintPeriodEnded"]:
+        if reason in ["incorrectPayment", "complaintPeriodEnded", "cancelledByComplainant"]:
             funds = "complainant"
 
     elif status in ["satisfied", "resolved"]:
