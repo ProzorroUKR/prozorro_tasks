@@ -69,6 +69,34 @@ COMPLAINT_NOT_FOUND_MAX_RETRIES = 20
 
 
 @app.task(bind=True, max_retries=None)
+def process_payment_cookies(self, payment_data):
+    client_request_id = uuid4().hex
+    try:
+        head_response = requests.head(
+            "{host}/api/{version}/spore".format(
+                host=API_HOST,
+                version=API_VERSION,
+            ),
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                "Authorization": "Bearer {}".format(API_TOKEN),
+                "X-Client-Request-ID": client_request_id,
+            }
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
+        if self.request.is_eager:
+            raise
+        countdown = get_exponential_request_retry_countdown(self)
+        raise self.retry(countdown=countdown, exc=exc)
+
+    return head_response.cookies.get_dict()
+
+
+@app.task(bind=True, max_retries=None)
 def process_payment_data(self, payment_data, *args, **kwargs):
     """
     Process and validate payment data
@@ -104,7 +132,14 @@ def process_payment_data(self, payment_data, *args, **kwargs):
 
 
 @app.task(bind=True, max_retries=None)
-def process_payment_complaint_search(self, payment_data, payment_params, *args, **kwargs):
+def process_payment_complaint_search(self, payment_data, payment_params, cookies=None, *args, **kwargs):
+    if not cookies:
+        cookies = process_payment_cookies.apply_async(
+            kwargs=dict(
+                payment_data=payment_data
+            )
+        ).wait()
+
     complaint_pretty_id = payment_params.get("complaint")
 
     url = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}".format(
@@ -122,15 +157,15 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
                 "Authorization": "Bearer {}".format(API_TOKEN),
             },
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            cookies=cookies,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(str(exc), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_SEARCH_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
-        if self.max_retries and self.request.retries >= self.max_retries:
-            if not self.request.is_eager:
-                return
+        if self.request.is_eager:
+            raise
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
@@ -141,6 +176,8 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
             "MESSAGE_ID": PAYMENTS_SEARCH_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
+        if self.request.is_eager:
+            return
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)
 
@@ -153,11 +190,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
             "MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT
         })
         if self.request.is_eager:
-            if self.max_retries and self.request.retries >= self.max_retries:
-                return
-        else:
-            if self.request.retries >= COMPLAINT_NOT_FOUND_MAX_RETRIES:
-                return
+            return
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)
 
@@ -165,11 +198,12 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
 
     complaint_params = search_complaint_data.get("params")
 
-    try:
-        set_payment_params(payment_data, complaint_params)
-    except PyMongoError as exc:
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown, exc=exc)
+    if not self.request.is_eager:
+        try:
+            set_payment_params(payment_data, complaint_params)
+        except PyMongoError as exc:
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown, exc=exc)
 
     logger.info("Successfully found complaint {}".format(
         complaint_pretty_id
@@ -197,11 +231,12 @@ def process_payment_complaint_search(self, payment_data, payment_params, *args, 
     process_payment_complaint_data.apply_async(kwargs=dict(
         complaint_params=complaint_params,
         payment_data=payment_data,
+        cookies=cookies
     ))
 
 
 @app.task(bind=True, max_retries=None)
-def process_payment_complaint_data(self, complaint_params, payment_data, *args, **kwargs):
+def process_payment_complaint_data(self, complaint_params, payment_data, cookies=None, *args, **kwargs):
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
@@ -216,15 +251,15 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
             url,
             headers={"X-Client-Request-ID": client_request_id},
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            cookies=cookies
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(str(exc), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
-        if self.max_retries and self.request.retries >= self.max_retries:
-            if not self.request.is_eager:
-                return
+        if self.request.is_eager:
+            raise
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
@@ -235,8 +270,22 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
             "MESSAGE_ID": PAYMENTS_GET_TENDER_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown)
+        if self.request.is_eager:
+            return
+        if response.status_code == 412:
+            cookies = process_payment_cookies.apply_async(
+                kwargs=dict(
+                    payment_data=payment_data
+                )
+            ).wait()
+            raise self.retry(countdown=0, kwargs=dict(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+                cookies=cookies
+            ))
+        else:
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown)
     else:
         logger.info("Successfully retrieved tender {}".format(
             tender_id
@@ -258,6 +307,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
             ), payment_data=payment_data, task=self, extra={
                 "MESSAGE_ID": PAYMENTS_ITEM_NOT_FOUND
             })
+            if self.request.is_eager:
+                return
             countdown = get_exponential_request_retry_countdown(self)
             raise self.retry(countdown=countdown)
         complaint_data =  get_item_data(item_data, "complaints", complaint_id)
@@ -275,6 +326,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_COMPLAINT_NOT_FOUND
         })
+        if self.request.is_eager:
+            return
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)
 
@@ -315,7 +368,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
             complaint_params=complaint_params,
             complaint_patch_data={
                 "status": "mistaken"
-            }
+            },
+            cookies=cookies
         ))
         return
 
@@ -330,7 +384,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
             complaint_params=complaint_params,
             complaint_patch_data={
                 "status": "mistaken"
-            }
+            },
+            cookies=cookies
         ))
         return
 
@@ -343,12 +398,14 @@ def process_payment_complaint_data(self, complaint_params, payment_data, *args, 
         complaint_params=complaint_params,
         complaint_patch_data={
             "status": "pending"
-        }
+        },
+        cookies=cookies
     ))
 
 
 @app.task(bind=True, max_retries=None)
-def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data, *args, **kwargs):
+def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data, cookies=None,
+                                    *args, **kwargs):
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
@@ -359,29 +416,6 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         version=API_VERSION,
         **complaint_params
     )
-    
-    client_request_id = uuid4().hex
-    try:
-        head_response = requests.head(
-            url,
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={
-                "Authorization": "Bearer {}".format(API_TOKEN),
-                "X-Client-Request-ID": client_request_id,
-            }
-        )
-    except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
-            "CDB_CLIENT_REQUEST_ID": client_request_id,
-        })
-        if self.max_retries and self.request.retries >= self.max_retries:
-            if not self.request.is_eager:
-                return
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown, exc=exc)
-
-    cookies = head_response.cookies
     
     client_request_id = uuid4().hex
     try:
@@ -400,9 +434,8 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
             "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
-        if self.max_retries and self.request.retries >= self.max_retries:
-            if not self.request.is_eager:
-                return
+        if self.request.is_eager:
+            raise
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
@@ -416,10 +449,25 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
             "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
-        if response.status_code == 403:
+        if self.request.is_eager:
+            return
+        if response.status_code == 412:
+            cookies = process_payment_cookies.apply_async(
+                kwargs=dict(
+                    payment_data=payment_data
+                )
+            ).wait()
+            raise self.retry(countdown=0, kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                complaint_patch_data=complaint_patch_data,
+                cookies=cookies
+            ))
+        elif response.status_code == 403:
             process_payment_complaint_patch.apply_async(kwargs=dict(
                 payment_data=payment_data,
-                complaint_params=complaint_params
+                complaint_params=complaint_params,
+                cookies=cookies
             ))
             return
         else:
@@ -451,10 +499,11 @@ def process_tender(self, tender_id, *args, **kwargs):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc, task=self, extra={
+        logger.exception(str(exc), task=self, extra={
             "MESSAGE_ID": "PAYMENTS_CRAWLER_GET_TENDER_EXCEPTION"
         })
-        raise self.retry(exc=exc)
+        countdown = get_exponential_request_retry_countdown(self)
+        raise self.retry(countdown=countdown, exc=exc)
     else:
         if response.status_code != 200:
             logger.warning("Unexpected status code {} while getting tender {}: {}".format(
