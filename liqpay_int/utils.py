@@ -9,7 +9,7 @@ from environment_settings import (
     LIQPAY_PRIVATE_KEY,
     LIQPAY_SANDBOX_PUBLIC_KEY,
     LIQPAY_SANDBOX_PRIVATE_KEY,
-    LIQPAY_TAX_COEF,
+    LIQPAY_TAX_PERCENTAGE,
     LIQPAY_API_HOST,
     LIQPAY_API_PROXIES,
 )
@@ -46,6 +46,9 @@ def generate_liqpay_params(data, sandbox=False):
 
 
 def generate_liqpay_checkout_params(data, payment_params, complaint_data, sandbox=False):
+    amount = float(complaint_data.get("value").get("amount"))
+    if LIQPAY_TAX_PERCENTAGE:
+        amount /= (1.0 - (LIQPAY_TAX_PERCENTAGE / 100.0))
     params = {
         "action": "payment_prepare",
         "action_payment": "pay",
@@ -53,7 +56,7 @@ def generate_liqpay_checkout_params(data, payment_params, complaint_data, sandbo
             payment_params.get("complaint"),
             payment_params.get("code").upper()
         ),
-        "amount": float(complaint_data.get("value").get("amount")) * LIQPAY_TAX_COEF,
+        "amount": amount,
         "currency": complaint_data.get("value").get("currency")
     }
     params.update(data)
