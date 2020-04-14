@@ -3,7 +3,7 @@
         {% with endpoint_list='payments_views.payment_list', endpoint_detail='payments_views.payment_detail' %}
             <a class="nav-link{% if request.url_rule.endpoint in [endpoint_list, endpoint_detail] %} active{% endif %}"
            href="{{ url_for(endpoint_list) }}">
-            Оплати
+            Операції
         </a>
         {% endwith %}
     </li>

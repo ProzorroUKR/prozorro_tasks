@@ -1,12 +1,30 @@
 import dateutil.parser
-import jmespath
 import requests
 from flask import request, url_for
 from flask_paginate import Pagination
 
-from app.filters import datetime_astimezone, datetime_isoformat, datetime_replace_microseconds
 from environment_settings import PUBLIC_API_HOST, API_VERSION
-from payments.filters import complaint_status_description, complaint_reject_description, complaint_funds_description
+from payments.schemes import payment_scheme, resolution_scheme, full_scheme, get_scheme_value, get_scheme_data
+from payments.message_ids import (
+    PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
+    PAYMENTS_INVALID_PATTERN,
+    PAYMENTS_SEARCH_INVALID_COMPLAINT,
+    PAYMENTS_SEARCH_INVALID_CODE,
+    PAYMENTS_INVALID_STATUS,
+    PAYMENTS_INVALID_AMOUNT,
+    PAYMENTS_INVALID_CURRENCY,
+    PAYMENTS_INVALID_COMPLAINT_VALUE,
+    PAYMENTS_ITEM_NOT_FOUND,
+    PAYMENTS_COMPLAINT_NOT_FOUND,
+    PAYMENTS_SEARCH_EXCEPTION,
+    PAYMENTS_SEARCH_CODE_ERROR,
+    PAYMENTS_GET_TENDER_EXCEPTION,
+    PAYMENTS_GET_TENDER_CODE_ERROR,
+    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+)
 from payments.results_db import get_payment_count
 
 DEFAULT_PAGE = 1
@@ -15,162 +33,47 @@ DEFAULT_LIMIT = 10
 CONNECT_TIMEOUT = 3.0
 READ_TIMEOUT = 3.0
 
-DEFAULT_PAYMENT_FIELDS = [
-    "description",
-    "amount",
-    "currency",
-    "date_oper",
-    "type",
-    "account",
-    "okpo",
-    "mfo",
-    "name",
+PAYMENTS_INFO_MESSAGE_ID_LIST = [
+    PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
 ]
 
-payment_scheme = {
-    "description": {
-        "title": "Призначення платежу",
-        "path": "payment.description",
-        "default": "",
-    },
-    "amount": {
-        "title": "Сума платежу",
-        "path": "payment.amount",
-        "default": "",
-    },
-    "currency": {
-        "title": "Валюта платежу",
-        "path": "payment.currency",
-        "default": "",
-    },
-    "date_oper": {
-        "title": "Дата операції",
-        "path": "payment.date_oper",
-        "default": "",
-    },
-    "type": {
-        "title": "Тип операції",
-        "path": "payment.type",
-        "default": "",
-    },
-    "account": {
-        "title": "Номер рахунку",
-        "path": "payment.account",
-        "default": "",
-    },
-    "okpo": {
-        "title": "ОКПО рахунку",
-        "path": "payment.okpo",
-        "default": "",
-    },
-    "mfo": {
-        "title": "МФО рахунку",
-        "path": "payment.mfo",
-        "default": "",
-    },
-    "name": {
-        "title": "Назва рахунку",
-        "path": "payment.name",
-        "default": "",
-    },
+PAYMENTS_SUCCESS_MESSAGE_ID_LIST = [
+    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+]
+
+PAYMENTS_WARNING_MESSAGE_ID_LIST = [
+    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
+]
+
+PAYMENTS_DANGER_MESSAGE_ID_LIST = [
+    PAYMENTS_INVALID_PATTERN,
+    PAYMENTS_SEARCH_INVALID_COMPLAINT,
+    PAYMENTS_SEARCH_INVALID_CODE,
+    PAYMENTS_INVALID_STATUS,
+    PAYMENTS_INVALID_AMOUNT,
+    PAYMENTS_INVALID_CURRENCY,
+    PAYMENTS_INVALID_COMPLAINT_VALUE,
+    PAYMENTS_ITEM_NOT_FOUND,
+    PAYMENTS_COMPLAINT_NOT_FOUND,
+]
+
+PAYMENTS_ERROR_MESSAGE_ID_LIST = [
+    PAYMENTS_SEARCH_EXCEPTION,
+    PAYMENTS_SEARCH_CODE_ERROR,
+    PAYMENTS_GET_TENDER_EXCEPTION,
+    PAYMENTS_GET_TENDER_CODE_ERROR,
+    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
+    PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+]
+
+PAYMENTS_MESSAGE_IDS = {
+    'success': PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
+    'warning': PAYMENTS_WARNING_MESSAGE_ID_LIST,
+    'danger': PAYMENTS_DANGER_MESSAGE_ID_LIST,
+    'error': PAYMENTS_ERROR_MESSAGE_ID_LIST,
 }
 
-resolution_scheme = {
-    "type": {
-        "title": "Рішення по скарзі",
-        "path": "resolution.type",
-        "method": complaint_status_description,
-        "default": "",
-    },
-    "date": {
-        "title": "Дата рішення",
-        "path": "resolution.date",
-        "default": "",
-    },
-    "reason": {
-        "title": "Причина",
-        "path": "resolution.reason",
-        "method": complaint_reject_description,
-        "default": "",
-    },
-    "funds": {
-        "title": "Висновок",
-        "path": "resolution.funds",
-        "method": complaint_funds_description,
-        "default": "",
-    },
-}
-
-extra_scheme = {
-    "user": {
-        "title": "Ініціатор",
-        "path": "user",
-        "default": "",
-    },
-    "created": {
-        "title": "Дата отримання",
-        "path": "createdAt",
-        "method": lambda x: datetime_isoformat(datetime_replace_microseconds(datetime_astimezone(x))),
-        "default": "",
-    },
-}
-
-full_scheme = {
-    "id": {
-        "title": "ID",
-        "path": "_id",
-        "default": "",
-    },
-    "payment": {
-        "title": "Транзакція",
-        "scheme": payment_scheme,
-        "default": "",
-    },
-    "extra": {
-        "title": "Додатково",
-        "scheme": extra_scheme,
-        "default": "",
-    },
-    "resolution": {
-        "title": "Рішення",
-        "scheme": resolution_scheme,
-        "default": "",
-    },
-}
-
-
-def get_scheme_value(data, scheme_info):
-    if "scheme" in scheme_info:
-        value = {}
-        for scheme_nested_field, scheme_nested_info in scheme_info["scheme"].items():
-            value.update({scheme_nested_field: get_scheme_item(data, scheme_nested_info)})
-        return value
-    value = jmespath.search(scheme_info["path"], data) or scheme_info.get("default")
-    if "method" in scheme_info:
-        value = scheme_info["method"](value)
-    return value
-
-
-def get_scheme_title(data, scheme_info):
-    if "title" in scheme_info:
-        return scheme_info["title"]
-    return None
-
-
-def get_scheme_item(data, scheme_info):
-    value = get_scheme_value(data, scheme_info)
-    title = get_scheme_title(data, scheme_info)
-    item = dict(value=value)
-    if title:
-        item.update(dict(title=title))
-    return item
-
-
-def get_scheme_data(data, scheme):
-    data_formatted = {}
-    for scheme_field, scheme_info in scheme.items():
-        data_formatted.update({scheme_field: get_scheme_item(data, scheme_info)})
-    return data_formatted
 
 def get_tender(params):
     url_pattern = "{host}/api/{version}/tenders/{tender_id}"
@@ -252,7 +155,7 @@ def get_report_params():
         resolution_funds=funds,
     )
 
-def get_pagination(**kwargs):
+def get_payment_pagination(**kwargs):
     return Pagination(
         bs_version=4,
         link_size="sm",
@@ -296,3 +199,33 @@ def get_report(rows):
     data.insert(0, headers)
 
     return data
+
+
+def payment_primary_message(payment):
+    primary_list = []
+    primary_list.extend(PAYMENTS_INFO_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_SUCCESS_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_WARNING_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_DANGER_MESSAGE_ID_LIST)
+    primary_list.extend(PAYMENTS_ERROR_MESSAGE_ID_LIST)
+    for primary in primary_list:
+        for message in payment.get("messages", []):
+            if message.get("message_id") == primary:
+                return message
+
+
+def payment_message_status(message):
+    if message is None:
+        return None
+    message_id = message.get("message_id")
+    if message_id in PAYMENTS_INFO_MESSAGE_ID_LIST:
+        return "info"
+    if message_id in PAYMENTS_SUCCESS_MESSAGE_ID_LIST:
+        return "success"
+    elif message_id in PAYMENTS_WARNING_MESSAGE_ID_LIST:
+        return "warning"
+    elif message_id in PAYMENTS_ERROR_MESSAGE_ID_LIST:
+        return "warning"
+    elif message_id in PAYMENTS_DANGER_MESSAGE_ID_LIST:
+        return "danger"
+    return None
