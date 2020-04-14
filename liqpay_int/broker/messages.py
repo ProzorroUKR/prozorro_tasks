@@ -53,3 +53,5 @@ DESC_SIGNATURE_POST = "" \
 "- if the signature is identical, then you have received a genuine response from the server of LiqPay \n" \
 "(not changed by a third party / without the intervention of third parties) and you can fulfill obligations to the \n" \
 "customer on payment, in accordance with the received payment status."
+
+SERVER_ID_DESC = "An optional server id that will be used as cookie to request external api"

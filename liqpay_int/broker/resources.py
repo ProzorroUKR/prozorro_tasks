@@ -1,6 +1,7 @@
 from binascii import Error as ASCIIError
 from json import JSONDecodeError
 
+from flask import request
 from flask_restx import abort
 from flask_restx._http import HTTPStatus
 from requests import ConnectionError, Timeout
@@ -33,7 +34,7 @@ from liqpay_int.utils import (
     generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign,
     liqpay_decode, liqpay_request,
 )
-from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST, DESC_SIGNATURE_POST
+from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST, DESC_SIGNATURE_POST, SERVER_ID_DESC
 from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
 from liqpay_int.broker.models import model_checkout, model_receipt, model_sign
@@ -58,6 +59,7 @@ class CheckoutResource(Resource):
     @api.doc_response(HTTPStatus.UNAUTHORIZED, model=model_response_error)
     @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
     @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.param("X-Server-Id", description=SERVER_ID_DESC, _in="header")
     @api.marshal_with(model_response_checkout, code=HTTPStatus.OK)
     @api.expect(model_checkout, validate=True)
     def post(self):
@@ -71,8 +73,10 @@ class CheckoutResource(Resource):
 
         payment_data = dict(description=description)
 
+        server_id = request.headers.get("X-Server-Id")
+
         try:
-            cookies = get_cookies()
+            cookies = {"SERVER_ID": server_id} if server_id else get_cookies()
 
             payment_params = process_payment_data.apply(kwargs=dict(
                 payment_data=payment_data,
