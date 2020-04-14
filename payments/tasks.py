@@ -68,31 +68,19 @@ RETRY_REQUESTS_EXCEPTIONS = (
 COMPLAINT_NOT_FOUND_MAX_RETRIES = 20
 
 
-@app.task(bind=True, max_retries=None)
-def process_payment_cookies(self, payment_data):
+def get_cookies():
     client_request_id = uuid4().hex
-    try:
-        head_response = requests.head(
-            "{host}/api/{version}/spore".format(
-                host=API_HOST,
-                version=API_VERSION,
-            ),
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={
-                "Authorization": "Bearer {}".format(API_TOKEN),
-                "X-Client-Request-ID": client_request_id,
-            }
-        )
-    except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
-            "CDB_CLIENT_REQUEST_ID": client_request_id,
-        })
-        if self.request.is_eager:
-            raise
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown, exc=exc)
-
+    head_response = requests.head(
+        "{host}/api/{version}/spore".format(
+            host=API_HOST,
+            version=API_VERSION,
+        ),
+        timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        headers={
+            "Authorization": "Bearer {}".format(API_TOKEN),
+            "X-Client-Request-ID": client_request_id,
+        }
+    )
     return head_response.cookies.get_dict()
 
 
@@ -119,7 +107,9 @@ def process_payment_data(self, payment_data, *args, **kwargs):
     if not payment_params:
         logger.warning("Invalid pattern for \"{}\"".format(
             description
-        ), payment_data=payment_data, task=self, extra={"MESSAGE_ID": PAYMENTS_INVALID_PATTERN})
+        ), payment_data=payment_data, task=self, extra={
+            "MESSAGE_ID": PAYMENTS_INVALID_PATTERN
+        })
         return
 
     if self.request.is_eager:
@@ -134,11 +124,16 @@ def process_payment_data(self, payment_data, *args, **kwargs):
 @app.task(bind=True, max_retries=None)
 def process_payment_complaint_search(self, payment_data, payment_params, cookies=None, *args, **kwargs):
     if not cookies:
-        cookies = process_payment_cookies.apply_async(
-            kwargs=dict(
-                payment_data=payment_data
-            )
-        ).wait()
+        try:
+            cookies = get_cookies()
+        except RETRY_REQUESTS_EXCEPTIONS as exc:
+            logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+                "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+            })
+            if self.request.is_eager:
+                raise
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown, exc=exc)
 
     complaint_pretty_id = payment_params.get("complaint")
 
@@ -272,20 +267,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         })
         if self.request.is_eager:
             return
-        if response.status_code == 412:
-            cookies = process_payment_cookies.apply_async(
-                kwargs=dict(
-                    payment_data=payment_data
-                )
-            ).wait()
-            raise self.retry(countdown=0, kwargs=dict(
-                complaint_params=complaint_params,
-                payment_data=payment_data,
-                cookies=cookies
-            ))
-        else:
-            countdown = get_exponential_request_retry_countdown(self)
-            raise self.retry(countdown=countdown)
+        countdown = get_exponential_request_retry_countdown(self)
+        raise self.retry(countdown=countdown)
     else:
         logger.info("Successfully retrieved tender {}".format(
             tender_id
@@ -406,6 +389,18 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
 @app.task(bind=True, max_retries=None)
 def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data, cookies=None,
                                     *args, **kwargs):
+    if not cookies:
+        try:
+            cookies = get_cookies()
+        except RETRY_REQUESTS_EXCEPTIONS as exc:
+            logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+                "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
+            })
+            if self.request.is_eager:
+                raise
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown, exc=exc)
+
     if complaint_params.get("item_type"):
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
@@ -452,16 +447,10 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         if self.request.is_eager:
             return
         if response.status_code == 412:
-            cookies = process_payment_cookies.apply_async(
-                kwargs=dict(
-                    payment_data=payment_data
-                )
-            ).wait()
             raise self.retry(countdown=0, kwargs=dict(
                 payment_data=payment_data,
                 complaint_params=complaint_params,
                 complaint_patch_data=complaint_patch_data,
-                cookies=cookies
             ))
         elif response.status_code == 403:
             process_payment_complaint_patch.apply_async(kwargs=dict(

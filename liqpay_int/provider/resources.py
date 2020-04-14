@@ -36,8 +36,8 @@ class PushResource(Resource):
         extra = {"PAYMENT_DESCRIPTION": api.payload.get("description")}
         try:
             save_payment_item(api.payload, (get_network_data() or {}).get("username"))
-            logger.error("Payment save failed.", extra=extra)
         except PyMongoError:
+            logger.error("Payment save failed.", extra=extra)
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         logger.info("Payment push received.", extra=extra)
         if api.payload.get("type") == "credit":
