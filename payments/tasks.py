@@ -23,7 +23,6 @@ from payments.message_ids import (
     PAYMENTS_COMPLAINT_NOT_FOUND,
     PAYMENTS_INVALID_AMOUNT,
     PAYMENTS_INVALID_CURRENCY,
-    PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
@@ -136,7 +135,8 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
-    cookies = response.cookies.get_dict()
+    cookies = cookies or {}
+    cookies.update(response.cookies.get_dict())
 
     if response.status_code != 200:
         logger.warning("Unexpected status code {} while searching complaint {}".format(
@@ -238,7 +238,8 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
-    cookies = response.cookies.get_dict()
+    cookies = cookies or {}
+    cookies.update(response.cookies.get_dict())
 
     if response.status_code != 200:
         logger.warning("Unexpected status code {} while getting tender {}".format(
@@ -387,7 +388,7 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         version=API_VERSION,
         **complaint_params
     )
-    
+
     client_request_id = uuid4().hex
     try:
         response = requests.patch(
@@ -410,7 +411,8 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
-    cookies = response.cookies.get_dict()
+    cookies = cookies or {}
+    cookies.update(response.cookies.get_dict())
 
     complaint_id = complaint_params.get("complaint_id")
     tender_id = complaint_params.get("tender_id")
