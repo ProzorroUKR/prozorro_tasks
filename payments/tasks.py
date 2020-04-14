@@ -27,7 +27,11 @@ from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
 )
-from payments.results_db import set_payment_params, set_payment_resolution, get_payment_item_by_params
+from payments.results_db import (
+    set_payment_params,
+    set_payment_resolution,
+    get_payment_item_by_params,
+)
 from payments.utils import (
     get_item_data,
     check_complaint_status,
@@ -554,7 +558,7 @@ def process_complaint_resolution(self, payment_data, complaint_data, *args, **kw
     if status in ["mistaken"]:
         date = complaint_data.get("date")
 
-        if reason in ["incorrectPayment", "complaintPeriodEnded"]:
+        if reason in ["incorrectPayment", "complaintPeriodEnded", "cancelledByComplainant"]:
             funds = "complainant"
 
     elif status in ["satisfied", "resolved"]:

@@ -1,18 +1,18 @@
 from flask import Blueprint, render_template
 
 from app.auth import login_group_required
-from app.filters import (
+from app.utils import (
     typing_is_dict,
     typing_is_list,
     datetime_astimezone,
     datetime_replace_microseconds,
     datetime_isoformat,
-    prozorro_portal_url,
-    prozorro_portal_tender_path,
-    prozorro_api_url,
     prozorro_api_tender_path,
     prozorro_api_item_path,
     prozorro_api_complaint_path,
+    prozorro_portal_tender_path,
+    prozorro_api_url,
+    prozorro_portal_url,
 )
 
 bp = Blueprint("app_views", __name__, template_folder="templates")

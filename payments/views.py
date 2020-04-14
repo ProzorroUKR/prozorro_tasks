@@ -5,23 +5,23 @@ from xlsxwriter import Workbook
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_group_required
-from payments.filters import (
-    payment_message_status,
-    payment_primary_message,
-    PAYMENTS_MESSAGE_IDS,
-    complaint_status_description,
-    complaint_reject_description,
-    complaint_funds_description,
-)
 from payments.tasks import process_payment_data
 from payments.results_db import get_payment_list, get_payment_item
 from payments.context import (
-    url_for_search, get_payment_search_params, get_pagination, get_tender, get_complaint,
+    url_for_search,
+    get_payment_search_params,
+    get_payment_pagination,
+    get_tender,
+    get_complaint,
     get_report,
     get_payments,
     get_payment,
     get_report_params,
+    PAYMENTS_MESSAGE_IDS,
+    payment_primary_message,
+    payment_message_status,
 )
+from payments.data import complaint_status_description, complaint_reject_description, complaint_funds_description
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
 
@@ -43,7 +43,7 @@ def payment_list():
         rows=data,
         message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
-        pagination=get_pagination(**kwargs)
+        pagination=get_payment_pagination(**kwargs)
     )
 
 
@@ -100,42 +100,41 @@ def reports_download():
     kwargs = get_report_params()
     date = kwargs.get("resolution_date")
     funds = kwargs.get("resolution_funds") or 'all'
-    if date:
-        rows = list(get_payment_list(resolution_exists=True, **kwargs))
-        data = get_report(rows)
 
-        for index, row in enumerate(data):
-            data[index] = [str(index) if index else " "] + row
+    if not date:
+        abort(404)
 
-        headers = data.pop(0)
-        filename = "{}-{}-report".format(date.date().isoformat(), funds)
-        bytes_io = io.BytesIO()
+    rows = list(get_payment_list(resolution_exists=True, **kwargs))
+    data = get_report(rows)
 
-        workbook = Workbook(bytes_io)
-        worksheet = workbook.add_worksheet()
+    for index, row in enumerate(data):
+        data[index] = [str(index) if index else " "] + row
 
-        properties = {'text_wrap': True}
-        cell_format = workbook.add_format(properties)
-        cell_format.set_align('top')
+    headers = data.pop(0)
+    filename = "{}-{}-report".format(date.date().isoformat(), funds)
+    bytes_io = io.BytesIO()
 
-        worksheet.add_table(0, 0, len(data), len(headers) - 1, {
-            'first_column': True,
-            'header_row': True,
-            'columns': [{"header": header} for header in headers],
-            'data': data
-        })
+    workbook = Workbook(bytes_io)
+    worksheet = workbook.add_worksheet()
 
-        for index, header in enumerate(headers):
-            max_len = max(
-                max(map(lambda x: len(x[index]), data)),
-                len(header)
-            )
-            worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+    properties = {'text_wrap': True}
+    cell_format = workbook.add_format(properties)
+    cell_format.set_align('top')
 
-        workbook.close()
+    worksheet.add_table(0, 0, len(data), len(headers) - 1, {
+        'first_column': True,
+        'header_row': True,
+        'columns': [{"header": header} for header in headers],
+        'data': data
+    })
 
-        response = make_response(bytes_io.getvalue())
-        response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
-        response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        return response
-    abort(404)
+    for index, header in enumerate(headers):
+        max_len = max(max(map(lambda x: len(x[index]), data)), len(header))
+        worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+
+    workbook.close()
+
+    response = make_response(bytes_io.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
+    response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    return response
