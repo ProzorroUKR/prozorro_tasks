@@ -1,7 +1,6 @@
 from binascii import Error as ASCIIError
 from json import JSONDecodeError
 
-from celery.exceptions import TaskError
 from flask_restx import abort
 from flask_restx._http import HTTPStatus
 from requests import ConnectionError, Timeout
@@ -12,7 +11,7 @@ from payments.tasks import (
     process_payment_data,
     process_payment_complaint_search,
     process_payment_complaint_data,
-    process_payment_cookies,
+    get_cookies,
 )
 from liqpay_int.exceptions import (
     LiqpayResponseErrorHTTPException,
@@ -73,9 +72,7 @@ class CheckoutResource(Resource):
         payment_data = dict(description=description)
 
         try:
-            cookies = process_payment_cookies.apply(kwargs=dict(
-                payment_data=payment_data
-            )).wait()
+            cookies = get_cookies()
 
             payment_params = process_payment_data.apply(kwargs=dict(
                 payment_data=payment_data,
