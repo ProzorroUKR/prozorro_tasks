@@ -94,16 +94,14 @@ def get_payment_filters(
         find_filter.update({"messages.message_id": {"$in": message_ids_include}})
     if message_ids_include is not None and message_ids_date is not None:
         message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
-        print(message_ids_date)
         find_filter_part = {"messages" : {"$elemMatch": {
             "message_id": {"$in": message_ids_include},
             "createdAt": {
-                "$gte": message_ids_date.astimezone(UTC),
-                "$lt": (message_ids_date + timedelta(days=1)).astimezone(UTC)
+                "$gte": message_ids_date,
+                "$lt": (message_ids_date + timedelta(days=1))
             }
         }}}
         find_filter.update(find_filter_part)
-        print(find_filter_part)
     if message_ids_exclude is not None:
         find_filter.update({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
     return find_filter
