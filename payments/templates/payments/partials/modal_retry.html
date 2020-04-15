@@ -10,31 +10,6 @@
             </div>
             <div class="modal-body">
                 <p>Спробувати обробити дані оплати ще раз.</p>
-                {% if message_ids %}
-                <p>Не має сенсу якщо у списку подій наявні наступні події:</p>
-
-                <ul>
-                    {% for message_id in message_ids['success'] %}
-                    <li>{{ message_id }}</li>
-                    {% endfor %}
-                    {% for message_id in message_ids['warning'] %}
-                    <li>{{ message_id }}</li>
-                    {% endfor %}
-                </ul>
-                <p>У більшості випадків не має сенсу якщо у списку подій наявні наступні події (але немає
-                    попередніх):</p>
-                <ul>
-                    {% for message_id in message_ids['danger'] %}
-                    <li>{{ message_id }}</li>
-                    {% endfor %}
-                </ul>
-                <p>Є сенс якщо у списку подій наявні наступні події (але немає попередніх):</p>
-                <ul>
-                    {% for message_id in message_ids['error'] %}
-                    <li>{{ message_id }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-payment btn-secondary" data-dismiss="modal">Закрити</button>

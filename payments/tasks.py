@@ -26,6 +26,7 @@ from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
+    PAYMENTS_SEARCH_FAILED,
 )
 from payments.results_db import (
     set_payment_params,
@@ -166,9 +167,16 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
         logger.warning("Invalid payment complaint {}".format(
             complaint_pretty_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT
+            "MESSAGE_ID": PAYMENTS_SEARCH_FAILED
         })
         if self.request.is_eager:
+            return
+        if self.request.retries >= COMPLAINT_NOT_FOUND_MAX_RETRIES:
+            logger.warning("Invalid payment complaint {}".format(
+                complaint_pretty_id
+            ), payment_data=payment_data, task=self, extra={
+                "MESSAGE_ID": PAYMENTS_SEARCH_INVALID_COMPLAINT
+            })
             return
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown)

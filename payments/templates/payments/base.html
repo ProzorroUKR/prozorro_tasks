@@ -66,12 +66,28 @@
         padding: .4rem .4rem;
         overflow: hidden;
         word-break: break-all;
-        min-width: 7rem;
         position: relative;
     }
 
+    .table-payments > tbody > tr > td.cell-payment {
+        min-width: 30rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-resolution,
+    .table-payments > tbody > tr > td.cell-extra {
+        min-width: 20rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-processing {
+        min-width: 10rem;
+    }
+
     .table-payments > tbody > tr > td.cell-name {
-        width: 10rem;
+        width: 9rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-value {
+        min-width: 9rem;
     }
 
     .table-payments > tbody > tr > td.cell-action {
@@ -158,6 +174,13 @@
         color: #aaaaaa;
     }
 
+    .table-failed, .table-failed > td, .table-failed > th {
+        background-color: #e1cdff;
+    }
+
+    .bg-failed {
+        background-color: #7700ff !important;
+    }
 </style>
 
 {% endblock %}

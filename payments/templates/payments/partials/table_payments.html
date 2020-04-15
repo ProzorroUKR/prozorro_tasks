@@ -13,7 +13,7 @@
     <tr>
         {% for name, item in row.items() %}
         {% if item.value|typing_is_dict %}
-        <td>
+        <td class="cell-{{ name }}">
             {% if not name=='resolution' or item.value.type.value %}
             {% with data=item.value %}
             {% include "payments/partials/table_info.html" %}
@@ -21,7 +21,7 @@
             {% endif %}
         </td>
         {% elif name not in ['id', 'messages', 'params'] %}
-        <td>
+        <td class="cell-{{ name }}">
             {{ item.value }}
         </td>
         {% endif %}
@@ -39,7 +39,7 @@
             <i class="fas fa-sync-alt"></i>
         </td>
         {% endif %}
-        <td class="text-white cell-action cell-lg border-0 bg-{{ row|payment_primary_message|payment_message_status or 'dark' }}">
+        <td class="text-white cell-action cell-lg border-0 bg-{{ row.messages|payment_message_list_status or 'dark' }}">
             <a href="/payments/{{row.id.value}}">
                 <i class="fas fa-info-circle"></i>
             </a>

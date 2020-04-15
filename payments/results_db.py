@@ -2,11 +2,13 @@ import pymongo
 from datetime import datetime, timedelta
 from celery.utils.log import get_task_logger
 from pymongo import DESCENDING
+from pytz import UTC
 
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
 from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
+from environment_settings import TIMEZONE
 from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
 
 logger = get_task_logger(__name__)
@@ -69,6 +71,9 @@ def get_payment_filters(
     resolution_exists=None,
     resolution_date=None,
     resolution_funds=None,
+    message_ids_include=None,
+    message_ids_date=None,
+    message_ids_exclude=None,
     **kwargs
 ):
     find_filter = dict()
@@ -85,6 +90,22 @@ def get_payment_filters(
             "$gte": resolution_date.isoformat(),
             "$lt": (resolution_date + timedelta(days=1)).isoformat()
         }})
+    if message_ids_include is not None:
+        find_filter.update({"messages.message_id": {"$in": message_ids_include}})
+    if message_ids_include is not None and message_ids_date is not None:
+        message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
+        print(message_ids_date)
+        find_filter_part = {"messages" : {"$elemMatch": {
+            "message_id": {"$in": message_ids_include},
+            "createdAt": {
+                "$gte": message_ids_date.astimezone(UTC),
+                "$lt": (message_ids_date + timedelta(days=1)).astimezone(UTC)
+            }
+        }}}
+        find_filter.update(find_filter_part)
+        print(find_filter_part)
+    if message_ids_exclude is not None:
+        find_filter.update({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
     return find_filter
 
 
