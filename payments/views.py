@@ -95,6 +95,7 @@ def reports():
         data_success = list(get_payment_list(
             resolution_exists=True,
             resolution_date=date,
+            resolution_funds=funds,
         ))
         rows_success = get_report(data_success)
         data_failed = list(get_payment_list(

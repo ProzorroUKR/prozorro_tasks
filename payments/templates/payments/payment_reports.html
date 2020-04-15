@@ -12,7 +12,7 @@
                data-href="{{ url_for(request.url_rule.endpoint) }}" data-initial="{{ request.args.get('date') or '' }}">
     </div>
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download') }}"
+    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
        type="button"
        class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити
@@ -32,7 +32,7 @@
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2">
+       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2   ">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'unknown'|complaint_funds_description }}"
     </a>
 </div>
