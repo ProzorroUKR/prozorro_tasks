@@ -72,7 +72,7 @@ def payment_detail(uid):
 
 
 @bp.route("/<uid>/retry", methods=["GET"])
-@login_group_required("admin")
+@login_group_required("admins")
 def payment_retry(uid):
     data = get_payment_item(uid)
     if not data:
