@@ -76,22 +76,22 @@ def get_payment_filters(
     message_ids_exclude=None,
     **kwargs
 ):
-    find_filter = dict()
+    find_filters = []
     if search is not None:
-        find_filter.update({"$text": {"$search": search}})
+        find_filters.append({"$text": {"$search": search}})
     if payment_type is not None:
-        find_filter.update({"payment.type": payment_type})
+        find_filters.append({"payment.type": payment_type})
     if resolution_exists is not None:
-        find_filter.update({"resolution": {"$exists": resolution_exists}})
+        find_filters.append({"resolution": {"$exists": resolution_exists}})
     if resolution_funds is not None:
-        find_filter.update({"resolution.funds": resolution_funds})
+        find_filters.append({"resolution.funds": resolution_funds})
     if resolution_date is not None:
-        find_filter.update({"resolution.date": {
+        find_filters.append({"resolution.date": {
             "$gte": resolution_date.isoformat(),
             "$lt": (resolution_date + timedelta(days=1)).isoformat()
         }})
     if message_ids_include is not None:
-        find_filter.update({"messages.message_id": {"$in": message_ids_include}})
+        find_filters.append({"messages.message_id": {"$in": message_ids_include}})
     if message_ids_include is not None and message_ids_date is not None:
         message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
         find_filter_part = {"messages" : {"$elemMatch": {
@@ -101,10 +101,12 @@ def get_payment_filters(
                 "$lt": (message_ids_date + timedelta(days=1))
             }
         }}}
-        find_filter.update(find_filter_part)
+        find_filters.append(find_filter_part)
     if message_ids_exclude is not None:
-        find_filter.update({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
-    return find_filter
+        find_filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
+    if find_filters:
+        return {"$and": find_filters}
+    return {}
 
 
 def get_payment_list(page=DEFAULT_PAGE, limit=DEFAULT_LIMIT, **kwargs):
