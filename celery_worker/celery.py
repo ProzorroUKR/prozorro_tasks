@@ -7,9 +7,13 @@ import celeryconfig
 
 import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 if SENTRY_DSN:
-    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENVIRONMENT, integrations=[CeleryIntegration()])
+    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENVIRONMENT, integrations=[
+        CeleryIntegration(),
+        FlaskIntegration()
+    ])
 
 app = Celery(
     'celery_worker',
