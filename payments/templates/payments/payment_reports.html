@@ -26,13 +26,21 @@
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2">
+       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'complainant'|complaint_funds_description }}"
+    </a>
+
+    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
+       type="button"
+       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2">
+        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'unknown'|complaint_funds_description }}"
     </a>
 </div>
 
-<div class="table-responsive">
+<div class="table-responsive mb-2">
+{% with data=rows %}
 {% include 'payments/partials/table_report.html' %}
+{% endwith %}
 </div>
 
 {% endblock %}

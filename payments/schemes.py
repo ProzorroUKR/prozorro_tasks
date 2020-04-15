@@ -9,6 +9,9 @@ from payments.data import (
     complaint_status_description,
     complaint_reject_description,
     complaint_funds_description,
+    payment_primary_message,
+    payment_message_status,
+    processing_message_description,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -94,7 +97,6 @@ RESOLUTION_REASON_SCHEME_ITEM = {
     "title": "Причина",
     "path": "resolution.reason",
     "method": complaint_reject_description,
-    "default": "",
 }
 
 RESOLUTION_FUNDS_SCHEME_ITEM = {
@@ -106,8 +108,8 @@ RESOLUTION_FUNDS_SCHEME_ITEM = {
 
 RESOLUTION_SCHEME = {
     "type": RESOLUTION_TYPE_SCHEME_ITEM,
-    "date": RESOLUTION_DATE_SCHEME_ITEM,
     "reason": RESOLUTION_REASON_SCHEME_ITEM,
+    "date": RESOLUTION_DATE_SCHEME_ITEM,
     "funds": RESOLUTION_FUNDS_SCHEME_ITEM,
 }
 
@@ -147,6 +149,13 @@ ROOT_EXTRA_SCHEME_ITEM = {
     "default": "",
 }
 
+ROOT_PROCESSING_SCHEME_ITEM = {
+    "title": "Статус обробки",
+    "path": "messages",
+    "method": lambda x: processing_message_description(payment_message_status(payment_primary_message(x))),
+    "default": "",
+}
+
 ROOT_RESOLUTION_SCHEME_ITEM = {
     "title": "Рішення",
     "scheme": RESOLUTION_SCHEME,
@@ -158,6 +167,7 @@ ROOT_SCHEME = {
     "payment": ROOT_PAYMENT_SCHEME_ITEM,
     "extra": ROOT_EXTRA_SCHEME_ITEM,
     "resolution": ROOT_RESOLUTION_SCHEME_ITEM,
+    "processing": ROOT_PROCESSING_SCHEME_ITEM,
 }
 
 REPORT_SCHEME = {
@@ -174,19 +184,19 @@ REPORT_SCHEME = {
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
     "resolution_reason": RESOLUTION_REASON_SCHEME_ITEM,
     "resolution_funds": RESOLUTION_FUNDS_SCHEME_ITEM,
+    "processing": ROOT_PROCESSING_SCHEME_ITEM,
 }
 
 
 def get_scheme_value(data, scheme_info):
     if "scheme" in scheme_info:
-        value = {}
-        for scheme_nested_field, scheme_nested_info in scheme_info["scheme"].items():
-            value.update({scheme_nested_field: get_scheme_item(data, scheme_nested_info)})
-        return value
-    value = jmespath.search(scheme_info["path"], data) or scheme_info.get("default")
+        return get_scheme_data(data, scheme_info["scheme"])
+    value = jmespath.search(scheme_info["path"], data)
     if "method" in scheme_info:
         value = scheme_info["method"](value)
-    return value
+    value = value or scheme_info.get("default")
+    if value is not None:
+        return value
 
 
 def get_scheme_title(data, scheme_info):
@@ -197,15 +207,18 @@ def get_scheme_title(data, scheme_info):
 
 def get_scheme_item(data, scheme_info):
     value = get_scheme_value(data, scheme_info)
-    title = get_scheme_title(data, scheme_info)
-    item = dict(value=value)
-    if title:
-        item.update(dict(title=title))
-    return item
+    if value is not None:
+        title = get_scheme_title(data, scheme_info)
+        item = dict(value=value)
+        if title:
+            item.update(dict(title=title))
+        return item
 
 
 def get_scheme_data(data, scheme):
     data_formatted = {}
     for scheme_field, scheme_info in scheme.items():
-        data_formatted.update({scheme_field: get_scheme_item(data, scheme_info)})
+        item = get_scheme_item(data, scheme_info)
+        if item is not None:
+            data_formatted.update({scheme_field: item})
     return data_formatted

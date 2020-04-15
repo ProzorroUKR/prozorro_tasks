@@ -29,6 +29,7 @@ DESC_REJECT_REASON_INCORRECT_PAYMENT = "" \
 
 DESC_FUNDS_STATE = "Перерахунок до держбюджету"
 DESC_FUNDS_COMPLAINANT = "Повернення коштів скаржнику"
+DESC_FUNDS_UNKNOWN = "Неідентифіковано"
 
 COMPLAINT_STATUS_MISTAKEN = "Скасовано"
 COMPLAINT_STATUS_RESOLVED = "Рішення виконано замовником"
@@ -37,3 +38,9 @@ COMPLAINT_STATUS_SATISFIED = "Задоволено"
 COMPLAINT_STATUS_DECLINED = "Відхилено"
 COMPLAINT_STATUS_ACCEPTED = "Прийнято до розгляду"
 COMPLAINT_STATUS_STOPPED = "Розгляд припинено"
+
+DESC_PROCESSING_INFO = "Успішно"
+DESC_PROCESSING_SUCCESS = "Очікується рішення"
+DESC_PROCESSING_WARNING = "Виконується"
+DESC_PROCESSING_DANGER = "Виконується"
+DESC_PROCESSING_FAILED = "Неуспішно"
