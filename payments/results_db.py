@@ -109,12 +109,16 @@ def get_payment_filters(
     return {}
 
 
-def get_payment_list(page=DEFAULT_PAGE, limit=DEFAULT_LIMIT, **kwargs):
-    skip = page * limit - limit
+def get_payment_list(page=None, limit=None, **kwargs):
+    skip = page * limit - limit if page and limit else None
     collection = get_mongodb_collection()
     find_filter = get_payment_filters(**kwargs)
     try:
-        doc = collection.find(find_filter).sort("createdAt", DESCENDING).skip(skip).limit(limit)
+        doc = collection.find(find_filter).sort("createdAt", DESCENDING)
+        if skip:
+            doc = doc.skip(skip)
+        if limit:
+            doc = doc.limit(limit)
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
     else:
