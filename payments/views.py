@@ -94,9 +94,7 @@ def reports():
     if date:
         data_success = list(get_payment_list(
             resolution_exists=True,
-            resolution_funds=funds,
             resolution_date=date,
-            **kwargs
         ))
         rows_success = get_report(data_success)
         data_failed = list(get_payment_list(
@@ -105,7 +103,6 @@ def reports():
                                 PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
                                 PAYMENTS_WARNING_MESSAGE_ID_LIST,
             message_ids_date=date,
-            **kwargs
         ))
         rows_failed = get_report(data_failed)
         rows = rows_success + rows_failed[1:]
