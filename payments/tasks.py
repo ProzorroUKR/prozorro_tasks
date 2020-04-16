@@ -27,6 +27,8 @@ from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS,
     PAYMENTS_SEARCH_FAILED,
+    PAYMENTS_GET_COMPLAINT_EXCEPTION,
+    PAYMENTS_GET_COMPLAINT_CODE_ERROR,
 )
 from payments.results_db import (
     set_payment_params,
@@ -455,9 +457,10 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
                 cookies=cookies,
             ))
         elif response.status_code == 403:
-            process_payment_complaint_data.apply_async(kwargs=dict(
+            process_payment_complaint_recheck.apply_async(kwargs=dict(
                 payment_data=payment_data,
                 complaint_params=complaint_params,
+                complaint_patch_data=complaint_patch_data,
                 cookies=cookies
             ))
             return
@@ -474,6 +477,90 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": message_id
         })
+
+@app.task(bind=True, max_retries=None)
+def process_payment_complaint_recheck(self, payment_data, complaint_params, complaint_patch_data, cookies=None,
+                                    *args, **kwargs):
+    if complaint_params.get("item_type"):
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
+    else:
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
+
+    url = url_pattern.format(
+        host=PUBLIC_API_HOST,
+        version=API_VERSION,
+        **complaint_params
+    )
+
+    client_request_id = uuid4().hex
+    try:
+        response = requests.get(
+            url,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={
+                "Authorization": "Bearer {}".format(API_TOKEN),
+                "X-Client-Request-ID": client_request_id,
+            },
+            cookies=cookies,
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        countdown = get_exponential_request_retry_countdown(self)
+        message = "Request failed: {}, next retry in {} seconds".format(str(exc), countdown)
+        if self.request.is_eager:
+            message = "Request failed: {}".format(str(exc))
+        logger.exception(message, payment_data=payment_data, task=self, extra={
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_EXCEPTION,
+            "CDB_CLIENT_REQUEST_ID": client_request_id,
+        })
+        if self.request.is_eager:
+            raise
+        raise self.retry(countdown=countdown, exc=exc)
+
+    cookies = cookies or {}
+    cookies.update(response.cookies.get_dict())
+
+    complaint_id = complaint_params.get("complaint_id")
+    tender_id = complaint_params.get("tender_id")
+
+    if response.status_code != 200:
+        logger.warning("Unexpected status code {} while getting complaint {} of tender {}".format(
+            response.status_code, complaint_id, tender_id
+        ), payment_data=payment_data, task=self, extra={
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_CODE_ERROR,
+            "STATUS_CODE": response.status_code
+        })
+        if self.request.is_eager:
+            return
+        if response.status_code == 412:
+            raise self.retry(countdown=0, kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                complaint_patch_data=complaint_patch_data,
+                cookies=cookies,
+            ))
+        else:
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown)
+    else:
+        complaint_get_data = response.json()["data"]
+        if complaint_get_data.get("status") == complaint_patch_data.get("status"):
+            if complaint_patch_data.get("status") == "pending":
+                message_id = PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
+            else:
+                message_id = PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
+            logger.info("Successfully updated complaint {} of tender {}: {}".format(
+                complaint_id, tender_id, complaint_patch_data
+            ), payment_data=payment_data, task=self, extra={
+                "MESSAGE_ID": message_id
+            })
+        else:
+            process_payment_complaint_data.apply_async(kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                cookies=cookies
+            ))
+
+
 
 
 @app.task(bind=True, max_retries=None)
