@@ -1,17 +1,11 @@
 import jmespath
 
-from app.utils import (
-    datetime_isoformat,
-    datetime_replace_microseconds,
-    datetime_astimezone,
-)
 from payments.data import (
     complaint_status_description,
     complaint_reject_description,
     complaint_funds_description,
-    payment_primary_message,
-    payment_message_status,
-    processing_message_description,
+    date_representation,
+    processing_message_list_description,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -90,6 +84,7 @@ RESOLUTION_TYPE_SCHEME_ITEM = {
 RESOLUTION_DATE_SCHEME_ITEM = {
     "title": "Дата рішення",
     "path": "resolution.date",
+    "method": date_representation,
     "default": "",
 }
 
@@ -122,7 +117,7 @@ EXTRA_USER_SCHEME_ITEM = {
 EXTRA_CREATED_SCHEME_ITEM = {
     "title": "Дата отримання",
     "path": "createdAt",
-    "method": lambda x: datetime_isoformat(datetime_replace_microseconds(datetime_astimezone(x))),
+    "method": date_representation,
     "default": "",
 }
 
@@ -152,7 +147,7 @@ ROOT_EXTRA_SCHEME_ITEM = {
 ROOT_PROCESSING_SCHEME_ITEM = {
     "title": "Статус обробки",
     "path": "messages",
-    "method": lambda x: processing_message_description(payment_message_status(payment_primary_message(x))),
+    "method": processing_message_list_description,
     "default": "",
 }
 

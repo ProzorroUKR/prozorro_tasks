@@ -70,18 +70,6 @@ def typing_is_list(item):
     return isinstance(item, typing.List)
 
 
-def datetime_astimezone(dt):
-    return dt.astimezone(TIMEZONE)
-
-
-def datetime_replace_microseconds(dt):
-    return dt.replace(microsecond=0)
-
-
-def datetime_isoformat(dt):
-    return dt.isoformat()
-
-
 def prozorro_api_tender_path(tender_params):
     url_pattern = "/tenders/{tender_id}"
     return url_pattern.format(host=PUBLIC_API_HOST, version=API_VERSION, **tender_params)

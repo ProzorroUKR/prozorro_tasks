@@ -14,7 +14,7 @@
         </td>
         <td>
             {% if key=="createdAt" %}
-            {{ row[key]|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}
+            {{ row[key]|date_representation }}
             {% else %}
             {{ row[key] }}
             {% endif %}

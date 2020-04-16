@@ -1,3 +1,6 @@
+import dateutil.parser
+
+from environment_settings import TIMEZONE
 from payments.message_ids import (
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
     PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
@@ -77,8 +80,8 @@ def payment_message_list_status(messages):
 
 
 def processing_message_list_description(messages):
-    return payment_message_list_status(
-        payment_primary_message(messages)
+    return processing_message_description(
+        payment_message_list_status(messages)
     )
 
 
@@ -87,6 +90,14 @@ def payment_primary_message(messages):
         for message in messages or []:
             if message.get("message_id") == priority:
                 return message
+
+
+def date_representation(dt):
+    if not dt:
+        return None
+    if type(dt) is str:
+        dt = dateutil.parser.parse(dt)
+    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat()
 
 
 DESC_REJECT_REASON_DICT = {

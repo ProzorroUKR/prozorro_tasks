@@ -7,7 +7,7 @@
             <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
             {% if message.createdAt %}
             <div class="table-content">{{
-                message.createdAt|datetime_astimezone|datetime_replace_microseconds|datetime_isoformat }}
+                message.createdAt|date_representation }}
             </div>
             {% endif %}
         </td>
