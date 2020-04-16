@@ -118,11 +118,7 @@ def get_payments(rows):
     return [get_payment(row) for row in rows]
 
 def get_payment(row):
-    data = get_scheme_data(row, ROOT_SCHEME)
-    data["messages"] = row.get("messages", [])
-    data["params"] = row.get("params", {})
-    return data
-
+    return get_scheme_data(row, ROOT_SCHEME)
 
 def get_report(rows):
     data = []
