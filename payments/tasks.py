@@ -131,13 +131,16 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
             cookies=cookies,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+        countdown = get_exponential_request_retry_countdown(self)
+        message = "Request failed: {}, next retry in {} seconds".format(str(exc), countdown)
+        if self.request.is_eager:
+            message = "Request failed: {}".format(str(exc))
+        logger.exception(message, payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_SEARCH_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
         if self.request.is_eager:
             raise
-        countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
     cookies = cookies or {}
@@ -241,13 +244,16 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
             cookies=cookies
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+        countdown = get_exponential_request_retry_countdown(self)
+        message = "Request failed: {}, next retry in {} seconds".format(str(exc), countdown)
+        if self.request.is_eager:
+            message = "Request failed: {}".format(str(exc))
+        logger.exception(message, payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
         if self.request.is_eager:
             raise
-        countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
     cookies = cookies or {}
@@ -316,7 +322,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         raise self.retry(countdown=countdown)
 
     if self.request.is_eager:
-        logger.info("Successfully found complaint data {}.".format(
+        logger.info("Successfully found complaint data {}".format(
             complaint_id
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": "PAYMENTS_VALID_COMPLAINT"
@@ -324,7 +330,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         return complaint_data
 
     if not check_complaint_status(complaint_data):
-        logger.warning("Invalid complaint status: {}.".format(
+        logger.warning("Invalid complaint status: {}".format(
             complaint_data["status"]
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_INVALID_STATUS
@@ -332,7 +338,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         return
 
     if not check_complaint_value(complaint_data):
-        logger.info("Invalid complaint value amount or currency for complaint {}.".format(
+        logger.info("Invalid complaint value amount or currency for complaint {}".format(
             complaint_id
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_INVALID_COMPLAINT_VALUE
@@ -342,7 +348,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     value = complaint_data.get("value", {})
 
     if not check_complaint_value_amount(complaint_data, payment_data):
-        logger.warning("Invalid payment amount for complaint {}: {} not equal {}.".format(
+        logger.warning("Invalid payment amount for complaint {}: {} not equal {}".format(
             complaint_id, payment_data.get("amount"), value.get("amount")
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_INVALID_AMOUNT
@@ -358,7 +364,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         return
 
     if not check_complaint_value_currency(complaint_data, payment_data):
-        logger.warning("Invalid payment amount for complaint {}: {} not equal {}.".format(
+        logger.warning("Invalid payment amount for complaint {}: {} not equal {}".format(
             complaint_id, payment_data.get("currency"), value.get("currency")
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_INVALID_CURRENCY
@@ -373,7 +379,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         ))
         return
 
-    logger.info("Successfully matched payment for complaint {}.".format(
+    logger.info("Successfully matched payment for complaint {}".format(
         complaint_id
     ), payment_data=payment_data, task=self, extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
 
@@ -414,13 +420,16 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
             cookies=cookies,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), payment_data=payment_data, task=self, extra={
+        countdown = get_exponential_request_retry_countdown(self)
+        message = "Request failed: {}, next retry in {} seconds".format(str(exc), countdown)
+        if self.request.is_eager:
+            message = "Request failed: {}".format(str(exc))
+        logger.exception(message, payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
         if self.request.is_eager:
             raise
-        countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
 
     cookies = cookies or {}
