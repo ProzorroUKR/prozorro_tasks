@@ -1,68 +1,71 @@
 import jmespath
 
-from app.utils import (
-    datetime_isoformat,
-    datetime_replace_microseconds,
-    datetime_astimezone,
-)
 from payments.data import (
     complaint_status_description,
     complaint_reject_description,
     complaint_funds_description,
-    payment_primary_message,
-    payment_message_status,
-    processing_message_description,
+    date_representation,
+    processing_message_list_description,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
+    "type": "object",
     "title": "Призначення платежу",
     "path": "payment.description",
     "default": "",
 }
 
 PAYMENT_AMOUNT_SCHEME_ITEM = {
+    "type": "object",
     "title": "Сума платежу",
     "path": "payment.amount",
     "default": "",
 }
 
 PAYMENT_CURRENCY_SCHEME_ITEM = {
+    "type": "object",
     "title": "Валюта платежу",
     "path": "payment.currency",
     "default": "",
 }
 
 PAYMENT_DATE_OPER_SCHEME_ITEM = {
+    "type": "object",
     "title": "Дата операції",
     "path": "payment.date_oper",
     "default": "",
 }
 
 PAYMENT_TYPE_SCHEME_ITEM = {
+    "type": "object",
     "title": "Тип операції",
     "path": "payment.type",
     "default": "",
 }
 
 PAYMENT_ACCOUNT_SCHEME_ITEM = {
+    "type": "object",
     "title": "Номер рахунку",
     "path": "payment.account",
     "default": "",
 }
 
 PAYMENT_OKPO_SCHEME_ITEM = {
+    "type": "object",
     "title": "ОКПО рахунку",
     "path": "payment.okpo",
     "default": "",
 }
 
 PAYMENT_MFO_SCHEME_ITEM = {
+    "type": "object",
     "title": "МФО рахунку",
     "path": "payment.mfo",
     "default": "",
 }
 
 PAYMENT_NAME_SCHEME_ITEM = {
+    "type": "object",
     "title": "Назва рахунку",
     "path": "payment.name",
     "default": "",
@@ -81,6 +84,7 @@ PAYMENT_SCHEME = {
 }
 
 RESOLUTION_TYPE_SCHEME_ITEM = {
+    "type": "object",
     "title": "Рішення по скарзі",
     "path": "resolution.type",
     "method": complaint_status_description,
@@ -88,18 +92,22 @@ RESOLUTION_TYPE_SCHEME_ITEM = {
 }
 
 RESOLUTION_DATE_SCHEME_ITEM = {
+    "type": "object",
     "title": "Дата рішення",
     "path": "resolution.date",
+    "method": date_representation,
     "default": "",
 }
 
 RESOLUTION_REASON_SCHEME_ITEM = {
+    "type": "object",
     "title": "Причина",
     "path": "resolution.reason",
     "method": complaint_reject_description,
 }
 
 RESOLUTION_FUNDS_SCHEME_ITEM = {
+    "type": "object",
     "title": "Висновок",
     "path": "resolution.funds",
     "method": complaint_funds_description,
@@ -114,15 +122,17 @@ RESOLUTION_SCHEME = {
 }
 
 EXTRA_USER_SCHEME_ITEM = {
+    "type": "object",
     "title": "Ініціатор",
     "path": "user",
     "default": "",
 }
 
 EXTRA_CREATED_SCHEME_ITEM = {
+    "type": "object",
     "title": "Дата отримання",
     "path": "createdAt",
-    "method": lambda x: datetime_isoformat(datetime_replace_microseconds(datetime_astimezone(x))),
+    "method": date_representation,
     "default": "",
 }
 
@@ -132,34 +142,49 @@ EXTRA_SCHEME = {
 }
 
 ROOT_ID_SCHEME_ITEM = {
+    "type": "object",
     "title": "ID",
     "path": "_id",
     "default": "",
 }
 
 ROOT_PAYMENT_SCHEME_ITEM = {
+    "type": "object",
     "title": "Операція",
     "scheme": PAYMENT_SCHEME,
     "default": "",
 }
 
 ROOT_EXTRA_SCHEME_ITEM = {
+    "type": "object",
     "title": "Додатково",
     "scheme": EXTRA_SCHEME,
     "default": "",
 }
 
-ROOT_PROCESSING_SCHEME_ITEM = {
+ROOT_PROCESSING_STATUS_SCHEME_ITEM = {
+    "type": "object",
     "title": "Статус обробки",
     "path": "messages",
-    "method": lambda x: processing_message_description(payment_message_status(payment_primary_message(x))),
+    "method": processing_message_list_description,
     "default": "",
 }
 
 ROOT_RESOLUTION_SCHEME_ITEM = {
+    "type": "object",
     "title": "Рішення",
     "scheme": RESOLUTION_SCHEME,
     "default": "",
+}
+
+ROOT_MESSAGES_SCHEME_ITEM = {
+    "type": "value",
+    "path": "messages",
+}
+
+ROOT_PARAMS_SCHEME_ITEM = {
+    "type": "value",
+    "path": "params",
 }
 
 ROOT_SCHEME = {
@@ -167,7 +192,9 @@ ROOT_SCHEME = {
     "payment": ROOT_PAYMENT_SCHEME_ITEM,
     "extra": ROOT_EXTRA_SCHEME_ITEM,
     "resolution": ROOT_RESOLUTION_SCHEME_ITEM,
-    "processing": ROOT_PROCESSING_SCHEME_ITEM,
+    "processing_status": ROOT_PROCESSING_STATUS_SCHEME_ITEM,
+    "messages": ROOT_MESSAGES_SCHEME_ITEM,
+    "params": ROOT_PARAMS_SCHEME_ITEM,
 }
 
 REPORT_SCHEME = {
@@ -184,7 +211,7 @@ REPORT_SCHEME = {
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
     "resolution_reason": RESOLUTION_REASON_SCHEME_ITEM,
     "resolution_funds": RESOLUTION_FUNDS_SCHEME_ITEM,
-    "processing": ROOT_PROCESSING_SCHEME_ITEM,
+    "processing_status": ROOT_PROCESSING_STATUS_SCHEME_ITEM,
 }
 
 
@@ -218,7 +245,13 @@ def get_scheme_item(data, scheme_info):
 def get_scheme_data(data, scheme):
     data_formatted = {}
     for scheme_field, scheme_info in scheme.items():
-        item = get_scheme_item(data, scheme_info)
-        if item is not None:
-            data_formatted.update({scheme_field: item})
+        scheme_type = scheme_info.get("type")
+        if scheme_type == "object":
+            item = get_scheme_item(data, scheme_info)
+            if item is not None:
+                data_formatted.update({scheme_field: item})
+        elif scheme_type == "value":
+            value = get_scheme_value(data, scheme_info)
+            if value is not None:
+                data_formatted.update({scheme_field: value})
     return data_formatted

@@ -1,3 +1,6 @@
+import dateutil.parser
+
+from environment_settings import TIMEZONE
 from payments.message_ids import (
     PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
     PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
@@ -18,6 +21,8 @@ from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+    PAYMENTS_GET_COMPLAINT_EXCEPTION,
+    PAYMENTS_GET_COMPLAINT_CODE_ERROR,
 )
 from payments.messages import (
     DESC_REJECT_REASON_LAW_NON_COMPLIANCE, DESC_REJECT_REASON_ALREADY_EXISTS,
@@ -77,8 +82,8 @@ def payment_message_list_status(messages):
 
 
 def processing_message_list_description(messages):
-    return payment_message_list_status(
-        payment_primary_message(messages)
+    return processing_message_description(
+        payment_message_list_status(messages)
     )
 
 
@@ -87,6 +92,14 @@ def payment_primary_message(messages):
         for message in messages or []:
             if message.get("message_id") == priority:
                 return message
+
+
+def date_representation(dt):
+    if not dt:
+        return None
+    if type(dt) is str:
+        dt = dateutil.parser.parse(dt)
+    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat()
 
 
 DESC_REJECT_REASON_DICT = {
@@ -135,12 +148,12 @@ PAYMENTS_FAILED_MESSAGE_ID_LIST = [
     PAYMENTS_SEARCH_INVALID_COMPLAINT,
     PAYMENTS_SEARCH_INVALID_CODE,
     PAYMENTS_INVALID_STATUS,
-    PAYMENTS_INVALID_AMOUNT,
-    PAYMENTS_INVALID_CURRENCY,
     PAYMENTS_INVALID_COMPLAINT_VALUE,
 ]
 
 PAYMENTS_DANGER_MESSAGE_ID_LIST = [
+    PAYMENTS_INVALID_AMOUNT,
+    PAYMENTS_INVALID_CURRENCY,
     PAYMENTS_ITEM_NOT_FOUND,
     PAYMENTS_COMPLAINT_NOT_FOUND,
     PAYMENTS_SEARCH_FAILED,
@@ -151,6 +164,8 @@ PAYMENTS_DANGER_MESSAGE_ID_LIST = [
     PAYMENTS_PATCH_COMPLAINT_HEAD_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
     PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
+    PAYMENTS_GET_COMPLAINT_EXCEPTION,
+    PAYMENTS_GET_COMPLAINT_CODE_ERROR,
 ]
 
 PAYMENTS_MESSAGE_IDS = {

@@ -27,10 +27,12 @@ from payments.data import (
     PAYMENTS_INFO_MESSAGE_ID_LIST,
     PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
     PAYMENTS_WARNING_MESSAGE_ID_LIST,
+    date_representation,
 )
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
 
+bp.add_app_template_filter(date_representation, "date_representation")
 bp.add_app_template_filter(payment_message_status, "payment_message_status")
 bp.add_app_template_filter(payment_message_list_status, "payment_message_list_status")
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
@@ -72,7 +74,7 @@ def payment_detail(uid):
 
 
 @bp.route("/<uid>/retry", methods=["GET"])
-@login_group_required("admin")
+@login_group_required("admins")
 def payment_retry(uid):
     data = get_payment_item(uid)
     if not data:
