@@ -232,7 +232,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     tender_id = complaint_params.get("tender_id")
 
     url = "{host}/api/{version}/tenders/{tender_id}".format(
-        host=PUBLIC_API_HOST,
+        host=API_HOST,
         version=API_VERSION,
         tender_id=tender_id
     )
@@ -487,7 +487,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, comp
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
 
     url = url_pattern.format(
-        host=PUBLIC_API_HOST,
+        host=API_HOST,
         version=API_VERSION,
         **complaint_params
     )
