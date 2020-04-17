@@ -84,4 +84,4 @@ def liqpay_decode(data=None, sandbox=False):
 def liqpay_sign(data=None, sandbox=False):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
     liqpay = LiqPay(public_key, private_key)
-    return liqpay.cnb_signature(data)
+    return liqpay._make_signature(private_key, data, private_key)
