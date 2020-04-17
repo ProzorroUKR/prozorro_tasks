@@ -193,11 +193,12 @@ class SignatureResource(Resource):
         """
         logger.info("Payment signature requested.")
         sandbox = parser_query.parse_args().get("sandbox")
+        original_data = api.payload.get("data")
         try:
-            data = liqpay_decode(api.payload.get("data"), sandbox=sandbox)
+            data = liqpay_decode(original_data, sandbox=sandbox)
         except ASCIIError:
             raise Base64DecodeHTTPException()
         except JSONDecodeError:
             raise JSONDecodeHTTPException()
-        signature = liqpay_sign(data, sandbox=sandbox)
+        signature = liqpay_sign(original_data, sandbox=sandbox)
         return {'signature': signature}
