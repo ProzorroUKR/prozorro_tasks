@@ -9,7 +9,7 @@ from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
-from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
+from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
 
 logger = get_task_logger(__name__)
 
@@ -208,16 +208,19 @@ def get_payment_item_by_params(params):
             return items[0]
         elif len(items) > 1:
             return get_payment_item_by_params_and_message_id(
-                params, PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
+                params, [
+                    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+                    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
+                ]
             )
 
 
-def get_payment_item_by_params_and_message_id(params, message_id):
+def get_payment_item_by_params_and_message_id(params, message_ids):
     collection = get_mongodb_collection()
     try:
         doc = collection.find_one({
             "params": params,
-            "messages.message_id": message_id
+            "messages.message_id": {"$in": message_ids}
         })
     except PyMongoError as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_BY_PARAM_AND_MESSAGE_ID_MONGODB_EXCEPTION"})
