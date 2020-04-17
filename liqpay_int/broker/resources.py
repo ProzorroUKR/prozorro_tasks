@@ -2,7 +2,7 @@ from binascii import Error as ASCIIError
 from json import JSONDecodeError
 
 from flask import request
-from flask_restx import abort
+from flask_restx import abort, marshal
 from flask_restx._http import HTTPStatus
 from requests import ConnectionError, Timeout
 
@@ -66,7 +66,9 @@ class CheckoutResource(Resource):
         """
         Receive a payment link.
         """
-        description = api.payload.get("description")
+        data = marshal(api.payload, model_checkout, skip_none=True)
+
+        description = data.get("description")
 
         extra = {"PAYMENT_DESCRIPTION": description}
         logger.info("Payment checkout requested.", extra=extra)
@@ -118,7 +120,7 @@ class CheckoutResource(Resource):
         else:
             sandbox = parser_query.parse_args().get("sandbox")
             params = generate_liqpay_checkout_params(
-                api.payload, payment_params, complaint_data, sandbox=sandbox
+                data, payment_params, complaint_data, sandbox=sandbox
             )
             try:
                 resp_json = liqpay_request(data=params, sandbox=sandbox)
@@ -152,13 +154,15 @@ class ReceiptResource(Resource):
         """
         Receive a receipt.
         """
-        order_id = api.payload.get("order_id")
+        data = marshal(api.payload, model_checkout, skip_none=True)
+
+        order_id = data.get("order_id")
 
         extra = {"PAYMENT_ORDER_ID": order_id}
         logger.info("Payment receipt requested.", extra=extra)
 
         sandbox = parser_query.parse_args().get("sandbox")
-        params = generate_liqpay_receipt_params(api.payload, sandbox=sandbox)
+        params = generate_liqpay_receipt_params(data, sandbox=sandbox)
         try:
             resp_json = liqpay_request(data=params, sandbox=sandbox)
         except (Timeout, ConnectionError):
@@ -191,9 +195,10 @@ class SignatureResource(Resource):
         """
         Receive a signature.
         """
+        data = marshal(api.payload, model_checkout, skip_none=True)
         logger.info("Payment signature requested.")
         sandbox = parser_query.parse_args().get("sandbox")
-        original_data = api.payload.get("data")
+        original_data = data.get("data")
         try:
             data = liqpay_decode(original_data, sandbox=sandbox)
         except ASCIIError:

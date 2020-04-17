@@ -21,6 +21,9 @@ DESC_CHECKOUT_SERVER_URL = "" \
 "of payment status change. " \
 "Maximum length is 510 symbols. " \
 "Details: https://www.liqpay.ua/documentation/api/callback."
+DESC_CHECKOUT_ORDER_ID = "" \
+"Unique purchase ID in your shop. Maximum length is 255 symbols. " \
+"Optional. If not passed will be automatically filled."
 
 DESC_TICKET_POST = "" \
 "# Send a receipt to the specified client's email.\n" \
