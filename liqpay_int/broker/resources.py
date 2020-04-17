@@ -200,7 +200,7 @@ class SignatureResource(Resource):
         sandbox = parser_query.parse_args().get("sandbox")
         original_data = data.get("data")
         try:
-            data = liqpay_decode(original_data, sandbox=sandbox)
+            liqpay_data = liqpay_decode(original_data, sandbox=sandbox)
         except ASCIIError:
             raise Base64DecodeHTTPException()
         except JSONDecodeError:
