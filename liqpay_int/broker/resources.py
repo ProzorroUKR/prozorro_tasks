@@ -154,7 +154,7 @@ class ReceiptResource(Resource):
         """
         Receive a receipt.
         """
-        data = marshal(api.payload, model_checkout, skip_none=True)
+        data = marshal(api.payload, model_receipt, skip_none=True)
 
         order_id = data.get("order_id")
 
@@ -195,7 +195,7 @@ class SignatureResource(Resource):
         """
         Receive a signature.
         """
-        data = marshal(api.payload, model_checkout, skip_none=True)
+        data = marshal(api.payload, model_sign, skip_none=True)
         logger.info("Payment signature requested.")
         sandbox = parser_query.parse_args().get("sandbox")
         original_data = data.get("data")
