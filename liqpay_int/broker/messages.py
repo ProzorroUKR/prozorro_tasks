@@ -58,3 +58,10 @@ DESC_SIGNATURE_POST = "" \
 "customer on payment, in accordance with the received payment status."
 
 SERVER_ID_DESC = "An optional server id that will be used as cookie to request external api"
+REQUEST_ID_DESC = "" \
+"Server generates a unique request ID for every incoming HTTP request that it receives. \n" \
+"This unique ID is then passed to your application as an HTTP header called X-Request-ID. \n" \
+"Alternately, you can specify the X-Request-ID header when making a request. "
+CLIENT_REQUEST_ID_DESC = "" \
+"You can specify the X-Client-Request-ID header when making a request. \n" \
+"This ID is then passed to your application as an HTTP header called X-Client-Request-ID."

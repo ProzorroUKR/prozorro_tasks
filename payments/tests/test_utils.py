@@ -1,5 +1,7 @@
 import unittest
+from unittest.mock import patch, MagicMock
 
+from environment_settings import API_TOKEN, API_HOST, API_VERSION
 from payments.utils import (
     get_payment_params,
     get_item_data,
@@ -7,7 +9,16 @@ from payments.utils import (
     check_complaint_value_amount,
     check_complaint_value_currency,
     ALLOWED_COMPLAINT_PAYMENT_STATUSES,
+    request_complaint_search,
+    get_request_headers,
+    get_complaint_search_url,
+    request_tender_data,
+    get_tender_url,
+    request_complaint_data,
+    get_complaint_url,
+    request_complaint_patch,
 )
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 valid_zoned_complaint_str = [
     "UA-2020-03-17-000090-a.a2-12AD3F12",
@@ -265,3 +276,318 @@ class CheckComplaintValueCurrencyTestCase(unittest.TestCase):
             {"value": {"currency": "UAH"}},
             {}
         ))
+
+
+class GetRequestHeadersTestCase(unittest.TestCase):
+    """
+    Test utils.get_request_headers
+    """
+
+
+class GetComplaintSearchUrlTestCase(unittest.TestCase):
+    """
+    Test utils.get_complaint_search_url
+    """
+    def test_get_complaint_search_url(self):
+        complaint_pretty_id = "TEST-PRETTY-ID"
+        result = get_complaint_search_url(complaint_pretty_id)
+        url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=API_HOST,
+            version=API_VERSION,
+            complaint_pretty_id=complaint_pretty_id
+        ))
+
+    def test_get_complaint_search_url_with_host(self):
+        host = "https://test.host"
+        complaint_pretty_id = "TEST-PRETTY-ID"
+        result = get_complaint_search_url(complaint_pretty_id, host=host)
+        url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=host,
+            version=API_VERSION,
+            complaint_pretty_id=complaint_pretty_id
+        ))
+
+
+class GetComplaintUrlTestCase(unittest.TestCase):
+    """
+    Test utils.get_complaint_url
+    """
+    def test_get_complaint_url(self):
+        tender_id = "test_tender_id"
+        complaint_id = "test_complaint_id"
+        result = get_complaint_url(tender_id, None, None, complaint_id)
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=API_HOST,
+            version=API_VERSION,
+            tender_id=tender_id,
+            complaint_id=complaint_id,
+        ))
+
+    def test_get_complaint_url_item(self):
+        tender_id = "test_tender_id"
+        item_type = "test_item_type"
+        item_id = "test_item_id"
+        complaint_id = "test_complaint_id"
+        result = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=API_HOST,
+            version=API_VERSION,
+            tender_id=tender_id,
+            item_type=item_type,
+            item_id=item_id,
+            complaint_id=complaint_id,
+        ))
+
+    def test_get_complaint_url_with_host(self):
+        host = "https://test.host"
+        tender_id = "test_tender_id"
+        complaint_id = "test_complaint_id"
+        result = get_complaint_url(tender_id, None, None, complaint_id, host=host)
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=host,
+            version=API_VERSION,
+            tender_id=tender_id,
+            complaint_id=complaint_id,
+        ))
+
+
+class GetTenderUrlTestCase(unittest.TestCase):
+    """
+    Test utils.get_tender_url
+    """
+    def test_get_complaint_url(self):
+        tender_id = "test_tender_id"
+        complaint_id = "test_complaint_id"
+        result = get_tender_url(tender_id)
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=API_HOST,
+            version=API_VERSION,
+            tender_id=tender_id,
+        ))
+
+    def test_get_complaint_url_with_host(self):
+        host = "https://test.host"
+        tender_id = "test_tender_id"
+        complaint_id = "test_complaint_id"
+        result = get_tender_url(tender_id, host=host)
+        url_pattern = "{host}/api/{version}/tenders/{tender_id}"
+        self.assertEqual(result, url_pattern.format(
+            host=host,
+            version=API_VERSION,
+            tender_id=tender_id,
+        ))
+
+
+class RequestComplaintSearchTestCase(unittest.TestCase):
+    """
+    Test utils.request_complaint_search
+    """
+
+    @patch("payments.utils.uuid4", MagicMock())
+    @patch("payments.utils.requests")
+    def test_request_complaint_search(self, requests):
+        complaint_pretty_id = "TEST-PRETTY-ID"
+
+        url = get_complaint_search_url(complaint_pretty_id)
+        headers = get_request_headers(authorization=True)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_search(complaint_pretty_id)
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=None
+        )
+
+    @patch("payments.utils.requests")
+    def test_request_complaint_search_with_optional_args(self, requests):
+        complaint_pretty_id = "TEST-PRETTY-ID"
+        client_request_id = "test-client-req-id"
+        host = "https://test.host"
+        cookies = {"test_cookie_name": "test_cookie_value"}
+
+        url = get_complaint_search_url(complaint_pretty_id, host=host)
+        headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_search(
+            complaint_pretty_id,
+            client_request_id=client_request_id,
+            cookies=cookies,
+            host=host,
+        )
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=cookies
+        )
+
+
+class RequestTenderDataTestCase(unittest.TestCase):
+    """
+    Test utils.request_tender_data
+    """
+
+    @patch("payments.utils.uuid4", MagicMock())
+    @patch("payments.utils.requests")
+    def test_request_tender_data(self, requests):
+        tender_id = "test_tender_id"
+
+        url = get_tender_url(tender_id)
+        headers = get_request_headers(authorization=False)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_tender_data(tender_id)
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=None
+        )
+
+    @patch("payments.utils.requests")
+    def test_request_tender_data_with_optional_args(self, requests):
+        tender_id = "test_tender_id"
+        client_request_id = "test-client-req-id"
+        host = "https://test.host"
+        cookies = {"test_cookie_name": "test_cookie_value"}
+
+        url = get_tender_url(tender_id, host=host)
+        headers = get_request_headers(client_request_id=client_request_id, authorization=False)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_tender_data(
+            tender_id,
+            client_request_id=client_request_id,
+            cookies=cookies,
+            host=host,
+        )
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=cookies
+        )
+
+
+class RequestComplaintDataTestCase(unittest.TestCase):
+    """
+    Test utils.request_complaint_data
+    """
+
+    @patch("payments.utils.uuid4", MagicMock())
+    @patch("payments.utils.requests")
+    def test_request_complaint_data(self, requests):
+        tender_id = "test_tender_id"
+        item_type = "test_item_type"
+        item_id = "test_item_id"
+        complaint_id = "test_complaint_id"
+
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        headers = get_request_headers(authorization=False)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_data(
+            tender_id, item_type, item_id, complaint_id
+        )
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=None
+        )
+
+    @patch("payments.utils.requests")
+    def test_request_complaint_data_with_optional_args(self, requests):
+        tender_id = "test_tender_id"
+        item_type = "test_item_type"
+        item_id = "test_item_id"
+        complaint_id = "test_complaint_id"
+        client_request_id = "test-client-req-id"
+        host = "https://test.host"
+        cookies = {"test_cookie_name": "test_cookie_value"}
+
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+        headers = get_request_headers(client_request_id=client_request_id, authorization=False)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_data(
+            tender_id, item_type, item_id, complaint_id,
+            client_request_id=client_request_id,
+            cookies=cookies,
+            host=host,
+        )
+
+        self.assertEqual(result, requests.get.return_value)
+
+        requests.get.assert_called_once_with(
+            url, headers=headers, timeout=timeout, cookies=cookies
+        )
+
+
+
+class RequestComplaintPatchTestCase(unittest.TestCase):
+    """
+    Test utils.request_complaint_patch
+    """
+
+    @patch("payments.utils.uuid4", MagicMock())
+    @patch("payments.utils.requests")
+    def test_request_complaint_patch(self, requests):
+        tender_id = "test_tender_id"
+        item_type = "test_item_type"
+        item_id = "test_item_id"
+        complaint_id = "test_complaint_id"
+        data = {"test_data_field": "test_data_value"}
+
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        json = {"data": data}
+        headers = get_request_headers(authorization=True)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_patch(
+            tender_id, item_type, item_id, complaint_id, data
+        )
+
+        self.assertEqual(result, requests.patch.return_value)
+
+        requests.patch.assert_called_once_with(
+            url, json=json, headers=headers, timeout=timeout, cookies=None
+        )
+
+    @patch("payments.utils.requests")
+    def test_request_complaint_patch_with_optional_args(self, requests):
+        tender_id = "test_tender_id"
+        item_type = "test_item_type"
+        item_id = "test_item_id"
+        complaint_id = "test_complaint_id"
+        data = {"test_data_field": "test_data_value"}
+        client_request_id = "test-client-req-id"
+        host = "https://test.host"
+        cookies = {"test_cookie_name": "test_cookie_value"}
+
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+        json = {"data": data}
+        headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+        timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+        result = request_complaint_patch(
+            tender_id, item_type, item_id, complaint_id, data,
+            client_request_id=client_request_id,
+            cookies=cookies,
+            host=host,
+        )
+
+        self.assertEqual(result, requests.patch.return_value)
+
+        requests.patch.assert_called_once_with(
+            url, json=json, headers=headers, timeout=timeout, cookies=cookies
+        )

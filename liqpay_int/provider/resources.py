@@ -5,6 +5,7 @@ from pymongo.errors import PyMongoError
 
 from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
+from liqpay_int.broker.messages import REQUEST_ID_DESC, CLIENT_REQUEST_ID_DESC
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
 from liqpay_int.resources import Resource
@@ -30,6 +31,10 @@ class PushResource(Resource):
     @api.doc_response(HTTPStatus.FORBIDDEN, model=model_response_error)
     @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
     @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
+    @api.param("X-Request-ID", description=REQUEST_ID_DESC, _in="header")
+    @api.param("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC, _in="header")
+    @api.header("X-Request-ID", description=REQUEST_ID_DESC)
+    @api.header("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC)
     @api.marshal_with(model_response_success, code=HTTPStatus.OK)
     @api.expect(model_payment, validate=True)
     def post(self):

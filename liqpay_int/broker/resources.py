@@ -9,11 +9,6 @@ from requests import ConnectionError, Timeout
 from app.auth import login_group_required
 from app.logging import getLogger
 from liqpay_int.broker.utils import get_cookies
-from payments.tasks import (
-    process_payment_data,
-    process_payment_complaint_search,
-    process_payment_complaint_data,
-)
 from liqpay_int.exceptions import (
     LiqpayResponseErrorHTTPException,
     PaymentInvalidHTTPException,
@@ -23,6 +18,7 @@ from liqpay_int.exceptions import (
     PaymentComplaintInvalidStatusHTTPException,
     Base64DecodeHTTPException,
     JSONDecodeHTTPException,
+    ProzorroApiPreconditionFailedHTTPException,
 )
 from liqpay_int.resources import Resource
 from liqpay_int.responses import (
@@ -34,7 +30,14 @@ from liqpay_int.utils import (
     generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign,
     liqpay_decode, liqpay_request,
 )
-from liqpay_int.broker.messages import DESC_CHECKOUT_POST, DESC_TICKET_POST, DESC_SIGNATURE_POST, SERVER_ID_DESC
+from liqpay_int.broker.messages import (
+    DESC_CHECKOUT_POST,
+    DESC_TICKET_POST,
+    DESC_SIGNATURE_POST,
+    SERVER_ID_DESC,
+    REQUEST_ID_DESC,
+    CLIENT_REQUEST_ID_DESC,
+)
 from liqpay_int.broker.namespaces import api
 from liqpay_int.broker.parsers import parser_query
 from liqpay_int.broker.models import model_checkout, model_receipt, model_sign
@@ -44,7 +47,12 @@ from liqpay_int.broker.responses import (
     model_response_receipt_error,
     model_response_sign,
 )
-from payments.utils import check_complaint_code, check_complaint_value, check_complaint_status
+from payments.utils import (
+    check_complaint_code, check_complaint_value, check_complaint_status, get_payment_params,
+    get_item_data,
+    request_complaint_search,
+    request_tender_data,
+)
 
 logger = getLogger()
 
@@ -59,7 +67,11 @@ class CheckoutResource(Resource):
     @api.doc_response(HTTPStatus.UNAUTHORIZED, model=model_response_error)
     @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
     @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
-    @api.param("X-Server-Id", description=SERVER_ID_DESC, _in="header")
+    @api.param("X-Server-ID", description=SERVER_ID_DESC, _in="header")
+    @api.param("X-Request-ID", description=REQUEST_ID_DESC, _in="header")
+    @api.param("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC, _in="header")
+    @api.header("X-Request-ID", description=REQUEST_ID_DESC)
+    @api.header("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC)
     @api.marshal_with(model_response_checkout, code=HTTPStatus.OK)
     @api.expect(model_checkout, validate=True)
     def post(self):
@@ -67,51 +79,57 @@ class CheckoutResource(Resource):
         Receive a payment link.
         """
         data = marshal(api.payload, model_checkout, skip_none=True)
-
-        description = data.get("description")
-
+        description = data.get("description", "")
         extra = {"PAYMENT_DESCRIPTION": description}
         logger.info("Payment checkout requested.", extra=extra)
-
         payment_data = dict(description=description)
-
-        server_id = request.headers.get("X-Server-Id")
-
+        server_id = request.headers.get("X-Server-ID")
         try:
-            cookies = {"SERVER_ID": server_id} if server_id else get_cookies()
-
-            payment_params = process_payment_data.apply(kwargs=dict(
-                payment_data=payment_data,
-            )).wait()
-
+            payment_params = get_payment_params(description)
             if not payment_params:
                 raise PaymentInvalidHTTPException()
 
-            search_complaint_data = process_payment_complaint_search.apply(kwargs=dict(
-                payment_data=payment_data,
-                payment_params=payment_params,
-                cookies=cookies,
-            )).wait()
+            complaint_pretty_id = payment_params.get("complaint")
+            cookies = {"SERVER_ID": server_id} if server_id else get_cookies()
 
-            if not search_complaint_data:
+            response = request_complaint_search(complaint_pretty_id, cookies=cookies)
+            if response.status_code == 412:
+                raise ProzorroApiPreconditionFailedHTTPException()
+            if response.status_code != 200:
                 raise PaymentComplaintNotFoundHTTPException()
 
+            search_complaints_data = response.json()["data"]
+            if len(search_complaints_data) == 0:
+                raise PaymentComplaintNotFoundHTTPException()
+
+            search_complaint_data = search_complaints_data[0]
             if not check_complaint_code(search_complaint_data, payment_params):
                 raise PaymentComplaintInvalidCodeHTTPException()
 
-            complaint_params = search_complaint_data.get("params")
-            complaint_data = process_payment_complaint_data.apply(kwargs=dict(
-                complaint_params=complaint_params,
-                payment_data=payment_data,
-                cookies=cookies,
-            )).wait()
+            complaint_params = search_complaint_data.get("params", {})
+            tender_id = complaint_params.get("tender_id")
+            complaint_id = complaint_params.get("complaint_id")
+
+            response = request_tender_data(tender_id, cookies=cookies)
+            if response.status_code == 412:
+                raise ProzorroApiPreconditionFailedHTTPException()
+            if response.status_code != 200:
+                raise PaymentComplaintNotFoundHTTPException()
+
+            tender_data = response.json()["data"]
+
+            if complaint_params.get("item_type"):
+                item_type = complaint_params.get("item_type")
+                item_id = complaint_params.get("item_id")
+                item_data = get_item_data(tender_data, item_type, item_id)
+                complaint_data = get_item_data(item_data, "complaints", complaint_id)
+            else:
+                complaint_data = get_item_data(tender_data, "complaints", complaint_id)
 
             if not complaint_data:
                 raise PaymentComplaintNotFoundHTTPException()
-
             if not check_complaint_status(complaint_data):
                 raise PaymentComplaintInvalidStatusHTTPException()
-
             if not check_complaint_value(complaint_data):
                 raise PaymentComplaintInvalidValueHTTPException()
 
@@ -125,7 +143,7 @@ class CheckoutResource(Resource):
             try:
                 resp_json = liqpay_request(data=params, sandbox=sandbox)
             except (Timeout, ConnectionError):
-                logger.error("Liqpay api request failed.")
+                logger.warning("Liqpay api request failed.", extra=extra)
                 abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
             else:
                 if not resp_json:
@@ -149,24 +167,25 @@ class ReceiptResource(Resource):
     @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
     @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
     @api.marshal_with(model_response_success, code=HTTPStatus.OK)
+    @api.param("X-Request-ID", description=REQUEST_ID_DESC, _in="header")
+    @api.param("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC, _in="header")
+    @api.header("X-Request-ID", description=REQUEST_ID_DESC)
+    @api.header("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC)
     @api.expect(model_receipt, validate=True)
     def post(self):
         """
         Receive a receipt.
         """
         data = marshal(api.payload, model_receipt, skip_none=True)
-
         order_id = data.get("order_id")
-
         extra = {"PAYMENT_ORDER_ID": order_id}
         logger.info("Payment receipt requested.", extra=extra)
-
         sandbox = parser_query.parse_args().get("sandbox")
         params = generate_liqpay_receipt_params(data, sandbox=sandbox)
         try:
             resp_json = liqpay_request(data=params, sandbox=sandbox)
         except (Timeout, ConnectionError):
-            logger.error("Liqpay api request failed.")
+            logger.warning("Liqpay api request failed.", extra=extra)
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
         else:
             if not resp_json:
@@ -190,6 +209,10 @@ class SignatureResource(Resource):
     @api.doc_response(HTTPStatus.SERVICE_UNAVAILABLE, model=model_response_failure)
     @api.doc_response(HTTPStatus.INTERNAL_SERVER_ERROR, model=model_response_failure)
     @api.marshal_with(model_response_sign, code=HTTPStatus.OK)
+    @api.param("X-Request-ID", description=REQUEST_ID_DESC, _in="header")
+    @api.param("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC, _in="header")
+    @api.header("X-Request-ID", description=REQUEST_ID_DESC)
+    @api.header("X-Client-Request-ID", description=CLIENT_REQUEST_ID_DESC)
     @api.expect(model_sign, validate=True)
     def post(self):
         """
