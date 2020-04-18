@@ -6,7 +6,10 @@ from flask import Blueprint, render_template, redirect, url_for, abort, make_res
 
 from app.auth import login_group_required
 from payments.tasks import process_payment_data
-from payments.results_db import get_payment_list, get_payment_item
+from payments.results_db import (
+    get_payment_list, get_payment_item, get_combined_filters_or, get_payment_search_filters,
+    get_payment_report_filters,
+)
 from payments.context import (
     url_for_search,
     get_payment_search_params,
@@ -24,10 +27,8 @@ from payments.data import (
     payment_message_list_status,
     payment_message_status,
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
-    PAYMENTS_INFO_MESSAGE_ID_LIST,
-    PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
-    PAYMENTS_WARNING_MESSAGE_ID_LIST,
     date_representation,
+    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
 )
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
@@ -44,7 +45,8 @@ bp.add_app_template_filter(complaint_funds_description, "complaint_funds_descrip
 @login_group_required("accountants")
 def payment_list():
     kwargs = get_payment_search_params()
-    rows = list(get_payment_list(**kwargs))
+    filters = get_payment_search_filters(**kwargs)
+    rows = list(get_payment_list(filters, **kwargs))
     data = get_payments(rows)
     return render_template(
         "payments/payment_list.html",
@@ -87,32 +89,28 @@ def payment_retry(uid):
     return redirect(url_for("payments_views.payment_detail", uid=uid))
 
 
-@bp.route("/reports", methods=["GET"])
+@bp.route("/report", methods=["GET"])
 @login_group_required("accountants")
-def reports():
+def report():
     kwargs = get_report_params()
     date = kwargs.get("date")
-    funds = kwargs.get("funds")
     if date:
-        data_success = list(get_payment_list(
+        data_success_filters = get_payment_report_filters(
             resolution_exists=True,
             resolution_date=date,
-            resolution_funds=funds,
-        ))
-        rows_success = get_report(data_success)
-        data_failed = list(get_payment_list(
+        )
+        data_failed_filters = get_payment_report_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
-            message_ids_exclude=PAYMENTS_INFO_MESSAGE_ID_LIST + \
-                                PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
-                                PAYMENTS_WARNING_MESSAGE_ID_LIST,
+            message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
             message_ids_date=date,
-        ))
-        rows_failed = get_report(data_failed)
-        rows = rows_success + rows_failed[1:]
+        )
+        filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+        data = list(get_payment_list(filters))
+        rows = get_report(data)
     else:
         rows = []
     return render_template(
-        "payments/payment_reports.html",
+        "payments/payment_report.html",
         rows=rows,
         url_for_search=url_for_search,
         resolution_date=date,
@@ -120,9 +118,9 @@ def reports():
     )
 
 
-@bp.route("/reports/download", methods=["GET"])
+@bp.route("/report/download", methods=["GET"])
 @login_group_required("accountants")
-def reports_download():
+def report_download():
     kwargs = get_report_params()
     date = kwargs.get("date")
     funds = kwargs.get("funds") or 'all'
@@ -132,35 +130,35 @@ def reports_download():
         return
 
     if funds in ["state", "complainant"]:
-        rows = list(get_payment_list(
+        filters = get_payment_report_filters(
             resolution_exists=True,
             resolution_funds=funds,
-            resolution_date=date,
-        ))
+            resolution_date=date
+        )
     elif funds in ["unknown"]:
-        rows = list(get_payment_list(
+        filters = get_payment_report_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
-            message_ids_exclude=PAYMENTS_INFO_MESSAGE_ID_LIST + \
-                                PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
-                                PAYMENTS_WARNING_MESSAGE_ID_LIST,
+            message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
             message_ids_date=date,
-        ))
+        )
+        rows = list(get_payment_list(filters))
     elif funds in ["all"]:
         rows = list()
-        rows.extend(list(get_payment_list(
+        filters_success = get_payment_report_filters(
             resolution_exists=True,
-            resolution_date=date,
-        )))
-        rows.extend(list(get_payment_list(
+            resolution_date=date
+        )
+        filters_failed = get_payment_report_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
-            message_ids_exclude=PAYMENTS_INFO_MESSAGE_ID_LIST + \
-                                PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
-                                PAYMENTS_WARNING_MESSAGE_ID_LIST,
-            message_ids_date=date,
-        )))
+            message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+            message_ids_date=date
+        )
+        filters = get_combined_filters_or([filters_success, filters_failed])
     else:
         abort(404)
         return
+
+    rows = list(get_payment_list(filters))
 
     data = get_report(rows)
 

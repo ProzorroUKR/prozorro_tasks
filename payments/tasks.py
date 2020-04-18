@@ -74,7 +74,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 COMPLAINT_NOT_FOUND_MAX_RETRIES = 20
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_payment_data(self, payment_data, *args, **kwargs):
     """
     Process and validate payment data
@@ -111,7 +111,7 @@ def process_payment_data(self, payment_data, *args, **kwargs):
     ))
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_payment_complaint_search(self, payment_data, payment_params, cookies=None, *args, **kwargs):
     complaint_pretty_id = payment_params.get("complaint")
 
@@ -227,7 +227,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
     ))
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_payment_complaint_data(self, complaint_params, payment_data, cookies=None, *args, **kwargs):
     tender_id = complaint_params.get("tender_id")
 
@@ -395,7 +395,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     ))
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_payment_complaint_patch(self, payment_data, complaint_params, complaint_patch_data, cookies=None,
                                     *args, **kwargs):
     if complaint_params.get("item_type"):
@@ -478,7 +478,7 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, compla
             "MESSAGE_ID": message_id
         })
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_payment_complaint_recheck(self, payment_data, complaint_params, complaint_patch_data, cookies=None,
                                     *args, **kwargs):
     if complaint_params.get("item_type"):
@@ -563,7 +563,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, comp
 
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_tender(self, tender_id, *args, **kwargs):
     url = "{host}/api/{version}/tenders/{tender_id}".format(
         host=PUBLIC_API_HOST,
@@ -629,10 +629,13 @@ def process_tender(self, tender_id, *args, **kwargs):
                         )
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_complaint_params(self, complaint_params, complaint_data):
     try:
-        payment = get_payment_item_by_params(complaint_params)
+        payment = get_payment_item_by_params(complaint_params, [
+            PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+            PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
+        ])
     except PyMongoError as exc:
         countdown = get_exponential_request_retry_countdown(self)
         raise self.retry(countdown=countdown, exc=exc)
@@ -652,7 +655,7 @@ def process_complaint_params(self, complaint_params, complaint_data):
         })
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 def process_complaint_resolution(self, payment_data, complaint_data, *args, **kwargs):
     status = complaint_data.get("status")
     reason = complaint_data.get("rejectReason")

@@ -9,7 +9,7 @@ from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
-from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
+from payments.logging import log_exc
 
 logger = get_task_logger(__name__)
 
@@ -19,55 +19,132 @@ get_mongodb_collection = partial(
 )
 
 
-DEFAULT_PAGE = 1
-DEFAULT_LIMIT = 10
-
-
-def init_db_indexes():
-    drop_db_indexes()
+def init_indexes():
+    drop_indexes()
     indexes = [
         dict(keys="createdAt", name="created_at"),
         dict(keys=[('payment.description', pymongo.TEXT)], name="payment_description_text")
     ]
     for kwargs in indexes:
-        init_db_index(**kwargs)
+        try:
+            init_index(**kwargs)
+        except OperationFailure:
+            # Index already exists
+            pass
 
 
-def drop_db_indexes():
-    try:
-        collection = get_mongodb_collection()
-        collection.drop_indexes()
-    except PyMongoError as e:
-        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
-    return "success"
-
-
-def init_db_index(**kwargs):
-    try:
-        collection = get_mongodb_collection()
-        collection.create_index(**kwargs)
-    except OperationFailure as e:
-        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
-        return "exists"
-    except PyMongoError as e:
-        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR"})
-    return "success"
-
-
-def get_payment_count(**kwargs):
+@log_exc(logger, PyMongoError, "MONGODB_INDEX_DROP_UNEXPECTED_ERROR")
+def drop_indexes():
     collection = get_mongodb_collection()
-    find_filter = get_payment_filters(**kwargs)
+    collection.drop_indexes()
+
+
+@log_exc(logger, PyMongoError, "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR")
+@log_exc(logger, OperationFailure, "MONGODB_INDEX_CREATION_ERROR")
+def init_index(**kwargs):
+    collection = get_mongodb_collection()
+    collection.create_index(**kwargs)
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
+def get_payment_count(filters, **kwargs):
+    collection = get_mongodb_collection()
+    return collection.count_documents(filters)
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION")
+def get_payment_list(filters=None, page=None, limit=None, **kwargs):
+    collection = get_mongodb_collection()
+    cursor = collection.find(filters).sort("createdAt", DESCENDING)
+    if page and limit:
+        skip = (page - 1) * limit
+        if skip >= 0:
+            cursor = cursor.skip(skip)
+    if limit:
+        cursor = cursor.limit(limit)
+    return cursor
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_ITEM_MONGODB_EXCEPTION")
+def get_payment_item(uid):
+    collection = get_mongodb_collection()
+    return collection.find_one({"_id": uid})
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION")
+def push_payment_message(data, message_id, message):
+    collection = get_mongodb_collection()
+    return collection.update(
+        {"_id": data_to_uid(data)},
+        {'$push': {
+            'messages': {
+                "message_id": message_id,
+                "message": message,
+                "createdAt": datetime.utcnow()
+            }
+        }}
+    )
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION")
+def save_payment_item(data, user):
+    collection = get_mongodb_collection()
     try:
-        count = collection.count_documents(find_filter)
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
-    else:
-        return count
+        return collection.insert({
+            "_id": data_to_uid(data),
+            "payment": data,
+            "user": user,
+            "createdAt": datetime.utcnow(),
+        })
+    except DuplicateKeyError:
+        pass
 
 
-def get_payment_filters(
+@log_exc(logger, PyMongoError, "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION")
+def set_payment_params(data, params):
+    collection = get_mongodb_collection()
+    return collection.update(
+        {"_id": data_to_uid(data)},
+        {'$set': {'params': params}}
+    )
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION")
+def set_payment_resolution(data, resolution):
+    collection = get_mongodb_collection()
+    return collection.update(
+        {"_id": data_to_uid(data)},
+        {'$set': {'resolution': resolution}}
+    )
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_BY_PARAMS_MONGODB_EXCEPTION")
+def get_payment_item_by_params(params, message_ids=None):
+    collection = get_mongodb_collection()
+    filters = [{"params": params}]
+    if message_ids:
+        filters.append({"messages.message_id": {"$in": message_ids}})
+    return collection.find_one(get_combined_filters_and(filters))
+
+
+def data_to_uid(data):
+    return args_to_uid(sorted(data.values()))
+
+
+def get_payment_search_filters(
     search=None,
     payment_type=None,
+    **kwargs
+):
+    filters = []
+    if search is not None:
+        filters.append({"$text": {"$search": search}})
+    if payment_type is not None:
+        filters.append({"payment.type": payment_type})
+    return get_combined_filters_and(filters) if filters else {}
+
+
+def get_payment_report_filters(
     resolution_exists=None,
     resolution_date=None,
     resolution_funds=None,
@@ -76,170 +153,37 @@ def get_payment_filters(
     message_ids_exclude=None,
     **kwargs
 ):
-    find_filters = []
-    if search is not None:
-        find_filters.append({"$text": {"$search": search}})
-    if payment_type is not None:
-        find_filters.append({"payment.type": payment_type})
+    filters = []
     if resolution_exists is not None:
-        find_filters.append({"resolution": {"$exists": resolution_exists}})
+        filters.append({"resolution": {"$exists": resolution_exists}})
     if resolution_funds is not None:
-        find_filters.append({"resolution.funds": resolution_funds})
+        filters.append({"resolution.funds": resolution_funds})
     if resolution_date is not None:
-        find_filters.append({"resolution.date": {
+        filters.append({"resolution.date": {
             "$gte": resolution_date.isoformat(),
             "$lt": (resolution_date + timedelta(days=1)).isoformat()
         }})
     if message_ids_include is not None:
-        find_filters.append({"messages.message_id": {"$in": message_ids_include}})
-    if message_ids_include is not None and message_ids_date is not None:
-        message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
-        find_filter_part = {"messages" : {"$elemMatch": {
-            "message_id": {"$in": message_ids_include},
-            "createdAt": {
+        filters.append({"messages.message_id": {"$in": message_ids_include}})
+    if message_ids_include is not None or message_ids_date is not None:
+        messages_match_filter = {}
+        if message_ids_include is not None:
+            messages_match_filter.update({"message_id": {"$in": message_ids_include}})
+        if message_ids_date is not None:
+            message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
+            messages_match_filter.update({"createdAt": {
                 "$gte": message_ids_date,
                 "$lt": (message_ids_date + timedelta(days=1))
-            }
-        }}}
-        find_filters.append(find_filter_part)
+            }})
+        filters.append({"messages" : {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
-        find_filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
-    if find_filters:
-        return {"$and": find_filters}
-    return {}
+        filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
+    return get_combined_filters_and(filters) if filters else {}
 
 
-def get_payment_list(page=None, limit=None, **kwargs):
-    skip = page * limit - limit if page and limit else None
-    collection = get_mongodb_collection()
-    find_filter = get_payment_filters(**kwargs)
-    try:
-        doc = collection.find(find_filter).sort("createdAt", DESCENDING)
-        if skip:
-            doc = doc.skip(skip)
-        if limit:
-            doc = doc.limit(limit)
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
-    else:
-        return doc
+def get_combined_filters_and(filters):
+    return {"$and": filters}
 
 
-def get_payment_item(uid):
-    collection = get_mongodb_collection()
-    try:
-        doc = collection.find_one(
-            {"_id": uid}
-        )
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION"})
-    else:
-        return doc
-
-
-def push_payment_message(data, message_id, message):
-    uid = args_to_uid(sorted(data.values()))
-    collection = get_mongodb_collection()
-    try:
-        doc = collection.update(
-            {"_id": uid},
-            {'$push': {
-                'messages': {
-                    "message_id": message_id,
-                    "message": message,
-                    "createdAt": datetime.utcnow()
-                }
-            }}
-        )
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION"})
-        raise
-    else:
-        return doc
-
-
-def save_payment_item(data, user):
-    uid = args_to_uid(sorted(data.values()))
-    collection = get_mongodb_collection()
-    try:
-        collection.insert({
-            "_id": uid,
-            "payment": data,
-            "user": user,
-            "createdAt": datetime.utcnow(),
-        })
-    except DuplicateKeyError:
-        pass
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION"})
-        raise
-    else:
-        return uid
-
-
-def set_payment_params(data, params):
-    uid = args_to_uid(sorted(data.values()))
-    collection = get_mongodb_collection()
-    try:
-        collection.update(
-            {"_id": uid},
-            {'$set': {
-                'params': params
-            }})
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION"})
-        raise
-    else:
-        return uid
-
-
-def get_payment_item_by_params(params):
-    collection = get_mongodb_collection()
-    try:
-        doc = collection.find({
-            "params": params
-        })
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_BY_PARAMS_MONGODB_EXCEPTION"})
-        raise
-    else:
-        items = list(doc)
-        if len(items) == 1:
-            return items[0]
-        elif len(items) > 1:
-            return get_payment_item_by_params_and_message_id(
-                params, [
-                    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
-                    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
-                ]
-            )
-
-
-def get_payment_item_by_params_and_message_id(params, message_ids):
-    collection = get_mongodb_collection()
-    try:
-        doc = collection.find_one({
-            "params": params,
-            "messages.message_id": {"$in": message_ids}
-        })
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_GET_BY_PARAM_AND_MESSAGE_ID_MONGODB_EXCEPTION"})
-        raise
-    else:
-        return doc
-
-
-def set_payment_resolution(data, resolution):
-    uid = args_to_uid(sorted(data.values()))
-    collection = get_mongodb_collection()
-    try:
-        collection.update(
-            {"_id": uid},
-            {'$set': {
-                'resolution': resolution
-            }})
-    except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION"})
-        raise
-    else:
-        return uid
+def get_combined_filters_or(filters):
+    return {"$or": filters}
