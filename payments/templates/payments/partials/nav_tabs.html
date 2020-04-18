@@ -8,7 +8,7 @@
         {% endwith %}
     </li>
     <li class="nav-item">
-        {% with endpoint='payments_views.reports' %}
+        {% with endpoint='payments_views.report' %}
         <a class="nav-link{% if request.url_rule.endpoint == endpoint %} active{% endif %}"
            href="{{ url_for(endpoint) }}">
             Звіти

@@ -1,19 +1,17 @@
 from datetime import datetime
 
-import dateutil.parser
 import requests
 from flask import request, url_for
 from flask_paginate import Pagination
-from pytz import UTC
 
-from environment_settings import PUBLIC_API_HOST, API_VERSION, TIMEZONE
+from environment_settings import PUBLIC_API_HOST, API_VERSION
 from payments.schemes import (
     get_scheme_value,
     get_scheme_data,
     ROOT_SCHEME,
     REPORT_SCHEME,
 )
-from payments.results_db import get_payment_count
+from payments.results_db import get_payment_count, get_payment_search_filters
 
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
@@ -108,7 +106,7 @@ def get_payment_pagination(**kwargs):
         link_size="sm",
         show_single_page=True,
         record_name="payments",
-        total=get_payment_count(**kwargs),
+        total=get_payment_count(get_payment_search_filters(**kwargs), **kwargs),
         per_page_parameter="limit",
         page_parameter="page",
         **kwargs

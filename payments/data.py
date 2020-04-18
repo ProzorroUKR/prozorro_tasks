@@ -46,6 +46,7 @@ from payments.messages import (
     DESC_PROCESSING_DANGER,
     DESC_PROCESSING_FAILED,
     DESC_FUNDS_UNKNOWN,
+    DESC_PROCESSING_DEFAULT,
 )
 
 
@@ -59,10 +60,6 @@ def complaint_reject_description(reason):
 
 def complaint_funds_description(funds):
     return DESC_FUNDS_DICT.get(funds, funds)
-
-
-def processing_message_description(processing_status):
-    return DESC_PROCESSING_DICT.get(processing_status, processing_status)
 
 
 def payment_message_status(message):
@@ -81,10 +78,29 @@ def payment_message_list_status(messages):
     )
 
 
+def processing_message_description(processing_status):
+    return DESC_PROCESSING_DICT.get(processing_status, processing_status) or DESC_PROCESSING_DEFAULT
+
+
 def processing_message_list_description(messages):
     return processing_message_description(
         payment_message_list_status(messages)
     )
+
+
+def processing_message_failed_list_description(messages):
+    return processing_message_failed_description(
+        payment_primary_message(messages)
+    )
+
+
+def processing_message_failed_description(message):
+    if message is None:
+        return None
+    message_status = payment_message_status(message)
+    if message_status == FAILED_MESSAGE_STATUS:
+        message_id = message.get("message_id")
+        return MESSAGE_ID_DESCRIPTION_DICT.get(message_id, message_id)
 
 
 def payment_primary_message(messages):
@@ -143,6 +159,11 @@ PAYMENTS_WARNING_MESSAGE_ID_LIST = [
     PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
 ]
 
+PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST = \
+    PAYMENTS_INFO_MESSAGE_ID_LIST + \
+    PAYMENTS_SUCCESS_MESSAGE_ID_LIST + \
+    PAYMENTS_WARNING_MESSAGE_ID_LIST
+
 PAYMENTS_FAILED_MESSAGE_ID_LIST = [
     PAYMENTS_INVALID_PATTERN,
     PAYMENTS_SEARCH_INVALID_COMPLAINT,
@@ -168,21 +189,27 @@ PAYMENTS_DANGER_MESSAGE_ID_LIST = [
     PAYMENTS_GET_COMPLAINT_CODE_ERROR,
 ]
 
+INFO_MESSAGE_STATUS = "info"
+SUCCESS_MESSAGE_STATUS = "success"
+WARNING_MESSAGE_STATUS = "warning"
+DANGER_MESSAGE_STATUS = "danger"
+FAILED_MESSAGE_STATUS = "failed"
+
 PAYMENTS_MESSAGE_IDS = {
-    "info": PAYMENTS_INFO_MESSAGE_ID_LIST,
-    "success": PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
-    "warning": PAYMENTS_WARNING_MESSAGE_ID_LIST,
-    "danger": PAYMENTS_DANGER_MESSAGE_ID_LIST,
-    "failed": PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    INFO_MESSAGE_STATUS: PAYMENTS_INFO_MESSAGE_ID_LIST,
+    SUCCESS_MESSAGE_STATUS: PAYMENTS_SUCCESS_MESSAGE_ID_LIST,
+    WARNING_MESSAGE_STATUS: PAYMENTS_WARNING_MESSAGE_ID_LIST,
+    DANGER_MESSAGE_STATUS: PAYMENTS_DANGER_MESSAGE_ID_LIST,
+    FAILED_MESSAGE_STATUS: PAYMENTS_FAILED_MESSAGE_ID_LIST,
 }
 
 
 DESC_PROCESSING_DICT = {
-    "info": DESC_PROCESSING_INFO,
-    "success": DESC_PROCESSING_SUCCESS,
-    "warning": DESC_PROCESSING_WARNING,
-    "danger": DESC_PROCESSING_DANGER,
-    "failed": DESC_PROCESSING_FAILED,
+    INFO_MESSAGE_STATUS: DESC_PROCESSING_INFO,
+    SUCCESS_MESSAGE_STATUS: DESC_PROCESSING_SUCCESS,
+    WARNING_MESSAGE_STATUS: DESC_PROCESSING_WARNING,
+    DANGER_MESSAGE_STATUS: DESC_PROCESSING_DANGER,
+    FAILED_MESSAGE_STATUS: DESC_PROCESSING_FAILED,
 }
 
 MESSAGE_ID_PRIORITY = \
@@ -191,3 +218,11 @@ MESSAGE_ID_PRIORITY = \
     PAYMENTS_WARNING_MESSAGE_ID_LIST + \
     PAYMENTS_FAILED_MESSAGE_ID_LIST + \
     PAYMENTS_DANGER_MESSAGE_ID_LIST
+
+MESSAGE_ID_DESCRIPTION_DICT = {
+    PAYMENTS_INVALID_PATTERN: "Відсутня або некоректна інформація про скаргу у описі призначення платежу",
+    PAYMENTS_SEARCH_INVALID_COMPLAINT: "Скаргу не знайдено у центральній базі даних",
+    PAYMENTS_SEARCH_INVALID_CODE: "Секретний код платежу вказано некоректно",
+    PAYMENTS_INVALID_STATUS: "Некоректний стан скарги у центральній базі даних",
+    PAYMENTS_INVALID_COMPLAINT_VALUE: "Відсутні дані про сумму до опалити скарги у центральній базі даних",
+}
