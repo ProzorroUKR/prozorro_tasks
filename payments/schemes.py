@@ -6,6 +6,7 @@ from payments.data import (
     complaint_funds_description,
     date_representation,
     processing_message_list_description,
+    processing_message_failed_list_description,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -136,9 +137,26 @@ EXTRA_CREATED_SCHEME_ITEM = {
     "default": "",
 }
 
+EXTRA_PROCESSING_STATUS_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Статус обробки",
+    "path": "messages",
+    "method": processing_message_list_description,
+    "default": "",
+}
+
+EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Опис обробки платежу",
+    "path": "messages",
+    "method": processing_message_failed_list_description,
+}
+
 EXTRA_SCHEME = {
     "user": EXTRA_USER_SCHEME_ITEM,
     "created": EXTRA_CREATED_SCHEME_ITEM,
+    "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
+    "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
 }
 
 ROOT_ID_SCHEME_ITEM = {
@@ -159,14 +177,6 @@ ROOT_EXTRA_SCHEME_ITEM = {
     "type": "object",
     "title": "Додатково",
     "scheme": EXTRA_SCHEME,
-    "default": "",
-}
-
-ROOT_PROCESSING_STATUS_SCHEME_ITEM = {
-    "type": "object",
-    "title": "Статус обробки",
-    "path": "messages",
-    "method": processing_message_list_description,
     "default": "",
 }
 
@@ -192,7 +202,6 @@ ROOT_SCHEME = {
     "payment": ROOT_PAYMENT_SCHEME_ITEM,
     "extra": ROOT_EXTRA_SCHEME_ITEM,
     "resolution": ROOT_RESOLUTION_SCHEME_ITEM,
-    "processing_status": ROOT_PROCESSING_STATUS_SCHEME_ITEM,
     "messages": ROOT_MESSAGES_SCHEME_ITEM,
     "params": ROOT_PARAMS_SCHEME_ITEM,
 }
@@ -209,9 +218,10 @@ REPORT_SCHEME = {
     "payment_okpo": PAYMENT_OKPO_SCHEME_ITEM,
     "payment_mfo": PAYMENT_MFO_SCHEME_ITEM,
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
+    "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
+    "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
     "resolution_reason": RESOLUTION_REASON_SCHEME_ITEM,
     "resolution_funds": RESOLUTION_FUNDS_SCHEME_ITEM,
-    "processing_status": ROOT_PROCESSING_STATUS_SCHEME_ITEM,
 }
 
 
