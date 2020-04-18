@@ -102,7 +102,7 @@ RESOLUTION_DATE_SCHEME_ITEM = {
 
 RESOLUTION_REASON_SCHEME_ITEM = {
     "type": "object",
-    "title": "Причина",
+    "title": "Причина рішення",
     "path": "resolution.reason",
     "method": complaint_reject_description,
 }
