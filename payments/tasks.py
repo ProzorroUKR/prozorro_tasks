@@ -29,6 +29,12 @@ from payments.message_ids import (
     PAYMENTS_SEARCH_FAILED,
     PAYMENTS_GET_COMPLAINT_EXCEPTION,
     PAYMENTS_GET_COMPLAINT_CODE_ERROR,
+    PAYMENTS_SEARCH_SUCCESS,
+    PAYMENTS_SEARCH_VALID_CODE,
+    PAYMENTS_GET_TENDER_SUCCESS,
+    PAYMENTS_VALID_ITEM,
+    PAYMENTS_VALID_COMPLAINT,
+    PAYMENTS_VALID_PAYMENT,
 )
 from payments.results_db import (
     set_payment_params,
@@ -200,7 +206,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
     logger.info("Successfully found complaint {}".format(
         complaint_pretty_id
     ), payment_data=payment_data, task=self, extra={
-        "MESSAGE_ID": "PAYMENTS_SEARCH_SUCCESS"
+        "MESSAGE_ID": PAYMENTS_SEARCH_SUCCESS
     })
 
     if self.request.is_eager:
@@ -217,7 +223,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
     logger.info("Successfully matched payment code {} for complaint {}".format(
         payment_params.get("code"), complaint_pretty_id
     ), payment_data=payment_data, task=self, extra={
-        "MESSAGE_ID": "PAYMENTS_SEARCH_VALID_CODE"
+        "MESSAGE_ID": PAYMENTS_SEARCH_VALID_CODE
     })
 
     process_payment_complaint_data.apply_async(kwargs=dict(
@@ -282,7 +288,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         logger.info("Successfully retrieved tender {}".format(
             tender_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": "PAYMENTS_GET_TENDER_SUCCESS"
+            "MESSAGE_ID": PAYMENTS_GET_TENDER_SUCCESS
         })
 
     tender_data = response.json()["data"]
@@ -307,7 +313,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         logger.info("Successfully retrieved {} {}".format(
             item_type[:-1], item_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": "PAYMENTS_VALID_ITEM"
+            "MESSAGE_ID": PAYMENTS_VALID_ITEM
         })
     else:
         complaint_data = get_item_data(tender_data, "complaints", complaint_id)
@@ -327,7 +333,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         logger.info("Successfully found complaint data {}".format(
             complaint_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": "PAYMENTS_VALID_COMPLAINT"
+            "MESSAGE_ID": PAYMENTS_VALID_COMPLAINT
         })
         return complaint_data
 
@@ -383,7 +389,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
 
     logger.info("Successfully matched payment for complaint {}".format(
         complaint_id
-    ), payment_data=payment_data, task=self, extra={"MESSAGE_ID": "PAYMENTS_VALID_PAYMENT"})
+    ), payment_data=payment_data, task=self, extra={"MESSAGE_ID": PAYMENTS_VALID_PAYMENT})
 
     process_payment_complaint_patch.apply_async(kwargs=dict(
         payment_data=payment_data,
