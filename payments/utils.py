@@ -94,21 +94,24 @@ def get_tender_url(tender_id, host=None):
     )
 
 
+def get_request_headers(client_request_id=None, authorization=False):
+    client_request_id = client_request_id or uuid4().hex
+    headers = {"X-Client-Request-ID": client_request_id}
+    if authorization:
+        headers.update({"Authorization": "Bearer {}".format(API_TOKEN)})
+    return headers
+
+
 def request_complaint_search(complaint_pretty_id, client_request_id=None, cookies=None, host=None):
     url = get_complaint_search_url(complaint_pretty_id, host=host)
-    client_request_id = client_request_id or uuid4().hex
-    headers = {
-        "X-Client-Request-ID": client_request_id,
-        "Authorization": "Bearer {}".format(API_TOKEN),
-    }
+    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
 def request_tender_data(tender_id, client_request_id=None, cookies=None, host=None):
     url = get_tender_url(tender_id, host=host)
-    client_request_id = client_request_id or uuid4().hex
-    headers = {"X-Client-Request-ID": client_request_id}
+    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
@@ -116,8 +119,7 @@ def request_tender_data(tender_id, client_request_id=None, cookies=None, host=No
 def request_complaint_data(tender_id, item_type, item_id, complaint_id,
                            client_request_id=None, cookies=None, host=None):
     url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
-    client_request_id = client_request_id or uuid4().hex
-    headers = {"X-Client-Request-ID": client_request_id}
+    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
@@ -125,9 +127,6 @@ def request_complaint_data(tender_id, item_type, item_id, complaint_id,
 def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data,
                             client_request_id=None, cookies=None, host=None):
     url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
-    headers = {
-        "X-Client-Request-ID": client_request_id,
-        "Authorization": "Bearer {}".format(API_TOKEN),
-    }
+    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
