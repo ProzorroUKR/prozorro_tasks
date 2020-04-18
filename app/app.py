@@ -1,4 +1,5 @@
 import logging
+
 import urllib3
 
 from flask import Flask
@@ -6,6 +7,7 @@ from flask.logging import default_handler
 from pythonjsonlogger.jsonlogger import JsonFormatter
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from app.middleware import RequestId
 from app.views import bp as app_views_bp
 from environment_settings import APP_X_FORWARDED_NUMBER
 from payments.views import bp as payments_views_bp
@@ -27,6 +29,7 @@ logger_root.setLevel(logging.INFO)
 app.config.SWAGGER_UI_DOC_EXPANSION = "list"
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=APP_X_FORWARDED_NUMBER)
+app.wsgi_app = RequestId(app.wsgi_app)
 
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")

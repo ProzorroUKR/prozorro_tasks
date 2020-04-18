@@ -8,6 +8,7 @@ from liqpay_int.codes import (
     CODE_PAYMENT_COMPLAINT_INVALID_CODE,
     CODE_PAYMENT_COMPLAINT_INVALID_VALUE,
     CODE_PAYMENT_COMPLAINT_INVALID_STATUS,
+    CODE_PROZORRO_API_PRECONDITION_FAILED,
 )
 
 
@@ -33,6 +34,15 @@ class LiqpayResponseErrorHTTPException(BadRequestHTTPException):
             description=description,
             response=response
         )
+
+
+class ProzorroApiPreconditionFailedHTTPException(BadRequestHTTPException):
+    description = "Prozorro api precondition failed caused by invalid X-Server-Id header"
+
+    data = dict(
+        message=description,
+        code=CODE_PROZORRO_API_PRECONDITION_FAILED
+    )
 
 
 class PaymentInvalidHTTPException(BadRequestHTTPException):

@@ -1,4 +1,5 @@
 import typing
+import uuid
 from ipaddress import ip_network
 
 from environment_settings import TIMEZONE, PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
@@ -98,3 +99,7 @@ def prozorro_api_url(path):
 
 def prozorro_portal_url(path):
     return "{host}{path}".format(host=PORTAL_HOST, path=path)
+
+
+def generate_request_id():
+    return 'req-' + str(uuid.uuid4())
