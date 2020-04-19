@@ -15,7 +15,69 @@ PAYMENT_RE = re.compile(
     re.IGNORECASE
 )
 
-ALLOWED_COMPLAINT_PAYMENT_STATUSES = ["draft"]
+STATUS_COMPLAINT_DRAFT = "draft"
+STATUS_COMPLAINT_PENDING = "pending"
+STATUS_COMPLAINT_ACCEPTED = "accepted"
+STATUS_COMPLAINT_MISTAKEN = "mistaken"
+STATUS_COMPLAINT_SATISFIED = "satisfied"
+STATUS_COMPLAINT_RESOLVED = "resolved"
+STATUS_COMPLAINT_INVALID = "invalid"
+STATUS_COMPLAINT_STOPPED = "stopped"
+STATUS_COMPLAINT_DECLINED = "declined"
+
+ALLOWED_COMPLAINT_PAYMENT_STATUSES = [STATUS_COMPLAINT_DRAFT]
+ALLOWED_COMPLAINT_RESOLUTION_STATUSES = [
+    STATUS_COMPLAINT_MISTAKEN,
+    STATUS_COMPLAINT_SATISFIED,
+    STATUS_COMPLAINT_RESOLVED,
+    STATUS_COMPLAINT_INVALID,
+    STATUS_COMPLAINT_STOPPED,
+    STATUS_COMPLAINT_DECLINED
+]
+
+RESOLUTION_MAPPING = {
+    STATUS_COMPLAINT_MISTAKEN: dict(
+        type="mistaken",
+        funds_by_default=None,
+        funds_by_reject_reason={
+            "incorrectPayment": "complainant",
+            "complaintPeriodEnded": "complainant",
+            "cancelledByComplainant": "complainant",
+        },
+        date_field="date",
+    ),
+    STATUS_COMPLAINT_SATISFIED: dict(
+        type="satisfied",
+        funds_by_default="complainant",
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_RESOLVED: dict(
+        type="satisfied",
+        funds_by_default="complainant",
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_INVALID: dict(
+        type="invalid",
+        funds_by_default="state",
+        funds_by_reject_reason={
+            "buyerViolationsCorrected": "complainant",
+        },
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_STOPPED: dict(
+        type="stopped",
+        funds_by_default="state",
+        funds_by_reject_reason={
+            "buyerViolationsCorrected": "complainant",
+        },
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_DECLINED: dict(
+        type="declined",
+        funds_by_default="state",
+        date_field="dateDecision",
+    ),
+}
 
 
 def get_payment_params(description):
@@ -130,3 +192,25 @@ def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data,
     headers = get_request_headers(client_request_id=client_request_id, authorization=True)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
+
+
+def get_resolution(complaint_data):
+    status = complaint_data.get("status")
+    resolution_scheme = RESOLUTION_MAPPING.get(status)
+    if resolution_scheme:
+        resolution_type = resolution_scheme.get("type")
+        date_field = resolution_scheme.get("date_field")
+        date = complaint_data.get(date_field)
+        reject_reason = complaint_data.get("rejectReason")
+        funds_by_reject_reason = resolution_scheme.get("funds_by_reject_reason")
+        if funds_by_reject_reason and reject_reason in funds_by_reject_reason.keys():
+            funds = funds_by_reject_reason.get(reject_reason)
+        else:
+            funds = resolution_scheme.get("funds_by_default")
+
+        return {
+            "type": resolution_type,
+            "date": date,
+            "reason": reject_reason,
+            "funds": funds,
+        }

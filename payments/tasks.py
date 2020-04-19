@@ -52,11 +52,12 @@ from payments.utils import (
     request_tender_data,
     request_complaint_data,
     request_complaint_patch,
+    STATUS_COMPLAINT_MISTAKEN,
+    STATUS_COMPLAINT_PENDING,
+    ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
+    get_resolution,
 )
 from tasks_utils.requests import get_exponential_request_retry_countdown
-from tasks_utils.settings import (
-    DEFAULT_RETRY_AFTER,
-)
 from environment_settings import (
     PUBLIC_API_HOST,
 )
@@ -312,9 +313,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         process_payment_complaint_patch.apply_async(kwargs=dict(
             payment_data=payment_data,
             complaint_params=complaint_params,
-            patch_data={
-                "status": "mistaken"
-            },
+            patch_data={"status": STATUS_COMPLAINT_MISTAKEN},
             cookies=cookies
         ))
         return
@@ -328,9 +327,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         process_payment_complaint_patch.apply_async(kwargs=dict(
             payment_data=payment_data,
             complaint_params=complaint_params,
-            patch_data={
-                "status": "mistaken"
-            },
+            patch_data={"status": STATUS_COMPLAINT_MISTAKEN},
             cookies=cookies
         ))
         return
@@ -342,9 +339,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     process_payment_complaint_patch.apply_async(kwargs=dict(
         payment_data=payment_data,
         complaint_params=complaint_params,
-        patch_data={
-            "status": "pending"
-        },
+        patch_data={"status": STATUS_COMPLAINT_PENDING},
         cookies=cookies
     ))
 
@@ -508,14 +503,13 @@ def process_tender(self, tender_id, *args, **kwargs):
                 "MESSAGE_ID": "PAYMENTS_CRAWLER_GET_TENDER_UNSUCCESSFUL_CODE",
                 "STATUS_CODE": response.status_code
             })
-            raise self.retry(countdown=response.headers.get("Retry-After", DEFAULT_RETRY_AFTER))
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown)
 
         tender = response.json()["data"]
 
-        allowed_statuses = ["mistaken", "satisfied", "resolved", "invalid", "stopped", "declined"]
-
         for complaint_data in tender.get("complaints", []):
-            if complaint_data["status"] in allowed_statuses:
+            if complaint_data["status"] in ALLOWED_COMPLAINT_RESOLUTION_STATUSES:
                 complaint_params = {
                     "item_id": None,
                     "item_type": None,
@@ -532,7 +526,7 @@ def process_tender(self, tender_id, *args, **kwargs):
         for item_type in ["qualifications", "awards", "cancellations"]:
             for item_data in tender.get(item_type, []):
                 for complaint_data in item_data.get("complaints", []):
-                    if complaint_data["status"] in allowed_statuses:
+                    if complaint_data["status"] in ALLOWED_COMPLAINT_RESOLUTION_STATUSES:
                         complaint_params = {
                             "item_id": item_data["id"],
                             "item_type": item_type,
@@ -575,56 +569,15 @@ def process_complaint_params(self, complaint_params, complaint_data):
 
 @app.task(bind=True, max_retries=1000)
 def process_complaint_resolution(self, payment_data, complaint_data, *args, **kwargs):
-    status = complaint_data.get("status")
-    reason = complaint_data.get("rejectReason")
-    funds = None
-    resolution = status
-
-    if status in ["mistaken"]:
-        date = complaint_data.get("date")
-
-        if reason in ["incorrectPayment", "complaintPeriodEnded", "cancelledByComplainant"]:
-            funds = "complainant"
-
-    elif status in ["satisfied", "resolved"]:
-        resolution = "satisfied"
-        date = complaint_data.get("dateDecision")
-        funds = "complainant"
-
-    elif status in ["invalid"]:
-        date = complaint_data.get("dateDecision")
-        if reason in ["buyerViolationsCorrected"]:
-            funds = "complainant"
-        else:
-            funds = "state"
-
-    elif status in ["stopped"]:
-        date = complaint_data.get("dateDecision")
-        if reason in ["buyerViolationsCorrected"]:
-            funds = "complainant"
-        else:
-            funds = "state"
-
-    elif status in ["declined"]:
-        date = complaint_data.get("dateDecision")
-        funds = "state"
-
-    else:
-        date = complaint_data.get("dateDecision")
-
-    resolution = {
-        "date": date,
-        "type": resolution,
-        "reason": reason,
-        "funds": funds,
-    }
-    try:
-        set_payment_resolution(payment_data, resolution)
-    except PyMongoError as exc:
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown, exc=exc)
-    logger.info("Successfully saved complaint {} resolution".format(
-        complaint_data["id"]
-    ), payment_data=payment_data, task=self, extra={
-        "MESSAGE_ID": PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
-    })
+    resolution = get_resolution(complaint_data)
+    if resolution:
+        try:
+            set_payment_resolution(payment_data, resolution)
+        except PyMongoError as exc:
+            countdown = get_exponential_request_retry_countdown(self)
+            raise self.retry(countdown=countdown, exc=exc)
+        logger.info("Successfully saved complaint {} resolution".format(
+            complaint_data["id"]
+        ), payment_data=payment_data, task=self, extra={
+            "MESSAGE_ID": PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
+        })
