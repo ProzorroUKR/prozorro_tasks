@@ -1,12 +1,13 @@
+import unittest
 import pymongo.errors
 
-from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
 from uuid import uuid4
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call, ANY
 from celery.exceptions import Retry
-from payments.tasks import process_complaint_params, process_complaint_resolution
-import unittest
+
+from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from payments.message_ids import PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
+from payments.tasks import process_complaint_resolution
 
 
 class TestHandlerCase(unittest.TestCase):
@@ -54,7 +55,9 @@ class TestHandlerCase(unittest.TestCase):
                 "funds": "complainant",
             }
 
-            with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+            with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+                 patch("payments.logging.push_payment_message") as push_payment_message:
+
                 process_complaint_resolution(
                     payment_data=payment_data,
                     complaint_data=complaint_data
@@ -62,6 +65,13 @@ class TestHandlerCase(unittest.TestCase):
 
                 set_payment_resolution.assert_called_once_with(
                     payment_data, resolution
+                )
+
+                self.assertEqual(
+                    push_payment_message.mock_calls,
+                    [
+                        call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                    ]
                 )
 
     def test_handle_resolution_mistaken_invalid_reject_reason(self):
@@ -81,7 +91,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": None,
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -89,6 +101,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_resolution_satisfied(self):
@@ -107,7 +126,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "complainant",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -115,6 +136,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_resolution_resolved(self):
@@ -133,15 +161,24 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "complainant",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
-            process_complaint_resolution(
-                payment_data=payment_data,
-                complaint_data=complaint_data
-            )
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
 
-            set_payment_resolution.assert_called_once_with(
-                payment_data, resolution
-            )
+                process_complaint_resolution(
+                    payment_data=payment_data,
+                    complaint_data=complaint_data
+                )
+
+                set_payment_resolution.assert_called_once_with(
+                    payment_data, resolution
+                )
+
+                self.assertEqual(
+                    push_payment_message.mock_calls,
+                    [
+                        call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                    ]
+                )
 
     def test_handle_resolution_invalid_complainant(self):
         payment_data = {'test_param': 'test_value'}
@@ -160,15 +197,24 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "complainant",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
-            process_complaint_resolution(
-                payment_data=payment_data,
-                complaint_data=complaint_data
-            )
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
 
-            set_payment_resolution.assert_called_once_with(
-                payment_data, resolution
-            )
+                process_complaint_resolution(
+                    payment_data=payment_data,
+                    complaint_data=complaint_data
+                )
+
+                set_payment_resolution.assert_called_once_with(
+                    payment_data, resolution
+                )
+
+                self.assertEqual(
+                    push_payment_message.mock_calls,
+                    [
+                        call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                    ]
+                )
 
     def test_handle_resolution_invalid_state(self):
         payment_data = {'test_param': 'test_value'}
@@ -187,7 +233,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "state",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -195,6 +243,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_resolution_stopped_complainant(self):
@@ -214,7 +269,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "complainant",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -222,6 +279,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_resolution_stopped_state(self):
@@ -241,7 +305,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "state",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -249,6 +315,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_resolution_declined(self):
@@ -268,7 +341,9 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "state",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
@@ -276,6 +351,13 @@ class TestHandlerCase(unittest.TestCase):
 
             set_payment_resolution.assert_called_once_with(
                 payment_data, resolution
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS, ANY),
+                ]
             )
 
     def test_handle_unexpected_complaint_status(self):
@@ -293,10 +375,13 @@ class TestHandlerCase(unittest.TestCase):
             "funds": "state",
         }
 
-        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution:
+        with patch("payments.tasks.set_payment_resolution") as set_payment_resolution, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
             process_complaint_resolution(
                 payment_data=payment_data,
                 complaint_data=complaint_data
             )
 
             set_payment_resolution.assert_not_called()
+            push_payment_message.assert_not_called()

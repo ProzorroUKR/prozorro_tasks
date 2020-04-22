@@ -1,39 +1,27 @@
 import logging
-from functools import wraps
 
 from pymongo.errors import PyMongoError
 
 from tasks_utils.requests import get_exponential_request_retry_countdown
+from payments.results_db import push_payment_message
 
 
 class PaymentResultsLoggerAdapter(logging.LoggerAdapter):
     def __init__(self, logger):
-        super(PaymentResultsLoggerAdapter, self).__init__(logger, None)
+        extra = {}
+        super(PaymentResultsLoggerAdapter, self).__init__(logger, extra)
 
-    def process(self, msg, kwargs):
-        extra = kwargs.setdefault("extra", self.extra or {})
-        message_id = extra.get("MESSAGE_ID", "")
+    def log(self, level, msg, *args, **kwargs):
+        extra = kwargs.setdefault("extra", self.extra)
         task = kwargs.pop("task", None)
-        if "payment_data" in kwargs:
+        payment_data = kwargs.pop("payment_data", None)
+        message_id = extra.get("MESSAGE_ID", None)
+        if payment_data and message_id:
             try:
-                from payments.results_db import push_payment_message
-                push_payment_message(kwargs.pop("payment_data"), message_id, msg)
+                push_payment_message(payment_data, message_id, msg)
             except PyMongoError as exc:
                 if task:
                     countdown = get_exponential_request_retry_countdown(task)
                     raise task.retry(countdown=countdown, exc=exc)
-        return msg, kwargs
-
-
-def log_exc(logger, exception, message_id):
-    def wrapper(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            try:
-                result = f(*args, **kwargs)
-            except exception as exc:
-                logger.exception(exc, extra={"MESSAGE_ID": message_id})
                 raise
-            return result
-        return wrapped
-    return wrapper
+        super(PaymentResultsLoggerAdapter, self).log(level, msg, *args, **kwargs)

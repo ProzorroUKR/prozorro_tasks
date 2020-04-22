@@ -1,14 +1,19 @@
-from payments.utils import (
-    ALLOWED_COMPLAINT_RESOLUTION_STATUSES, STATUS_COMPLAINT_DRAFT, STATUS_COMPLAINT_PENDING,
-    STATUS_COMPLAINT_ACCEPTED,
-)
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
-from uuid import uuid4
-from unittest.mock import patch, Mock, call
-from celery.exceptions import Retry
-from payments.tasks import process_tender
 import unittest
 import requests
+
+from uuid import uuid4
+from unittest.mock import patch, Mock, call
+
+from celery.exceptions import Retry
+
+from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from payments.utils import (
+    ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
+    STATUS_COMPLAINT_DRAFT,
+    STATUS_COMPLAINT_PENDING,
+    STATUS_COMPLAINT_ACCEPTED,
+)
+from payments.tasks import process_tender
 
 
 class TestHandlerCase(unittest.TestCase):
@@ -42,7 +47,7 @@ class TestHandlerCase(unittest.TestCase):
             with self.assertRaises(Retry):
                 process_tender(tender_id)
 
-                process_tender.retry.assert_called_once_with(countdown=ret_aft)
+            process_tender.retry.assert_called_once_with(countdown=ret_aft)
 
     def test_handle_500_response(self):
         tender_id = "f" * 32

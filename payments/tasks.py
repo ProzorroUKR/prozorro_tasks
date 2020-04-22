@@ -149,7 +149,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
                 payment_params=payment_params,
                 cookies=cookies,
             ))
-        countdown = get_exponential_request_retry_countdown(self)
+        countdown = get_exponential_request_retry_countdown(self, response)
         raise self.retry(countdown=countdown)
 
     search_complaints_data = response.json()["data"]
@@ -243,7 +243,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
                 payment_data=payment_data,
                 cookies=cookies,
             ))
-        countdown = get_exponential_request_retry_countdown(self)
+        countdown = get_exponential_request_retry_countdown(self, response)
         raise self.retry(countdown=countdown)
     else:
         logger.info("Successfully retrieved tender {}".format(
@@ -397,7 +397,7 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, patch_
             ))
             return
         else:
-            countdown = get_exponential_request_retry_countdown(self)
+            countdown = get_exponential_request_retry_countdown(self, response)
             raise self.retry(countdown=countdown)
     else:
         if patch_data.get("status") == "pending":
@@ -457,7 +457,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
                 cookies=cookies,
             ))
         else:
-            countdown = get_exponential_request_retry_countdown(self)
+            countdown = get_exponential_request_retry_countdown(self, response)
             raise self.retry(countdown=countdown)
     else:
         complaint_get_data = response.json()["data"]
@@ -489,7 +489,7 @@ def process_tender(self, tender_id, *args, **kwargs):
             client_request_id=client_request_id,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(str(exc), task=self, extra={
+        logger.exception(str(exc), extra={
             "MESSAGE_ID": "PAYMENTS_CRAWLER_GET_TENDER_EXCEPTION",
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
@@ -499,11 +499,11 @@ def process_tender(self, tender_id, *args, **kwargs):
         if response.status_code != 200:
             logger.warning("Unexpected status code {} while getting tender {}: {}".format(
                 response.status_code, tender_id, response.text
-            ), task=self, extra={
+            ), extra={
                 "MESSAGE_ID": "PAYMENTS_CRAWLER_GET_TENDER_UNSUCCESSFUL_CODE",
                 "STATUS_CODE": response.status_code
             })
-            countdown = get_exponential_request_retry_countdown(self)
+            countdown = get_exponential_request_retry_countdown(self, response)
             raise self.retry(countdown=countdown)
 
         tender = response.json()["data"]
@@ -562,7 +562,7 @@ def process_complaint_params(self, complaint_params, complaint_data):
     else:
         logger.warning("Payment not found for complaint {} with params".format(
             complaint_data["id"], complaint_params
-        ), task=self, extra={
+        ), extra={
             "MESSAGE_ID": "PAYMENTS_CRAWLER_PAYMENT_NOT_FOUND"
         })
 
