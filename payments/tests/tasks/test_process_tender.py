@@ -7,13 +7,13 @@ from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry
 
 from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from payments.tasks import process_tender
 from payments.utils import (
     ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
     STATUS_COMPLAINT_DRAFT,
     STATUS_COMPLAINT_PENDING,
     STATUS_COMPLAINT_ACCEPTED,
 )
-from payments.tasks import process_tender
 
 
 class TestHandlerCase(unittest.TestCase):

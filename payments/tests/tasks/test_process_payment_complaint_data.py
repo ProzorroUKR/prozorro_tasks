@@ -6,9 +6,17 @@ from unittest.mock import patch, Mock, call, ANY
 from celery.exceptions import Retry
 
 from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from payments.utils import STATUS_COMPLAINT_PENDING, STATUS_COMPLAINT_MISTAKEN
 from payments.message_ids import (
     PAYMENTS_GET_TENDER_EXCEPTION,
     PAYMENTS_GET_TENDER_CODE_ERROR,
+    PAYMENTS_VALID_PAYMENT,
+    PAYMENTS_GET_TENDER_SUCCESS,
+    PAYMENTS_COMPLAINT_NOT_FOUND,
+    PAYMENTS_INVALID_COMPLAINT_VALUE,
+    PAYMENTS_INVALID_STATUS,
+    PAYMENTS_INVALID_AMOUNT,
+    PAYMENTS_INVALID_CURRENCY,
 )
 from payments.tasks import process_payment_complaint_data
 
@@ -78,6 +86,45 @@ class TestHandlerCase(unittest.TestCase):
 
         process_payment_complaint_data.retry.assert_called_once_with(
             countdown=ret_aft
+        )
+
+    def test_handle_412_response(self):
+        payment_data = {"description": "test"}
+        complaint_params = {"test": "test"}
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        process_payment_complaint_data.retry = Mock(
+            side_effect=Retry
+        )
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=412,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+            )
+
+            with self.assertRaises(Retry):
+                process_payment_complaint_data(
+                    complaint_params=complaint_params,
+                    payment_data=payment_data,
+                )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_CODE_ERROR, ANY),
+                ]
+            )
+
+        process_payment_complaint_data.retry.assert_called_once_with(
+            countdown=0,
+            kwargs=dict(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+                cookies=cookies,
+            )
         )
 
     def test_handle_500_response(self):
@@ -150,6 +197,314 @@ class TestHandlerCase(unittest.TestCase):
             countdown=DEFAULT_RETRY_AFTER
         )
 
-    def test_handle_200_response(self):
-        # TODO: test valid data
-        pass
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_valid_complaint(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "2000",
+            "currency": "UAH"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id",
+                        "complaints": [{
+                            "id": "test_complaint_id",
+                            "status": "draft",
+                            "value": {
+                                "amount": 2000.0,
+                                "currency": "UAH"
+                            }
+                        }]
+                    },
+                })
+            )
+
+            process_payment_complaint_data(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_VALID_PAYMENT, ANY),
+                ]
+            )
+
+        process_payment_complaint_patch.apply_async.assert_called_once_with(
+            kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                patch_data={"status": STATUS_COMPLAINT_PENDING},
+                cookies=cookies
+            )
+        )
+
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_no_complaint(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "2000",
+            "currency": "UAH"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        process_payment_complaint_data.retry = Mock(
+            side_effect=Retry
+        )
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id"
+                    },
+                })
+            )
+
+            with self.assertRaises(Retry):
+                process_payment_complaint_data(
+                    complaint_params=complaint_params,
+                    payment_data=payment_data,
+                )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_COMPLAINT_NOT_FOUND, ANY),
+                ]
+            )
+
+        process_payment_complaint_data.retry.assert_called_once_with(
+            countdown=DEFAULT_RETRY_AFTER
+        )
+
+        process_payment_complaint_patch.apply_async.assert_not_called()
+
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_invalid_complaint_status(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "2000",
+            "currency": "UAH"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id",
+                        "complaints": [{
+                            "id": "test_complaint_id",
+                            "status": "pending",
+                            "value": {
+                                "amount": 2000.0,
+                                "currency": "UAH"
+                            }
+                        }]
+                    },
+                })
+            )
+
+            process_payment_complaint_data(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_INVALID_STATUS, ANY),
+                ]
+            )
+
+        process_payment_complaint_patch.apply_async.assert_not_called()
+
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_no_complaint_value(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "2000",
+            "currency": "UAH"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id",
+                        "complaints": [{
+                            "id": "test_complaint_id",
+                            "status": "draft"
+                        }]
+                    },
+                })
+            )
+
+            process_payment_complaint_data(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_INVALID_COMPLAINT_VALUE, ANY),
+                ]
+            )
+
+        process_payment_complaint_patch.apply_async.assert_not_called()
+
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_invalid_value_amount(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "1",
+            "currency": "UAH"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id",
+                        "complaints": [{
+                            "id": "test_complaint_id",
+                            "status": "draft",
+                            "value": {
+                                "amount": 2000.0,
+                                "currency": "UAH"
+                            }
+                        }]
+                    },
+                })
+            )
+
+            process_payment_complaint_data(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_INVALID_AMOUNT, ANY),
+                ]
+            )
+
+        process_payment_complaint_patch.apply_async.assert_called_once_with(
+            kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                patch_data={"status": STATUS_COMPLAINT_MISTAKEN},
+                cookies=cookies
+            )
+        )
+
+    @patch("payments.tasks.process_payment_complaint_patch")
+    def test_handle_200_response_invalid_value_currency(self, process_payment_complaint_patch):
+        payment_data = {
+            "description": "test",
+            "amount": "2000",
+            "currency": "USD"
+        }
+        complaint_params = {
+            "tender_id": "test_tender_id",
+            "complaint_id": "test_complaint_id"
+        }
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": {
+                        "id": "test_tender_id",
+                        "complaints": [{
+                            "id": "test_complaint_id",
+                            "status": "draft",
+                            "value": {
+                                "amount": 2000.0,
+                                "currency": "UAH"
+                            }
+                        }]
+                    },
+                })
+            )
+
+            process_payment_complaint_data(
+                complaint_params=complaint_params,
+                payment_data=payment_data,
+            )
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                [
+                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_INVALID_CURRENCY, ANY),
+                ]
+            )
+
+        process_payment_complaint_patch.apply_async.assert_called_once_with(
+            kwargs=dict(
+                payment_data=payment_data,
+                complaint_params=complaint_params,
+                patch_data={"status": STATUS_COMPLAINT_MISTAKEN},
+                cookies=cookies
+            )
+        )

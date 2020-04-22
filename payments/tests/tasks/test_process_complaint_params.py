@@ -1,12 +1,16 @@
+import unittest
 import pymongo.errors
 
-from payments.message_ids import PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
 from uuid import uuid4
 from unittest.mock import patch, Mock
 from celery.exceptions import Retry
+
+from tasks_utils.settings import DEFAULT_RETRY_AFTER
 from payments.tasks import process_complaint_params
-import unittest
+from payments.message_ids import (
+    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
+)
 
 
 class TestHandlerCase(unittest.TestCase):

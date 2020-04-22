@@ -6,8 +6,8 @@ from unittest.mock import patch, Mock, call, ANY
 from celery.exceptions import Retry
 
 from tasks_utils.settings import DEFAULT_RETRY_AFTER
-from payments.message_ids import PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
 from payments.tasks import process_complaint_resolution
+from payments.message_ids import PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
 
 
 class TestHandlerCase(unittest.TestCase):
