@@ -9,14 +9,16 @@ from tasks_utils.settings import DEFAULT_RETRY_AFTER
 from payments.utils import STATUS_COMPLAINT_PENDING, STATUS_COMPLAINT_MISTAKEN
 from payments.message_ids import (
     PAYMENTS_GET_TENDER_EXCEPTION,
-    PAYMENTS_GET_TENDER_CODE_ERROR,
+    PAYMENTS_GET_COMPLAINT_CODE_ERROR,
     PAYMENTS_VALID_PAYMENT,
-    PAYMENTS_GET_TENDER_SUCCESS,
+    PAYMENTS_GET_COMPLAINT_SUCCESS,
     PAYMENTS_COMPLAINT_NOT_FOUND,
     PAYMENTS_INVALID_COMPLAINT_VALUE,
     PAYMENTS_INVALID_STATUS,
     PAYMENTS_INVALID_AMOUNT,
     PAYMENTS_INVALID_CURRENCY,
+    PAYMENTS_GET_COMPLAINT_SUCCESS,
+    PAYMENTS_GET_COMPLAINT_EXCEPTION,
 )
 from payments.tasks import process_payment_complaint_data
 
@@ -42,7 +44,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_EXCEPTION, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_EXCEPTION, ANY),
                 ]
             )
 
@@ -80,7 +82,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
                 ]
             )
 
@@ -114,7 +116,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
                 ]
             )
 
@@ -154,7 +156,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
                 ]
             )
 
@@ -189,7 +191,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
                 ]
             )
 
@@ -218,15 +220,12 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=Mock(get_dict=Mock(return_value=cookies)),
                 json=Mock(return_value={
                     "data": {
-                        "id": "test_tender_id",
-                        "complaints": [{
-                            "id": "test_complaint_id",
-                            "status": "draft",
-                            "value": {
-                                "amount": 2000.0,
-                                "currency": "UAH"
-                            }
-                        }]
+                        "id": "test_complaint_id",
+                        "status": "draft",
+                        "value": {
+                            "amount": 2000.0,
+                            "currency": "UAH"
+                        }
                     },
                 })
             )
@@ -239,7 +238,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_SUCCESS, ANY),
                     call(payment_data, PAYMENTS_VALID_PAYMENT, ANY),
                 ]
             )
@@ -252,56 +251,6 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=cookies
             )
         )
-
-    @patch("payments.tasks.process_payment_complaint_patch")
-    def test_handle_200_response_no_complaint(self, process_payment_complaint_patch):
-        payment_data = {
-            "description": "test",
-            "amount": "2000",
-            "currency": "UAH"
-        }
-        complaint_params = {
-            "tender_id": "test_tender_id",
-            "complaint_id": "test_complaint_id"
-        }
-        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
-
-        process_payment_complaint_data.retry = Mock(
-            side_effect=Retry
-        )
-
-        with patch("payments.utils.requests") as requests_mock, \
-             patch("payments.logging.push_payment_message") as push_payment_message:
-
-            requests_mock.get.return_value = Mock(
-                status_code=200,
-                cookies=Mock(get_dict=Mock(return_value=cookies)),
-                json=Mock(return_value={
-                    "data": {
-                        "id": "test_tender_id"
-                    },
-                })
-            )
-
-            with self.assertRaises(Retry):
-                process_payment_complaint_data(
-                    complaint_params=complaint_params,
-                    payment_data=payment_data,
-                )
-
-            self.assertEqual(
-                push_payment_message.mock_calls,
-                [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
-                    call(payment_data, PAYMENTS_COMPLAINT_NOT_FOUND, ANY),
-                ]
-            )
-
-        process_payment_complaint_data.retry.assert_called_once_with(
-            countdown=DEFAULT_RETRY_AFTER
-        )
-
-        process_payment_complaint_patch.apply_async.assert_not_called()
 
     @patch("payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_invalid_complaint_status(self, process_payment_complaint_patch):
@@ -324,15 +273,12 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=Mock(get_dict=Mock(return_value=cookies)),
                 json=Mock(return_value={
                     "data": {
-                        "id": "test_tender_id",
-                        "complaints": [{
-                            "id": "test_complaint_id",
-                            "status": "pending",
-                            "value": {
-                                "amount": 2000.0,
-                                "currency": "UAH"
-                            }
-                        }]
+                        "id": "test_complaint_id",
+                        "status": "pending",
+                        "value": {
+                            "amount": 2000.0,
+                            "currency": "UAH"
+                        }
                     },
                 })
             )
@@ -345,7 +291,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_SUCCESS, ANY),
                     call(payment_data, PAYMENTS_INVALID_STATUS, ANY),
                 ]
             )
@@ -373,11 +319,8 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=Mock(get_dict=Mock(return_value=cookies)),
                 json=Mock(return_value={
                     "data": {
-                        "id": "test_tender_id",
-                        "complaints": [{
-                            "id": "test_complaint_id",
-                            "status": "draft"
-                        }]
+                        "id": "test_complaint_id",
+                        "status": "draft"
                     },
                 })
             )
@@ -390,7 +333,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_SUCCESS, ANY),
                     call(payment_data, PAYMENTS_INVALID_COMPLAINT_VALUE, ANY),
                 ]
             )
@@ -418,15 +361,12 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=Mock(get_dict=Mock(return_value=cookies)),
                 json=Mock(return_value={
                     "data": {
-                        "id": "test_tender_id",
-                        "complaints": [{
-                            "id": "test_complaint_id",
-                            "status": "draft",
-                            "value": {
-                                "amount": 2000.0,
-                                "currency": "UAH"
-                            }
-                        }]
+                        "id": "test_complaint_id",
+                        "status": "draft",
+                        "value": {
+                            "amount": 2000.0,
+                            "currency": "UAH"
+                        }
                     },
                 })
             )
@@ -439,7 +379,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_SUCCESS, ANY),
                     call(payment_data, PAYMENTS_INVALID_AMOUNT, ANY),
                 ]
             )
@@ -474,15 +414,12 @@ class TestHandlerCase(unittest.TestCase):
                 cookies=Mock(get_dict=Mock(return_value=cookies)),
                 json=Mock(return_value={
                     "data": {
-                        "id": "test_tender_id",
-                        "complaints": [{
-                            "id": "test_complaint_id",
-                            "status": "draft",
-                            "value": {
-                                "amount": 2000.0,
-                                "currency": "UAH"
-                            }
-                        }]
+                        "id": "test_complaint_id",
+                        "status": "draft",
+                        "value": {
+                            "amount": 2000.0,
+                            "currency": "UAH"
+                        }
                     },
                 })
             )
@@ -495,7 +432,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_TENDER_SUCCESS, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_SUCCESS, ANY),
                     call(payment_data, PAYMENTS_INVALID_CURRENCY, ANY),
                 ]
             )

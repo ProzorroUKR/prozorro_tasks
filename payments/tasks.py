@@ -17,10 +17,6 @@ from payments.message_ids import (
     PAYMENTS_SEARCH_INVALID_CODE,
     PAYMENTS_SEARCH_EXCEPTION,
     PAYMENTS_SEARCH_CODE_ERROR,
-    PAYMENTS_GET_TENDER_EXCEPTION,
-    PAYMENTS_GET_TENDER_CODE_ERROR,
-    PAYMENTS_ITEM_NOT_FOUND,
-    PAYMENTS_COMPLAINT_NOT_FOUND,
     PAYMENTS_INVALID_AMOUNT,
     PAYMENTS_INVALID_CURRENCY,
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,
@@ -31,9 +27,10 @@ from payments.message_ids import (
     PAYMENTS_GET_COMPLAINT_CODE_ERROR,
     PAYMENTS_SEARCH_SUCCESS,
     PAYMENTS_SEARCH_VALID_CODE,
-    PAYMENTS_GET_TENDER_SUCCESS,
-    PAYMENTS_VALID_ITEM,
     PAYMENTS_VALID_PAYMENT,
+    PAYMENTS_GET_COMPLAINT_SUCCESS,
+    PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR,
+    PAYMENTS_GET_COMPLAINT_RECHECK_EXCEPTION,
 )
 from payments.results_db import (
     set_payment_params,
@@ -41,7 +38,6 @@ from payments.results_db import (
     get_payment_item_by_params,
 )
 from payments.utils import (
-    get_item_data,
     check_complaint_status,
     check_complaint_value_amount,
     check_complaint_value_currency,
@@ -58,9 +54,6 @@ from payments.utils import (
     get_resolution,
 )
 from tasks_utils.requests import get_exponential_request_retry_countdown
-from environment_settings import (
-    PUBLIC_API_HOST,
-)
 
 logger = get_task_logger(__name__)
 
@@ -68,7 +61,7 @@ try:
     from app.logging import adaptLogger, AppLoggerAdapter
     logger = adaptLogger(logger, AppLoggerAdapter)
     logger = adaptLogger(logger, PaymentResultsLoggerAdapter)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 RETRY_REQUESTS_EXCEPTIONS = (
@@ -210,10 +203,16 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
 @app.task(bind=True, max_retries=1000)
 def process_payment_complaint_data(self, complaint_params, payment_data, cookies=None, *args, **kwargs):
     tender_id = complaint_params.get("tender_id")
+    item_type = complaint_params.get("item_type")
+    item_id = complaint_params.get("item_id")
+    complaint_id = complaint_params.get("complaint_id")
     client_request_id = uuid4().hex
     try:
-        response = request_tender_data(
-            tender_id,
+        response = request_complaint_data(
+            tender_id=tender_id,
+            item_type=item_type,
+            item_id=item_id,
+            complaint_id=complaint_id,
             client_request_id=client_request_id,
             cookies=cookies,
         )
@@ -222,7 +221,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         logger.exception("Request failed: {}, next retry in {} seconds".format(
             str(exc), countdown
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_GET_TENDER_EXCEPTION,
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
         raise self.retry(countdown=countdown, exc=exc)
@@ -231,10 +230,10 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     cookies.update(response.cookies.get_dict())
 
     if response.status_code != 200:
-        logger.warning("Unexpected status code {} while getting tender {}".format(
-            response.status_code, tender_id
+        logger.warning("Unexpected status code {} while getting complaint {}".format(
+            response.status_code, complaint_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_GET_TENDER_CODE_ERROR,
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
         if response.status_code == 412:
@@ -246,45 +245,13 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         countdown = get_exponential_request_retry_countdown(self, response)
         raise self.retry(countdown=countdown)
     else:
-        logger.info("Successfully retrieved tender {}".format(
-            tender_id
+        logger.info("Successfully retrieved complaint {}".format(
+            complaint_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_GET_TENDER_SUCCESS
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_SUCCESS
         })
 
-    tender_data = response.json()["data"]
-
-    complaint_id = complaint_params.get("complaint_id")
-
-    if complaint_params.get("item_type"):
-        item_type = complaint_params.get("item_type")
-        item_id = complaint_params.get("item_id")
-        item_data = get_item_data(tender_data, item_type, item_id)
-        if not item_data:
-            logger.warning("Invalid {} id {} for tender {}".format(
-                item_type[:-1], item_id,  tender_id
-            ), payment_data=payment_data, task=self, extra={
-                "MESSAGE_ID": PAYMENTS_ITEM_NOT_FOUND
-            })
-            countdown = get_exponential_request_retry_countdown(self)
-            raise self.retry(countdown=countdown)
-        complaint_data =  get_item_data(item_data, "complaints", complaint_id)
-        logger.info("Successfully retrieved {} {}".format(
-            item_type[:-1], item_id
-        ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_VALID_ITEM
-        })
-    else:
-        complaint_data = get_item_data(tender_data, "complaints", complaint_id)
-
-    if not complaint_data:
-        logger.warning("Invalid complaint id {} for tender {}".format(
-            complaint_id, tender_id
-        ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_COMPLAINT_NOT_FOUND
-        })
-        countdown = get_exponential_request_retry_countdown(self)
-        raise self.retry(countdown=countdown)
+    complaint_data = response.json()["data"]
 
     if not check_complaint_status(complaint_data):
         logger.warning("Invalid complaint status: {}".format(
@@ -431,7 +398,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
         logger.exception("Request failed: {}, next retry in {} seconds".format(
             str(exc), countdown
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_EXCEPTION,
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_RECHECK_EXCEPTION,
             "CDB_CLIENT_REQUEST_ID": client_request_id,
         })
         raise self.retry(countdown=countdown, exc=exc)
@@ -446,7 +413,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
         logger.warning("Unexpected status code {} while getting complaint {} of tender {}".format(
             response.status_code, complaint_id, tender_id
         ), payment_data=payment_data, task=self, extra={
-            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_CODE_ERROR,
+            "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR,
             "STATUS_CODE": response.status_code
         })
         if response.status_code == 412:
@@ -485,7 +452,6 @@ def process_tender(self, tender_id, *args, **kwargs):
     try:
         response = request_tender_data(
             tender_id,
-            host=PUBLIC_API_HOST,
             client_request_id=client_request_id,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:

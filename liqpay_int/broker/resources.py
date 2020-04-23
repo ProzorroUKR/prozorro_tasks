@@ -48,10 +48,12 @@ from liqpay_int.broker.responses import (
     model_response_sign,
 )
 from payments.utils import (
-    check_complaint_code, check_complaint_value, check_complaint_status, get_payment_params,
-    get_item_data,
+    check_complaint_code,
+    check_complaint_value,
+    check_complaint_status,
+    get_payment_params,
     request_complaint_search,
-    request_tender_data,
+    request_complaint_data,
 )
 
 logger = getLogger()
@@ -108,26 +110,24 @@ class CheckoutResource(Resource):
 
             complaint_params = search_complaint_data.get("params", {})
             tender_id = complaint_params.get("tender_id")
+            item_type = complaint_params.get("item_type")
+            item_id = complaint_params.get("item_id")
             complaint_id = complaint_params.get("complaint_id")
 
-            response = request_tender_data(tender_id, cookies=cookies)
+            response = request_complaint_data(
+                tender_id=tender_id,
+                item_type=item_type,
+                item_id=item_id,
+                complaint_id=complaint_id,
+                cookies=cookies
+            )
             if response.status_code == 412:
                 raise ProzorroApiPreconditionFailedHTTPException()
             if response.status_code != 200:
                 raise PaymentComplaintNotFoundHTTPException()
 
-            tender_data = response.json()["data"]
+            complaint_data = response.json()["data"]
 
-            if complaint_params.get("item_type"):
-                item_type = complaint_params.get("item_type")
-                item_id = complaint_params.get("item_id")
-                item_data = get_item_data(tender_data, item_type, item_id)
-                complaint_data = get_item_data(item_data, "complaints", complaint_id)
-            else:
-                complaint_data = get_item_data(tender_data, "complaints", complaint_id)
-
-            if not complaint_data:
-                raise PaymentComplaintNotFoundHTTPException()
             if not check_complaint_status(complaint_data):
                 raise PaymentComplaintInvalidStatusHTTPException()
             if not check_complaint_value(complaint_data):

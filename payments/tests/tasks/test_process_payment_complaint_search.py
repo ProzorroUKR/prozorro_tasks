@@ -1,5 +1,6 @@
 import unittest
 import requests
+import pymongo.errors
 
 from unittest.mock import patch, Mock, call, ANY
 from hashlib import sha512
@@ -45,6 +46,53 @@ class TestHandlerCase(unittest.TestCase):
         process_payment_complaint_search.retry.assert_called_once_with(
             countdown=DEFAULT_RETRY_AFTER,
             exc=requests_mock.get.side_effect
+        )
+
+    @patch("payments.tasks.process_payment_complaint_data")
+    def test_handle_mongodb_error(self, process_payment_complaint_data):
+        complaint_token = "test_token"
+        complaint_code = sha512(complaint_token.encode()).hexdigest()[:8].upper()
+        payment_data = {"description": "UA-2020-03-17-000090-a.a2-{code}".format(code=complaint_code)}
+        payment_params = {
+            "complaint": "UA-2020-03-17-000090-a.a2",
+            "code": complaint_code
+        }
+        complaint_params = {"tender_id": "test_tender_id"}
+        complaint_access = {"token": complaint_token}
+        cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
+
+        process_payment_complaint_search.retry = Mock(side_effect=Retry)
+
+        with patch("payments.utils.requests") as requests_mock, \
+             patch("payments.results_db.get_mongodb_collection") as get_collection, \
+             patch("payments.logging.push_payment_message") as push_payment_message:
+
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                cookies=Mock(get_dict=Mock(return_value=cookies)),
+                json=Mock(return_value={
+                    "data": [{
+                        "access": complaint_access,
+                        "params": complaint_params
+                    }],
+                })
+            )
+
+            collection = Mock()
+            get_collection.return_value = collection
+            collection.update.side_effect = pymongo.errors.PyMongoError()
+
+            with self.assertRaises(Retry):
+                process_payment_complaint_search(payment_data, payment_params)
+
+            self.assertEqual(
+                push_payment_message.mock_calls,
+                []
+            )
+
+        process_payment_complaint_search.retry.assert_called_once_with(
+            countdown=DEFAULT_RETRY_AFTER,
+            exc=collection.update.side_effect
         )
 
     def test_handle_429_response(self):

@@ -8,8 +8,8 @@ from celery.exceptions import Retry
 from tasks_utils.settings import DEFAULT_RETRY_AFTER
 from payments.tasks import process_payment_complaint_recheck
 from payments.message_ids import (
-    PAYMENTS_GET_COMPLAINT_EXCEPTION,
-    PAYMENTS_GET_COMPLAINT_CODE_ERROR,
+    PAYMENTS_GET_COMPLAINT_RECHECK_EXCEPTION,
+    PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR,
     PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
     PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
 )
@@ -38,7 +38,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_COMPLAINT_EXCEPTION, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_RECHECK_EXCEPTION, ANY),
                 ]
             )
 
@@ -78,7 +78,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR, ANY),
                 ]
             )
 
@@ -114,7 +114,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR, ANY),
                 ]
             )
 
@@ -157,7 +157,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR, ANY),
                 ]
             )
 
@@ -194,7 +194,7 @@ class TestHandlerCase(unittest.TestCase):
             self.assertEqual(
                 push_payment_message.mock_calls,
                 [
-                    call(payment_data, PAYMENTS_GET_COMPLAINT_CODE_ERROR, ANY),
+                    call(payment_data, PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR, ANY),
                 ]
             )
 
