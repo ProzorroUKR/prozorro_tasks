@@ -13,13 +13,15 @@ from environment_settings import (
     LIQPAY_API_HOST,
     LIQPAY_API_PROXIES,
 )
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
+
 
 class LiqPay(liqpay.LiqPay):
     def __init__(self, public_key, private_key, host=LIQPAY_API_HOST, proxies=LIQPAY_API_PROXIES):
         super(LiqPay, self).__init__(public_key=public_key, private_key=private_key, host=host)
         self._proxies = proxies
 
-    def api(self, url, params=None):
+    def request(self, url, params=None, timeout=None):
         params = self._prepare_params(params)
 
         json_encoded_params = json.dumps(params)
@@ -28,7 +30,17 @@ class LiqPay(liqpay.LiqPay):
 
         request_url = urljoin(self._host, url)
         request_data = {'data': json_encoded_params, 'signature': signature}
-        response = requests.post(request_url, data=request_data, verify=False, proxies=self._proxies)
+        response = requests.post(
+            request_url,
+            data=request_data,
+            verify=False,
+            proxies=self._proxies,
+            timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
+        )
+        return response
+
+    def api(self, url, params=None, timeout=None):
+        response = self.request(url, params=params, timeout=timeout)
         return json.loads(response.content)
 
 
@@ -69,10 +81,22 @@ def generate_liqpay_receipt_params(data, sandbox=False):
     return generate_liqpay_params(params, sandbox=sandbox)
 
 
-def liqpay_request(data=None, sandbox=False):
+def generate_liqpay_status_params(data, sandbox=False):
+    params = {"action": "status"}
+    params.update(data)
+    return generate_liqpay_params(params, sandbox=sandbox)
+
+
+def liqpay_request(data=None, sandbox=False, timeout=None):
     public_key, private_key = get_liqpay_keys(sandbox=sandbox)
     liqpay = LiqPay(public_key, private_key)
-    return liqpay.api("/api/request", data)
+    return liqpay.request("/api/request", data, timeout=timeout)
+
+
+def liqpay_request_data(data=None, sandbox=False, timeout=None):
+    public_key, private_key = get_liqpay_keys(sandbox=sandbox)
+    liqpay = LiqPay(public_key, private_key)
+    return liqpay.api("/api/request", data, timeout=timeout)
 
 
 def liqpay_decode(data=None, sandbox=False):

@@ -3,6 +3,8 @@ from flask_restx import Api
 
 from liqpay_int.provider.namespaces import api as provider_ns
 from liqpay_int.broker.namespaces import api as broker_ns
+from liqpay_int.resources import Resource
+from payments.health import health
 from payments.results_db import init_indexes
 
 API_VERSION_MAJOR = 1
@@ -23,5 +25,13 @@ api = Api(
 
 api.add_namespace(broker_ns, path=None)
 api.add_namespace(provider_ns, path=None)
+
+
+@api.route('/healthcheck')
+class HealthCheckResource(Resource):
+
+    def get(self):
+        return health()
+
 
 import liqpay_int.representations

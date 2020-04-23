@@ -24,14 +24,18 @@ DUPLICATE_COLLECTION_NAME = "celery_worker_locks"
 LOCK_COLLECTION_NAME = "celery_worker_concurrency_locks"
 
 
-def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME):
-    client = MongoClient(
+def get_mongodb_client():
+    return MongoClient(
         MONGODB_URL,
         serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
         connectTimeoutMS=MONGODB_CONNECT_TIMEOUT * 1000,
         socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
         retryWrites=True
     )
+
+
+def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME):
+    client = get_mongodb_client()
     db = getattr(client, MONGODB_DATABASE)
     collection = getattr(db, collection_name)
     return collection

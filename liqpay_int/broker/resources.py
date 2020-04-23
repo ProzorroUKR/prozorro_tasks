@@ -8,7 +8,6 @@ from requests import ConnectionError, Timeout
 
 from app.auth import login_group_required
 from app.logging import getLogger
-from liqpay_int.broker.utils import get_cookies
 from liqpay_int.exceptions import (
     LiqpayResponseErrorHTTPException,
     PaymentInvalidHTTPException,
@@ -28,7 +27,7 @@ from liqpay_int.responses import (
 )
 from liqpay_int.utils import (
     generate_liqpay_receipt_params, generate_liqpay_checkout_params, liqpay_sign,
-    liqpay_decode, liqpay_request,
+    liqpay_decode, liqpay_request_data,
 )
 from liqpay_int.broker.messages import (
     DESC_CHECKOUT_POST,
@@ -54,6 +53,7 @@ from payments.utils import (
     get_payment_params,
     request_complaint_search,
     request_complaint_data,
+    get_cookies,
 )
 
 logger = getLogger()
@@ -141,7 +141,7 @@ class CheckoutResource(Resource):
                 data, payment_params, complaint_data, sandbox=sandbox
             )
             try:
-                resp_json = liqpay_request(data=params, sandbox=sandbox)
+                resp_json = liqpay_request_data(data=params, sandbox=sandbox)
             except (Timeout, ConnectionError):
                 logger.warning("Liqpay api request failed.", extra=extra)
                 abort(code=HTTPStatus.SERVICE_UNAVAILABLE)
@@ -183,7 +183,7 @@ class ReceiptResource(Resource):
         sandbox = parser_query.parse_args().get("sandbox")
         params = generate_liqpay_receipt_params(data, sandbox=sandbox)
         try:
-            resp_json = liqpay_request(data=params, sandbox=sandbox)
+            resp_json = liqpay_request_data(data=params, sandbox=sandbox)
         except (Timeout, ConnectionError):
             logger.warning("Liqpay api request failed.", extra=extra)
             abort(code=HTTPStatus.SERVICE_UNAVAILABLE)

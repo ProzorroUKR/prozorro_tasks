@@ -157,38 +157,54 @@ def get_tender_url(tender_id):
 
 
 def get_request_headers(client_request_id=None, authorization=False):
-    client_request_id = client_request_id or uuid4().hex
+    client_request_id = client_request_id or "req-payments-" + str(uuid4())
     headers = {"X-Client-Request-ID": client_request_id}
     if authorization:
         headers.update({"Authorization": "Bearer {}".format(API_TOKEN)})
     return headers
 
 
-def request_complaint_search(complaint_pretty_id, client_request_id=None, cookies=None):
+def request_head(client_request_id=None, cookies=None,
+                 host=None, timeout=None):
+    url_pattern = "{host}/api/{version}/spore"
+    url = url_pattern.format(
+        host=host or PUBLIC_API_HOST,
+        version=API_VERSION,
+    )
+    headers = get_request_headers(client_request_id=client_request_id)
+    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
+    return requests.head(url, headers=headers, timeout=timeout, cookies=cookies)
+
+
+def request_complaint_search(complaint_pretty_id, client_request_id=None,
+                             cookies=None, timeout=None):
     url = get_complaint_search_url(complaint_pretty_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=True)
-    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_tender_data(tender_id, client_request_id=None, cookies=None):
+def request_tender_data(tender_id, client_request_id=None,
+                        cookies=None, timeout=None):
     url = get_tender_url(tender_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None, cookies=None):
+def request_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None,
+                           cookies=None, timeout=None):
     url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None, cookies=None):
+def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None,
+                            cookies=None, timeout=None):
     url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=True)
-    timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
+    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
 
 
@@ -212,3 +228,9 @@ def get_resolution(complaint_data):
             "reason": reject_reason,
             "funds": funds,
         }
+
+
+def get_cookies():
+    client_request_id = uuid4().hex
+    head_response = request_head(client_request_id=client_request_id, host=API_HOST)
+    return head_response.cookies.get_dict()
