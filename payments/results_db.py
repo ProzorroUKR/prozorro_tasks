@@ -9,7 +9,7 @@ from functools import partial
 from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
-from payments.logging import log_exc
+from app.logging import log_exc
 
 logger = get_task_logger(__name__)
 

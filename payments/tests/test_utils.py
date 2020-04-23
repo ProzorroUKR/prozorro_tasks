@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from environment_settings import API_TOKEN, API_HOST, API_VERSION
+from environment_settings import API_TOKEN, API_HOST, API_VERSION, PUBLIC_API_HOST
 from payments.utils import (
     get_payment_params,
     get_item_data,
@@ -298,17 +298,6 @@ class GetComplaintSearchUrlTestCase(unittest.TestCase):
             complaint_pretty_id=complaint_pretty_id
         ))
 
-    def test_get_complaint_search_url_with_host(self):
-        host = "https://test.host"
-        complaint_pretty_id = "TEST-PRETTY-ID"
-        result = get_complaint_search_url(complaint_pretty_id, host=host)
-        url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
-        self.assertEqual(result, url_pattern.format(
-            host=host,
-            version=API_VERSION,
-            complaint_pretty_id=complaint_pretty_id
-        ))
-
 
 class GetComplaintUrlTestCase(unittest.TestCase):
     """
@@ -342,19 +331,6 @@ class GetComplaintUrlTestCase(unittest.TestCase):
             complaint_id=complaint_id,
         ))
 
-    def test_get_complaint_url_with_host(self):
-        host = "https://test.host"
-        tender_id = "test_tender_id"
-        complaint_id = "test_complaint_id"
-        result = get_complaint_url(tender_id, None, None, complaint_id, host=host)
-        url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
-        self.assertEqual(result, url_pattern.format(
-            host=host,
-            version=API_VERSION,
-            tender_id=tender_id,
-            complaint_id=complaint_id,
-        ))
-
 
 class GetTenderUrlTestCase(unittest.TestCase):
     """
@@ -366,19 +342,7 @@ class GetTenderUrlTestCase(unittest.TestCase):
         result = get_tender_url(tender_id)
         url_pattern = "{host}/api/{version}/tenders/{tender_id}"
         self.assertEqual(result, url_pattern.format(
-            host=API_HOST,
-            version=API_VERSION,
-            tender_id=tender_id,
-        ))
-
-    def test_get_complaint_url_with_host(self):
-        host = "https://test.host"
-        tender_id = "test_tender_id"
-        complaint_id = "test_complaint_id"
-        result = get_tender_url(tender_id, host=host)
-        url_pattern = "{host}/api/{version}/tenders/{tender_id}"
-        self.assertEqual(result, url_pattern.format(
-            host=host,
+            host=PUBLIC_API_HOST,
             version=API_VERSION,
             tender_id=tender_id,
         ))
@@ -413,7 +377,7 @@ class RequestComplaintSearchTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_search_url(complaint_pretty_id, host=host)
+        url = get_complaint_search_url(complaint_pretty_id)
         headers = get_request_headers(client_request_id=client_request_id, authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
@@ -421,7 +385,6 @@ class RequestComplaintSearchTestCase(unittest.TestCase):
             complaint_pretty_id,
             client_request_id=client_request_id,
             cookies=cookies,
-            host=host,
         )
 
         self.assertEqual(result, requests.get.return_value)
@@ -460,7 +423,7 @@ class RequestTenderDataTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_tender_url(tender_id, host=host)
+        url = get_tender_url(tender_id)
         headers = get_request_headers(client_request_id=client_request_id, authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
@@ -468,7 +431,6 @@ class RequestTenderDataTestCase(unittest.TestCase):
             tender_id,
             client_request_id=client_request_id,
             cookies=cookies,
-            host=host,
         )
 
         self.assertEqual(result, requests.get.return_value)
@@ -515,7 +477,7 @@ class RequestComplaintDataTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
         headers = get_request_headers(client_request_id=client_request_id, authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
@@ -523,7 +485,6 @@ class RequestComplaintDataTestCase(unittest.TestCase):
             tender_id, item_type, item_id, complaint_id,
             client_request_id=client_request_id,
             cookies=cookies,
-            host=host,
         )
 
         self.assertEqual(result, requests.get.return_value)
@@ -574,7 +535,7 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
         json = {"data": data}
         headers = get_request_headers(client_request_id=client_request_id, authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
@@ -583,7 +544,6 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
             tender_id, item_type, item_id, complaint_id, data,
             client_request_id=client_request_id,
             cookies=cookies,
-            host=host,
         )
 
         self.assertEqual(result, requests.patch.return_value)

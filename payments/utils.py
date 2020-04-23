@@ -5,7 +5,7 @@ from uuid import uuid4
 import requests
 from celery.utils.log import get_task_logger
 
-from environment_settings import API_HOST, API_VERSION, API_TOKEN
+from environment_settings import API_HOST, API_VERSION, API_TOKEN, PUBLIC_API_HOST
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 logger = get_task_logger(__name__)
@@ -15,7 +15,69 @@ PAYMENT_RE = re.compile(
     re.IGNORECASE
 )
 
-ALLOWED_COMPLAINT_PAYMENT_STATUSES = ["draft"]
+STATUS_COMPLAINT_DRAFT = "draft"
+STATUS_COMPLAINT_PENDING = "pending"
+STATUS_COMPLAINT_ACCEPTED = "accepted"
+STATUS_COMPLAINT_MISTAKEN = "mistaken"
+STATUS_COMPLAINT_SATISFIED = "satisfied"
+STATUS_COMPLAINT_RESOLVED = "resolved"
+STATUS_COMPLAINT_INVALID = "invalid"
+STATUS_COMPLAINT_STOPPED = "stopped"
+STATUS_COMPLAINT_DECLINED = "declined"
+
+ALLOWED_COMPLAINT_PAYMENT_STATUSES = [STATUS_COMPLAINT_DRAFT]
+ALLOWED_COMPLAINT_RESOLUTION_STATUSES = [
+    STATUS_COMPLAINT_MISTAKEN,
+    STATUS_COMPLAINT_SATISFIED,
+    STATUS_COMPLAINT_RESOLVED,
+    STATUS_COMPLAINT_INVALID,
+    STATUS_COMPLAINT_STOPPED,
+    STATUS_COMPLAINT_DECLINED
+]
+
+RESOLUTION_MAPPING = {
+    STATUS_COMPLAINT_MISTAKEN: dict(
+        type="mistaken",
+        funds_by_default=None,
+        funds_by_reject_reason={
+            "incorrectPayment": "complainant",
+            "complaintPeriodEnded": "complainant",
+            "cancelledByComplainant": "complainant",
+        },
+        date_field="date",
+    ),
+    STATUS_COMPLAINT_SATISFIED: dict(
+        type="satisfied",
+        funds_by_default="complainant",
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_RESOLVED: dict(
+        type="satisfied",
+        funds_by_default="complainant",
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_INVALID: dict(
+        type="invalid",
+        funds_by_default="state",
+        funds_by_reject_reason={
+            "buyerViolationsCorrected": "complainant",
+        },
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_STOPPED: dict(
+        type="stopped",
+        funds_by_default="state",
+        funds_by_reject_reason={
+            "buyerViolationsCorrected": "complainant",
+        },
+        date_field="dateDecision",
+    ),
+    STATUS_COMPLAINT_DECLINED: dict(
+        type="declined",
+        funds_by_default="state",
+        date_field="dateDecision",
+    ),
+}
 
 
 def get_payment_params(description):
@@ -61,22 +123,22 @@ def check_complaint_value_currency(complaint_data, payment_data):
     return False
 
 
-def get_complaint_search_url(complaint_pretty_id, host=None):
+def get_complaint_search_url(complaint_pretty_id):
     url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
     return url_pattern.format(
-        host=host or API_HOST,
+        host=API_HOST,
         version=API_VERSION,
         complaint_pretty_id=complaint_pretty_id
     )
 
 
-def get_complaint_url(tender_id, item_type, item_id, complaint_id, host=None):
+def get_complaint_url(tender_id, item_type, item_id, complaint_id):
     if item_type:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
     return url_pattern.format(
-        host=host or API_HOST,
+        host=API_HOST,
         version=API_VERSION,
         tender_id=tender_id,
         item_type=item_type,
@@ -85,10 +147,10 @@ def get_complaint_url(tender_id, item_type, item_id, complaint_id, host=None):
     )
 
 
-def get_tender_url(tender_id, host=None):
+def get_tender_url(tender_id):
     url_pattern = "{host}/api/{version}/tenders/{tender_id}"
     return url_pattern.format(
-        host=host or API_HOST,
+        host=PUBLIC_API_HOST,
         version=API_VERSION,
         tender_id=tender_id
     )
@@ -102,31 +164,51 @@ def get_request_headers(client_request_id=None, authorization=False):
     return headers
 
 
-def request_complaint_search(complaint_pretty_id, client_request_id=None, cookies=None, host=None):
-    url = get_complaint_search_url(complaint_pretty_id, host=host)
+def request_complaint_search(complaint_pretty_id, client_request_id=None, cookies=None):
+    url = get_complaint_search_url(complaint_pretty_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=True)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_tender_data(tender_id, client_request_id=None, cookies=None, host=None):
-    url = get_tender_url(tender_id, host=host)
+def request_tender_data(tender_id, client_request_id=None, cookies=None):
+    url = get_tender_url(tender_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=False)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_data(tender_id, item_type, item_id, complaint_id,
-                           client_request_id=None, cookies=None, host=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+def request_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None, cookies=None):
+    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=False)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data,
-                            client_request_id=None, cookies=None, host=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None, cookies=None):
+    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
     headers = get_request_headers(client_request_id=client_request_id, authorization=True)
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
+
+
+def get_resolution(complaint_data):
+    status = complaint_data.get("status")
+    resolution_scheme = RESOLUTION_MAPPING.get(status)
+    if resolution_scheme:
+        resolution_type = resolution_scheme.get("type")
+        date_field = resolution_scheme.get("date_field")
+        date = complaint_data.get(date_field)
+        reject_reason = complaint_data.get("rejectReason")
+        funds_by_reject_reason = resolution_scheme.get("funds_by_reject_reason")
+        if funds_by_reject_reason and reject_reason in funds_by_reject_reason.keys():
+            funds = funds_by_reject_reason.get(reject_reason)
+        else:
+            funds = resolution_scheme.get("funds_by_default")
+
+        return {
+            "type": resolution_type,
+            "date": date,
+            "reason": reject_reason,
+            "funds": funds,
+        }

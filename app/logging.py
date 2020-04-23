@@ -1,4 +1,6 @@
 import logging
+from functools import wraps
+
 import flask
 
 from flask import request
@@ -37,3 +39,17 @@ def adaptLogger(logger, adapter):
 
 def getLogger(name=None):
     return adaptLogger(logging.getLogger(name), AppLoggerAdapter)
+
+
+def log_exc(logger, exception, message_id):
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            try:
+                result = f(*args, **kwargs)
+            except exception as exc:
+                logger.exception(exc, extra={"MESSAGE_ID": message_id})
+                raise
+            return result
+        return wrapped
+    return wrapper
