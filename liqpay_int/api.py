@@ -31,7 +31,10 @@ api.add_namespace(provider_ns, path=None)
 class HealthCheckResource(Resource):
 
     def get(self):
-        return health()
+        health_data = health()
+        if health_data["status"] != "available":
+            return health_data, 500
+        return health_data
 
 
 import liqpay_int.representations
