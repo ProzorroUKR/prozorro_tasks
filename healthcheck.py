@@ -10,6 +10,7 @@ con_opts = {
     "interval_max": 2,
 }
 task_name = "crawler.tasks.process_feed"
+tasks_count = 2  # we expect to have 2 crawlers: tender and contract
 
 
 def find_task():
@@ -26,6 +27,7 @@ def find_task():
     connection = kombu.Connection(CELERY_BROKER_URL, connect_timeout=5, transport_options=con_opts)
     inspect = app.control.inspect(timeout=1, connection=connection)
 
+    count = tasks_count
     for group in ("scheduled", "active", "reserved"):
         method = getattr(inspect, group)
         response = method() or method()  # sometimes first call returns None
@@ -33,8 +35,8 @@ def find_task():
             for task in tasks:
                 task_info = task.get("request") or task
                 if task_info["type"] == task_name:
-                    return 0
-    return 1
+                    count -= 1
+    return 1 if count > 0 else 0
 
 
 if __name__ == "__main__":

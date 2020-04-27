@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RequestMessage xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <UserLogin xmlns="https://www.unity-bars.com/ws">prozorrouser</UserLogin>
+  <UserPassword xmlns="https://www.unity-bars.com/ws">111111</UserPassword>
+  <MessageId xmlns="https://www.unity-bars.com/ws">351f4d32-5e92-4399-8e37-9309cb0895c3</MessageId>
+  <MethodName xmlns="https://www.unity-bars.com/ws">PRTrans</MethodName>
+  <Data xmlns="https://www.unity-bars.com/ws">H4sIAAAAAAACC32RyU7DMBCGX6XKFbUZO02coNRVS5szQuUcJXGASMSGJFDeixsX3oEnYGvZl5ZdQoCzCHLCsjwez+/5NDN2dy/ebOyGSRoJ3lFQC5RGyAPBIr7eUcYRZ2KcNhHWkdKldiJE1ojDbEMwl3tx2FGWV0aJx1NFxsJAJCy3axRjW82tzUTgptsUIQNZLcNWK794Z17GKAYMTdCaCI0AFou9AJo8S22hKdQS53r0aDKbl5HSL0KR73F5X+0ZxMSACAZN1xECkLnlMsHUq3SV8jehT69en64nd2fvHxcvh8/7p8cPj/c359OD77fZ7eX88+TrD+bXYL6EgVWDEauCoTZBeg0mf8VpspWwvJTwv3LrMjtibiB4lnhBJpu3hIdkAFrPMdqWYZh9x3KcPhrA0CEGGdhqXV22PPOynZRWVVdePpJyRGo+R/oDfVX/B/sBAAA=</Data>
+  <DataSign xmlns="https://www.unity-bars.com/ws">bb</DataSign>
+</RequestMessage>

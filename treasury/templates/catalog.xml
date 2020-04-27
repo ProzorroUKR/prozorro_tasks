@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<root method_name="GetRef">
+    <ref id="{{ catalog_id }}" date="{{ format_date(since_date) }}">
+    </ref>
+</root>

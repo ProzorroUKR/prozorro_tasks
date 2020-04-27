@@ -12,6 +12,9 @@ from app.views import bp as app_views_bp
 from environment_settings import APP_X_FORWARDED_NUMBER
 from payments.views import bp as payments_views_bp
 from liqpay_int.api import bp as liqpay_resources_bp
+from treasury.api.main import bp as treasury_resources_bp
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -34,3 +37,4 @@ app.wsgi_app = RequestId(app.wsgi_app)
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
 app.register_blueprint(liqpay_resources_bp, url_prefix="/liqpay")
+app.register_blueprint(treasury_resources_bp, url_prefix='/treasury')

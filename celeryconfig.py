@@ -1,4 +1,6 @@
 from kombu import Queue
+from environment_settings import TIMEZONE
+from celery.schedules import crontab
 
 task_acks_late = True
 # Default: Disabled.
@@ -20,6 +22,8 @@ broker_connection_max_retries = None
 # https://github.com/celery/celery/issues/5410
 broker_transport_options = {'confirm_publish': True}
 
+task_ignore_result = True
+
 # Celery will automatically retry sending messages in the event of connection failure,
 # and retry behavior can be configured – like how often to retry,
 # or a maximum number of retries – or disabled all together.
@@ -36,6 +40,7 @@ task_modules = [
     'fiscal_bot',
     'tasks_utils',
     'payments',
+    'treasury',
 ]
 
 # Route tasks to different queues
@@ -54,3 +59,12 @@ task_queues = tuple(
 ) + (
     Queue('celery',  routing_key=''),  # default
 )
+
+
+timezone = TIMEZONE
+beat_schedule = {
+    'request-org-catalog-every-day': {
+        'task': 'treasury.tasks.request_org_catalog',
+        'schedule': crontab(hour=6, minute=0),
+    },
+}

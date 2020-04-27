@@ -34,9 +34,10 @@ def get_mongodb_client():
     )
 
 
-def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME):
+def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME,
+                           db_name=MONGODB_DATABASE):
     client = get_mongodb_client()
-    db = getattr(client, MONGODB_DATABASE)
+    db = getattr(client, db_name)
     collection = getattr(db, collection_name)
     return collection
 

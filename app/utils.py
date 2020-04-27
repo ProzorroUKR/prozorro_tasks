@@ -2,7 +2,7 @@ import typing
 import uuid
 from ipaddress import ip_network
 
-from environment_settings import TIMEZONE, PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
+from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
 
 DEFAULT_CONFIG_VALUE_SEPARATOR = ","
 DEFAULT_AUTH_ID_SEPARATOR = "_"
