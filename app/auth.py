@@ -37,14 +37,24 @@ def get_network_data():
 @auth.verify_password
 def verify_password(username, password):
     user_id = generate_auth_id(username, auth.hash_password_callback(password))
-    if user_id in USERS:
-        return user_id
+    return verify_auth_id(user_id)
+
 
 @auth.hash_password
 def hash_password(password):
     if isinstance(password, text_type):
         password = password.encode("utf-8")
     return sha512(password).hexdigest()
+
+
+def verify_auth_group(user_id, group):
+    if user_id:
+        return group in USERS.get(user_id, {}).get("groups")
+
+
+def verify_auth_id(user_id):
+    if user_id in USERS:
+        return user_id
 
 
 def login_group_required(group):
@@ -56,7 +66,7 @@ def login_group_required(group):
 
             if request.method != 'OPTIONS':
                 user_id = auth.authenticate(authorization, None)
-                if not user_id or group not in USERS.get(user_id, None).get("groups", []):
+                if not verify_auth_group(user_id, group):
                     raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
 
             return func(*args, **kwargs)

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="https://www.unity-bars.com/ws" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" targetNamespace="https://www.unity-bars.com/ws" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="https://www.unity-bars.com/ws">
+      <s:element name="GetApiVersion">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetApiVersionResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetApiVersionResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetXsdSchema">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetXsdSchemaResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetXsdSchemaResult" type="tns:GetXsdResponse" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="GetXsdResponse">
+        <s:complexContent mixed="false">
+          <s:extension base="tns:ResponseMessage">
+            <s:sequence>
+              <s:element minOccurs="0" maxOccurs="1" name="XsdBody" type="s:string" />
+              <s:element minOccurs="1" maxOccurs="1" name="Version" nillable="true" type="s:decimal" />
+            </s:sequence>
+          </s:extension>
+        </s:complexContent>
+      </s:complexType>
+      <s:complexType name="ResponseMessage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="ResultCode" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="ResultMessage" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Data" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SendRequest">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="request" type="tns:RequestMessage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="RequestMessage">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="UserLogin" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="UserPassword" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="MessageId" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="MethodName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Data" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DataSign" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SendRequestResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="SendRequestResult" type="tns:ResponseMessage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="request" type="tns:RequestMessage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetResponseResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetResponseResult" type="tns:ResponseMessage" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="string" nillable="true" type="s:string" />
+      <s:element name="GetXsdResponse" nillable="true" type="tns:GetXsdResponse" />
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="GetApiVersionSoapIn">
+    <wsdl:part name="parameters" element="tns:GetApiVersion" />
+  </wsdl:message>
+  <wsdl:message name="GetApiVersionSoapOut">
+    <wsdl:part name="parameters" element="tns:GetApiVersionResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetXsdSchemaSoapIn">
+    <wsdl:part name="parameters" element="tns:GetXsdSchema" />
+  </wsdl:message>
+  <wsdl:message name="GetXsdSchemaSoapOut">
+    <wsdl:part name="parameters" element="tns:GetXsdSchemaResponse" />
+  </wsdl:message>
+  <wsdl:message name="SendRequestSoapIn">
+    <wsdl:part name="parameters" element="tns:SendRequest" />
+  </wsdl:message>
+  <wsdl:message name="SendRequestSoapOut">
+    <wsdl:part name="parameters" element="tns:SendRequestResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetResponseSoapIn">
+    <wsdl:part name="parameters" element="tns:GetResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetResponseSoapOut">
+    <wsdl:part name="parameters" element="tns:GetResponseResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetApiVersionHttpGetIn" />
+  <wsdl:message name="GetApiVersionHttpGetOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="GetXsdSchemaHttpGetIn" />
+  <wsdl:message name="GetXsdSchemaHttpGetOut">
+    <wsdl:part name="Body" element="tns:GetXsdResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetApiVersionHttpPostIn" />
+  <wsdl:message name="GetApiVersionHttpPostOut">
+    <wsdl:part name="Body" element="tns:string" />
+  </wsdl:message>
+  <wsdl:message name="GetXsdSchemaHttpPostIn" />
+  <wsdl:message name="GetXsdSchemaHttpPostOut">
+    <wsdl:part name="Body" element="tns:GetXsdResponse" />
+  </wsdl:message>
+  <wsdl:portType name="prozorroapiSoap">
+    <wsdl:operation name="GetApiVersion">
+      <wsdl:input message="tns:GetApiVersionSoapIn" />
+      <wsdl:output message="tns:GetApiVersionSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <wsdl:input message="tns:GetXsdSchemaSoapIn" />
+      <wsdl:output message="tns:GetXsdSchemaSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="SendRequest">
+      <wsdl:input message="tns:SendRequestSoapIn" />
+      <wsdl:output message="tns:SendRequestSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetResponse">
+      <wsdl:input message="tns:GetResponseSoapIn" />
+      <wsdl:output message="tns:GetResponseSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:portType name="prozorroapiHttpGet">
+    <wsdl:operation name="GetApiVersion">
+      <wsdl:input message="tns:GetApiVersionHttpGetIn" />
+      <wsdl:output message="tns:GetApiVersionHttpGetOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <wsdl:input message="tns:GetXsdSchemaHttpGetIn" />
+      <wsdl:output message="tns:GetXsdSchemaHttpGetOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:portType name="prozorroapiHttpPost">
+    <wsdl:operation name="GetApiVersion">
+      <wsdl:input message="tns:GetApiVersionHttpPostIn" />
+      <wsdl:output message="tns:GetApiVersionHttpPostOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <wsdl:input message="tns:GetXsdSchemaHttpPostIn" />
+      <wsdl:output message="tns:GetXsdSchemaHttpPostOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="prozorroapiSoap" type="tns:prozorroapiSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetApiVersion">
+      <soap:operation soapAction="https://www.unity-bars.com/ws/GetApiVersion" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <soap:operation soapAction="https://www.unity-bars.com/ws/GetXsdSchema" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SendRequest">
+      <soap:operation soapAction="https://www.unity-bars.com/ws/SendRequest" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetResponse">
+      <soap:operation soapAction="https://www.unity-bars.com/ws/GetResponse" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="prozorroapiSoap12" type="tns:prozorroapiSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetApiVersion">
+      <soap12:operation soapAction="https://www.unity-bars.com/ws/GetApiVersion" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <soap12:operation soapAction="https://www.unity-bars.com/ws/GetXsdSchema" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SendRequest">
+      <soap12:operation soapAction="https://www.unity-bars.com/ws/SendRequest" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetResponse">
+      <soap12:operation soapAction="https://www.unity-bars.com/ws/GetResponse" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="prozorroapiHttpGet" type="tns:prozorroapiHttpGet">
+    <http:binding verb="GET" />
+    <wsdl:operation name="GetApiVersion">
+      <http:operation location="/GetApiVersion" />
+      <wsdl:input>
+        <http:urlEncoded />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <http:operation location="/GetXsdSchema" />
+      <wsdl:input>
+        <http:urlEncoded />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="prozorroapiHttpPost" type="tns:prozorroapiHttpPost">
+    <http:binding verb="POST" />
+    <wsdl:operation name="GetApiVersion">
+      <http:operation location="/GetApiVersion" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetXsdSchema">
+      <http:operation location="/GetXsdSchema" />
+      <wsdl:input>
+        <mime:content type="application/x-www-form-urlencoded" />
+      </wsdl:input>
+      <wsdl:output>
+        <mime:mimeXml part="Body" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="prozorroapi">
+    <wsdl:port name="prozorroapiSoap" binding="tns:prozorroapiSoap">
+      <soap:address location="http://46.164.148.178/bars.webservices.prozorro/prozorro/prozorroapi.asmx" />
+    </wsdl:port>
+    <wsdl:port name="prozorroapiSoap12" binding="tns:prozorroapiSoap12">
+      <soap12:address location="http://46.164.148.178/bars.webservices.prozorro/prozorro/prozorroapi.asmx" />
+    </wsdl:port>
+    <wsdl:port name="prozorroapiHttpGet" binding="tns:prozorroapiHttpGet">
+      <http:address location="http://46.164.148.178/bars.webservices.prozorro/prozorro/prozorroapi.asmx" />
+    </wsdl:port>
+    <wsdl:port name="prozorroapiHttpPost" binding="tns:prozorroapiHttpPost">
+      <http:address location="http://46.164.148.178/bars.webservices.prozorro/prozorro/prozorroapi.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

@@ -1,0 +1,54 @@
+<report>
+    <tenderID>{{ tender.id }}</tenderID>
+    <date>{% if lot %}{{ format_date(lot.date) }}{% else %}{{ format_date(tender.date) }}{% endif %}</date>
+    <procuringEntityName>{{ tender.procuringEntity.name }}</procuringEntityName>
+    <procuringEntityIdentifierId>{{ tender.procuringEntity.identifier.id }}</procuringEntityIdentifierId>
+    <mainProcurementCategory>{{ tender.mainProcurementCategory }}</mainProcurementCategory>
+    <items>{% for item in tender['items'] %}
+        <item>
+            <itemsId>{{ item.id }}</itemsId>
+            <itemsDescription>{{ item.description }}</itemsDescription>
+            <itemsClassificationScheme>{{ item.classification and item.classification.scheme }}</itemsClassificationScheme>
+            <itemsClassificationId>{{ item.classification and item.classification.id }}</itemsClassificationId>
+            <itemsClassificationDescription>{{ item.classification and item.classification.description }}</itemsClassificationDescription>
+            <itemsAdditionalClassifications>{% for classification in item.additionalClassifications %}
+                <itemsAdditionalClassification>
+                    <itemsAdditionalClassificationsScheme>{{ classification.scheme }}</itemsAdditionalClassificationsScheme>
+                    <itemsAdditionalClassificationsId>{{ classification.id }}</itemsAdditionalClassificationsId>
+                    <itemsAdditionalClassificationsDescription>{{ classification.description }}</itemsAdditionalClassificationsDescription>
+                </itemsAdditionalClassification>{% endfor %}
+            </itemsAdditionalClassifications>
+            <itemsQuantity>{{ item.quantity }}</itemsQuantity>
+            <itemsUnitName>{{ item.unit and item.unit.name }}</itemsUnitName>
+            <itemsDeliveryAddress>{{ item.deliveryAddress and item.deliveryAddress.values()|join(', ') }}</itemsDeliveryAddress>
+            <itemsDeliveryDateEndDate>{{ item.deliveryDate and item.deliveryDate.endDate }}</itemsDeliveryDateEndDate>
+        </item>{% endfor %}</items>
+    <milestones>{% for milestone in tender.milestones %}
+        <milestone>
+            <milestonesId>{{ milestone.id }}</milestonesId>
+            <milestonesTitle>{{ milestone.title }}</milestonesTitle>
+            <milestonesDescription>{{ milestone.description }}</milestonesDescription>
+            <milestonesCode>{{ milestone.code }}</milestonesCode>
+            <milestonesDurationDays>{{ milestone.duration.days }}</milestonesDurationDays>
+            <milestonesDurationType>{{ milestone.duration.type }}</milestonesDurationType>
+            <milestonesPercentage>{{ milestone.percentage }}</milestonesPercentage>
+        </milestone>{% endfor %}</milestones>
+    <startDate>{{ format_date(tender_award.complaintPeriod.startDate) }}</startDate>
+    <bids>{% for bid in tender.bids %}
+        <bid>
+            <bidsId>{{ bid.id }}</bidsId>
+            <bidsSuppliersIdentifierName>{{ bid.tenderers[0].identifier.legalName }}</bidsSuppliersIdentifierName>
+            <bidsValueAmount>{{ initial_bids.get(bid.id) }}</bidsValueAmount>
+            <bidsValueAmountLast>{{ bid.value.amount }}</bidsValueAmountLast>{# lotValues are already handled in python code #}
+            <awardQualifiedEligible>{{ bid.selfQualified }}</awardQualifiedEligible>
+        </bid>{% endfor %}</bids>
+    <awardComplaintPeriodStartDate>{{ format_date(tender_award.complaintPeriod.startDate) }}</awardComplaintPeriodStartDate>
+    <cancellationsReason>{{ cancellation.reason }}</cancellationsReason>{# так как мы берем всегда только contracts:status:active то отмененных закупок и не может быть... #}
+    <contractsDateSigned>{{ format_date(tender_contract.dateSigned) }}</contractsDateSigned>
+    <contractsSuppliersIdentifierName>{{ tender_contract.suppliers[0].identifier.legalName }}</contractsSuppliersIdentifierName>
+    <contractsSuppliersAddress>{{ tender_contract.suppliers[0].address.values()|join(', ') }}</contractsSuppliersAddress>
+    <bidSubcontractingDetails>{{ tender_bid.subcontractingDetails }}</bidSubcontractingDetails>
+    <ContractsValueAmount>{{ tender_contract.value.amount }}</ContractsValueAmount>
+    <startDateCfaua>{# Дата оприлюднення оголошення з відомостями про укладену рамкову угоду #}</startDateCfaua>
+    <ContractsContractID>{{ tender_contract.id }}</ContractsContractID>
+</report>

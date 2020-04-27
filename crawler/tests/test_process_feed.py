@@ -85,6 +85,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
@@ -139,6 +140,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': -1,
                         'descending': '1',
@@ -148,6 +150,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
@@ -202,6 +205,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
+                        'resource': 'tenders',
                         'mode': 'test',
                         'offset': -1,
                         'descending': '1',
@@ -211,6 +215,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'resource': 'tenders',
                         'mode': 'test',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
@@ -257,6 +262,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': '',
                         'cookies': {'SERVER_ID': server_id},
@@ -302,6 +308,7 @@ class ProcessTestCase(unittest.TestCase):
         process_feed.apply_async.assert_called_once_with(
             countdown=60,
             kwargs={
+                'resource': 'tenders',
                 'mode': '_all_',
                 'offset': '',
                 'cookies': {'SERVER_ID': server_id},
@@ -354,6 +361,7 @@ class ProcessTestCase(unittest.TestCase):
             [
                 call(
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': -1,
                         'descending': '1',
@@ -363,6 +371,7 @@ class ProcessTestCase(unittest.TestCase):
                 call(
                     countdown=60,
                     kwargs={
+                        'resource': 'tenders',
                         'mode': '_all_',
                         'offset': 1,
                         'cookies': {'SERVER_ID': server_id},
@@ -414,6 +423,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'resource': 'tenders',
                 'mode': '_all_',
                 'offset': 2,
                 'descending': '',
@@ -463,6 +473,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'resource': 'tenders',
                 'mode': '_all_',
                 'offset': 2,
                 'descending': '',
@@ -513,6 +524,7 @@ class ProcessTestCase(unittest.TestCase):
 
         process_feed.apply_async.assert_called_once_with(
             kwargs={
+                'resource': 'tenders',
                 'mode': '_all_',
                 'offset': -2,
                 'descending': 1,

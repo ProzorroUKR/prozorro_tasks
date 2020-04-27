@@ -13,7 +13,7 @@ MONGODB_SERVER_SELECTION_TIMEOUT = int(os.environ.get("MONGODB_SERVER_SELECTION_
 MONGODB_CONNECT_TIMEOUT = int(os.environ.get("MONGODB_CONNECT_TIMEOUT", 5))
 MONGODB_SOCKET_TIMEOUT = int(os.environ.get("MONGODB_SOCKET_TIMEOUT", 5))
 
-PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openprocurement.gov.ua")
+PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openprocurement.org")
 API_HOST = os.environ.get("API_HOST", "https://lb.api.openprocurement.org")
 API_VERSION = os.environ.get("API_VERSION", "2.4")
 API_TOKEN = os.environ.get("API_TOKEN", "robot")
@@ -73,3 +73,16 @@ LIQPAY_SANDBOX_BY_DEFAULT_ENABLED = os.environ.get("LIQPAY_SANDBOX_BY_DEFAULT_EN
 LIQPAY_TAX_PERCENTAGE = float(os.environ.get("LIQPAY_TAX_PERCENTAGE", 0))
 
 PORTAL_HOST = os.environ.get("PORTAL_HOST", "https://prozorro.gov.ua")
+
+TREASURY_INT_START_DATE = os.environ.get("TREASURY_INT_START_DATE", "2020-03-27")
+TREASURY_WSDL_URL = os.environ.get(
+    "TREASURY_WSDL_URL", "http://46.164.148.178:24310/bars.webservices.prozorro/prozorro/prozorroapi.asmx?WSDL")
+TREASURY_USER = os.environ.get("TREASURY_USER", "prozorrouser")
+TREASURY_PASSWORD = os.environ.get("TREASURY_PASSWORD", "111111")
+TREASURY_SKIP_REQUEST_VERIFY = os.environ.get("TREASURY_SKIP_REQUEST_VERIFY", False)
+TREASURY_RESPONSE_RETRY_COUNTDOWN = int(os.environ.get("TREASURY_RESPONSE_RETRY_COUNTDOWN", 600))
+TREASURY_CATALOG_UPDATE_RETRIES = int(os.environ.get("TREASURY_CATALOG_UPDATE_RETRIES", 100))
+TREASURY_DB_NAME = os.environ.get("TREASURY_DB_NAME", "treasury")
+TREASURY_CONTEXT_COLLECTION = os.environ.get("TREASURY_CONTEXT_COLLECTION", "treasury_sent_states")
+TREASURY_ORG_COLLECTION = os.environ.get("TREASURY_ORG_COLLECTION", "organisations")
+TREASURY_DATETIME_FMT = os.environ.get("TREASURY_DATETIME_FMT", "%Y-%m-%dT%H:%M:%S")

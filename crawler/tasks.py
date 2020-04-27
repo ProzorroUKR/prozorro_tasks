@@ -10,25 +10,30 @@ from edr_bot.handlers import edr_bot_tender_handler
 from payments.handlers import payments_tender_handler
 from tasks_utils.requests import get_request_retry_countdown
 from fiscal_bot.handlers import fiscal_bot_tender_handler
+from treasury.handlers import contract_handler
 import requests
 
 
 logger = get_task_logger(__name__)
 
 
-# ITEM_HANDLERS contains code that will be executed for every feed item
+# TENDER_HANDLERS contains code that will be executed for every feed item
 # these functions SHOULD NOT use database/API/any other IO calls
 # handlers can add new tasks to the queue
 # example: if(item["status"] == "awarding"){ attach_edr_yaml.delay(item["id"]) }
 
-ITEM_HANDLERS = [
+
+CONTRACT_HANDLERS = [
+    contract_handler,
+]
+TENDER_HANDLERS = [
     edr_bot_tender_handler,
     fiscal_bot_tender_handler,
     payments_tender_handler,
 ]
 if CRAWLER_TENDER_HANDLERS:
     logger.info("Filtering tender handler with provided set: {}".format(CRAWLER_TENDER_HANDLERS))
-    ITEM_HANDLERS = [i for i in ITEM_HANDLERS if i.__name__ in CRAWLER_TENDER_HANDLERS]
+    TENDER_HANDLERS = [i for i in TENDER_HANDLERS if i.__name__ in CRAWLER_TENDER_HANDLERS]
 
 RETRY_REQUESTS_EXCEPTIONS = (
     requests.exceptions.Timeout,
@@ -86,8 +91,9 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
     else:
         if response.status_code == 200:
             response_json = response.json()
+            item_handlers = globals().get(f"{resource[:-1].upper()}_HANDLERS", "")
             for item in response_json["data"]:
-                for handler in ITEM_HANDLERS:
+                for handler in item_handlers:
                     try:
                         handler(item)
                     except Exception as e:
@@ -99,6 +105,7 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
 
             # schedule getting the next page
             next_page_kwargs = dict(
+                resource=resource,
                 mode=mode,
                 offset=response_json["next_page"]["offset"],
                 descending=descending,
@@ -124,6 +131,7 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
             # if it's initialization, add forward crawling task
             if not offset:
                 process_kwargs = dict(
+                    resource=resource,
                     mode=mode,
                     cookies=cookies,
                 )

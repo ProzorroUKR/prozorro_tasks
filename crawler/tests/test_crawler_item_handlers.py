@@ -33,7 +33,7 @@ class CrawlerIHandlersTestCase(unittest.TestCase):
             Mock(),
         ]
 
-        with patch("crawler.tasks.ITEM_HANDLERS", item_handlers):
+        with patch("crawler.tasks.TENDER_HANDLERS", item_handlers):
             crawler.tasks.process_feed(offset=1)
 
         for handler in item_handlers:
