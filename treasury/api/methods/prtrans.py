@@ -1,4 +1,4 @@
-from treasury.api.parsers import TransFields
+from treasury.api.parsers.prtrans import TransFields
 from treasury.api.builders import XMLResponse
 from treasury.tasks import save_transaction
 
@@ -6,7 +6,8 @@ from treasury.tasks import save_transaction
 class PRTrans:
 
     def __init__(self, data, message_id):
-        self.fields = TransFields(data)
+        xml_pr_trans_data_parser = TransFields(data)
+        self.fields = xml_pr_trans_data_parser.parse()
         self.message_id = message_id
 
     def run(self):
