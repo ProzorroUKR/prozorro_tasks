@@ -16,8 +16,7 @@
                     <itemsAdditionalClassificationsScheme>{{ classification.scheme }}</itemsAdditionalClassificationsScheme>
                     <itemsAdditionalClassificationsId>{{ classification.id }}</itemsAdditionalClassificationsId>
                     <itemsAdditionalClassificationsDescription>{{ classification.description }}</itemsAdditionalClassificationsDescription>
-                </itemsAdditionalClassification>{% endfor %}
-            </itemsAdditionalClassifications>
+                </itemsAdditionalClassification>{% endfor %}</itemsAdditionalClassifications>
             <itemsQuantity>{{ item.quantity }}</itemsQuantity>
             <itemsUnitName>{{ item.unit and item.unit.name }}</itemsUnitName>
             <itemsDeliveryAddress>{{ item.deliveryAddress and item.deliveryAddress.values()|join(', ') }}</itemsDeliveryAddress>
