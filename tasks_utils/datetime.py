@@ -77,6 +77,10 @@ def get_working_datetime(dt, custom_wd=None, working_weekends_enabled=False):
     return dt
 
 
+def parse_dt_string(dt):
+    return dateutil.parser.parse(dt).astimezone(TIMEZONE)
+
+
 def working_days_count_since(dt, now=None, custom_wd=None, working_weekends_enabled=False):
     """
     Returns a number of wd since a specified day
@@ -89,7 +93,7 @@ def working_days_count_since(dt, now=None, custom_wd=None, working_weekends_enab
     :return:
     """
     if type(dt) is str:
-        dt = dateutil.parser.parse(dt).astimezone(TIMEZONE)
+        dt = parse_dt_string(dt)
     now = now or get_now()
     assert dt.tzinfo.zone == TIMEZONE.zone
     assert now > dt, "this function goes only forward"
