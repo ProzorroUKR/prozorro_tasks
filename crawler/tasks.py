@@ -110,16 +110,12 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                 else:
                     if offset == next_page_kwargs["offset"]:
                         next_page_kwargs["try_count"] = try_count + 1
-                    result = process_feed.apply_async(
+                    process_feed.apply_async(
                         kwargs=next_page_kwargs,
                         countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                     )
-                    logger.info("Planned task {}".format(result.id),
-                                extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
             else:
-                result = process_feed.apply_async(kwargs=next_page_kwargs)
-                logger.info("Planned task {}".format(result.id),
-                            extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
+                process_feed.apply_async(kwargs=next_page_kwargs)
 
             # if it's initialization, add forward crawling task
             if not offset:
@@ -134,12 +130,10 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                     process_kwargs["offset"] = ""
                     process_kwargs["try_count"] = try_count + 1
 
-                result = process_feed.apply_async(
+                process_feed.apply_async(
                     kwargs=process_kwargs,
                     countdown=WAIT_MORE_RESULTS_COUNTDOWN,
                 )
-                logger.info("Planned task {}".format(result.id),
-                            extra={"MESSAGE_ID": "PLAN_TASK_MSG", "PLANNED_TASK_ID": result.id})
         elif response.status_code == 412:  # Precondition failed
             logger.warning("Precondition failed with cookies {}".format(cookies),
                            extra={"MESSAGE_ID": "FEED_PRECONDITION_FAILED"})

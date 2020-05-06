@@ -72,4 +72,6 @@ LIQPAY_SANDBOX_PRIVATE_KEY = os.environ.get("LIQPAY_SANDBOX_PRIVATE_KEY", "")
 LIQPAY_SANDBOX_BY_DEFAULT_ENABLED = os.environ.get("LIQPAY_SANDBOX_BY_DEFAULT_ENABLED", False)
 LIQPAY_TAX_COEF = float(os.environ.get("LIQPAY_TAX_COEF", 1))
 
+PAYMENTS_SKIP_TENDER_DAYS = int(os.environ.get("PAYMENTS_SKIP_TENDER_DAYS", 10))
+
 PORTAL_HOST = os.environ.get("PORTAL_HOST", "https://prozorro.gov.ua")
