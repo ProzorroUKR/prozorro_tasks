@@ -1,4 +1,5 @@
 from environment_settings import TREASURY_PASSWORD, TREASURY_USER, TREASURY_WSDL_URL
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from treasury.api_requests import (
     parse_request_response, prepare_request_data, send_request,
     prepare_get_response_data, parse_response_content, get_request_response,
@@ -87,7 +88,8 @@ class RequestTestCase(unittest.TestCase):
         session_mock.post.assert_called_once_with(
             TREASURY_WSDL_URL,
             data='<request></request>',
-            headers={'content-type': 'text/xml'}
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'content-type': 'text/xml'},
         )
         self.assertEqual(result, (0, None))
 
@@ -193,7 +195,8 @@ class ResponseTestCase(unittest.TestCase):
         session_mock.post.assert_called_once_with(
             TREASURY_WSDL_URL,
             data=prepare_data_mock.return_value,
-            headers={'content-type': 'text/xml'}
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'content-type': 'text/xml'},
         )
         parse_res_mock.assert_called_once_with(raw_response)
         self.assertEqual(result, 3)

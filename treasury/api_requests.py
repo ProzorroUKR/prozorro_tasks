@@ -1,5 +1,6 @@
 from environment_settings import TREASURY_WSDL_URL, TREASURY_USER, TREASURY_PASSWORD, TREASURY_SKIP_REQUEST_VERIFY
 from tasks_utils.requests import RETRY_REQUESTS_EXCEPTIONS, get_exponential_request_retry_countdown
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.utils.log import get_task_logger
 from zeep import Client
 from lxml import etree
@@ -29,7 +30,8 @@ def send_request(task, xml, message_id, method_name="GetRef"):
         response = session.post(
             TREASURY_WSDL_URL,
             data=request_data,
-            headers={'content-type': 'text/xml'}
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'content-type': 'text/xml'},
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "GET_DOC_EXCEPTION"})
@@ -104,7 +106,8 @@ def get_request_response(task, message_id):
         response = session.post(
             TREASURY_WSDL_URL,
             data=request_data,
-            headers={'content-type': 'text/xml'}
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'content-type': 'text/xml'},
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
