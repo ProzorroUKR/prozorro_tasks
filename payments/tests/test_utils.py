@@ -25,6 +25,7 @@ valid_zoned_complaint_str = [
     "ua-2020-03-17-000090-a.a2-12ad3f12",
     "Text - UA-2020-03-17-000090-a.a2-12AD3F12",
     "UA-2020-03-17-000090-a.a2-12AD3F12 = text",
+    "UA - 2020 - 03 - 17 - 000090 - a.a 2 - 12AD3F12 text",
 ]
 
 valid_zoned_complaint_multiple_str = [
@@ -32,6 +33,7 @@ valid_zoned_complaint_multiple_str = [
     "ua-2020-03-17-000090-a.a112-12ad3f12",
     "Text - UA-2020-03-17-000090-a.a112-12AD3F12",
     "UA-2020-03-17-000090-a.a112-12AD3F12 = text",
+    "UA - 2020 - 03 - 17 - 000090 - a.a 112 - 12AD3F12 text",
 ]
 
 valid_zoned_complaint_second_stage_str = [
@@ -39,6 +41,7 @@ valid_zoned_complaint_second_stage_str = [
     "ua-2020-03-17-000090-a.2.a2-12ad3f12",
     "Text - UA-2020-03-17-000090-a.2.a2-12AD3F12",
     "UA-2020-03-17-000090-a.2.a2-12AD3F12 = text",
+    "UA - 2020 - 03 - 17 - 000090 - a.2.a2 - 12AD3F12 text",
 ]
 
 valid_not_zoned_complaint_str = [
@@ -46,6 +49,7 @@ valid_not_zoned_complaint_str = [
     "ua-2020-03-17-000090.2-12ad3f12",
     "Text - UA-2020-03-17-000090.2-12AD3F12",
     "UA-2020-03-17-000090.2-12AD3F12 = text",
+    "UA - 2020 - 03 - 17 - 000090.2 - 12AD3F12 text",
 ]
 
 
