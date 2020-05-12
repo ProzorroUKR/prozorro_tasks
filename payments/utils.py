@@ -2,6 +2,7 @@ import re
 from hashlib import sha512
 from uuid import uuid4
 
+import re
 import requests
 from celery.utils.log import get_task_logger
 
@@ -11,7 +12,7 @@ from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 logger = get_task_logger(__name__)
 
 PAYMENT_RE = re.compile(
-    r"(?P<complaint>UA-\d{4}-\d{2}-\d{2}-\d{6}(?:-\w)?(?:\.\d+)?\.(?:\w)?\d+)-(?P<code>[0-9a-f]*)",
+    r"(?P<complaint>UA-\d{4}-\d{2}-\d{2}-\d{6}(?:-\w)?(?:\.\d+)?\.(?:\w)?\d+)-(?P<code>.{8})",
     re.IGNORECASE
 )
 
@@ -81,6 +82,8 @@ RESOLUTION_MAPPING = {
 
 
 def get_payment_params(description):
+    whitespace_pattern = re.compile(r"\s+")
+    description = re.sub(whitespace_pattern, '', description)
     match = PAYMENT_RE.search(description)
     if match:
         return match.groupdict()
