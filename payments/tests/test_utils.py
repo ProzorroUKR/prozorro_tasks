@@ -39,6 +39,7 @@ def generate_complaint_test_data(complaint_str):
         (complaint_str.replace("C", "С"), "replace cyrillic to latin - C"),
         (complaint_str.replace("A", "А"), "replace cyrillic to latin - A"),
         (complaint_str.replace("E", "Е"), "replace cyrillic to latin - E"),
+        (complaint_str.replace("B", "В"), "replace cyrillic to latin - B"),
     ]
 
 

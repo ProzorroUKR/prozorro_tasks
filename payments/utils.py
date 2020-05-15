@@ -20,10 +20,11 @@ PAYMENT_REPLACE_MAPPING = {
     # delete whitespaces
     "\s+": "",
     # replace cyrillic to latin
-    "с": "c",
-    "С": "C",
     "а": "a",
     "А": "A",
+    "В": "B",
+    "с": "c",
+    "С": "C",
     "е": "e",
     "Е": "E",
 }
