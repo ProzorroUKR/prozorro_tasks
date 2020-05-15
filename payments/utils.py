@@ -1,9 +1,9 @@
 import re
+import requests
+
 from hashlib import sha512
 from uuid import uuid4
 
-import re
-import requests
 from celery.utils.log import get_task_logger
 
 from environment_settings import API_HOST, API_VERSION, API_TOKEN, PUBLIC_API_HOST
@@ -15,6 +15,19 @@ PAYMENT_RE = re.compile(
     r"(?P<complaint>UA-\d{4}-\d{2}-\d{2}-\d{6}(?:-\w)?(?:\.\d+)?\.(?:\w)?\d+)-(?P<code>.{8})",
     re.IGNORECASE
 )
+
+PAYMENT_REPLACE_MAPPING = {
+    # delete whitespaces
+    "\s+": "",
+    # replace cyrillic to latin
+    "а": "a",
+    "А": "A",
+    "В": "B",
+    "с": "c",
+    "С": "C",
+    "е": "e",
+    "Е": "E",
+}
 
 STATUS_COMPLAINT_DRAFT = "draft"
 STATUS_COMPLAINT_PENDING = "pending"
@@ -81,10 +94,14 @@ RESOLUTION_MAPPING = {
 }
 
 
+def find_replace(string, dictionary):
+    for item in sorted(dictionary.keys(), key=len, reverse=True):
+        string = re.sub(item, dictionary[item], string)
+    return string
+
+
 def get_payment_params(description):
-    whitespace_pattern = re.compile(r"\s+")
-    description = re.sub(whitespace_pattern, '', description)
-    match = PAYMENT_RE.search(description)
+    match = PAYMENT_RE.search(find_replace(description, PAYMENT_REPLACE_MAPPING))
     if match:
         return match.groupdict()
 
