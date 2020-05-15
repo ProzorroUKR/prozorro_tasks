@@ -1,9 +1,9 @@
 import re
+import requests
+
 from hashlib import sha512
 from uuid import uuid4
 
-import re
-import requests
 from celery.utils.log import get_task_logger
 
 from environment_settings import API_HOST, API_VERSION, API_TOKEN, PUBLIC_API_HOST

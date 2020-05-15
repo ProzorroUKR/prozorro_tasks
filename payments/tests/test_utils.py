@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from environment_settings import API_TOKEN, API_HOST, API_VERSION, PUBLIC_API_HOST
+from environment_settings import API_HOST, API_VERSION, PUBLIC_API_HOST
 from payments.utils import (
     get_payment_params,
     get_item_data,
