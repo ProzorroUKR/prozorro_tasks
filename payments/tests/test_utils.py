@@ -20,37 +20,26 @@ from payments.utils import (
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
-valid_zoned_complaint_str = [
-    "UA-2020-03-17-000090-a.a2-12AD3F12",
-    "ua-2020-03-17-000090-a.a2-12ad3f12",
-    "Text - UA-2020-03-17-000090-a.a2-12AD3F12",
-    "UA-2020-03-17-000090-a.a2-12AD3F12 = text",
-    "UA - 2020 - 03 - 17 - 000090 - a.a 2 - 12AD3F12 text",
-]
 
-valid_zoned_complaint_multiple_str = [
-    "UA-2020-03-17-000090-a.a112-12AD3F12",
-    "ua-2020-03-17-000090-a.a112-12ad3f12",
-    "Text - UA-2020-03-17-000090-a.a112-12AD3F12",
-    "UA-2020-03-17-000090-a.a112-12AD3F12 = text",
-    "UA - 2020 - 03 - 17 - 000090 - a.a 112 - 12AD3F12 text",
-]
+VALID_ZONED_COMPLAINT_STR = "UA-2020-03-17-000090-a.c2-12ABCDEF"
+VALID_ZONED_COMPLAINT_MULTIPLE_STR = "UA-2020-03-17-000090-a.c112-12ABCDEF"
+VALID_ZONED_COMPLAINT_SECOND_STAGE_STR = "UA-2020-03-17-000090-a.2.c2-12ABCDEF"
+VALID_NOT_ZONED_COMPLAINT_STR = "UA-2020-03-17-000090.2-12ABCDEF"
 
-valid_zoned_complaint_second_stage_str = [
-    "UA-2020-03-17-000090-a.2.a2-12AD3F12",
-    "ua-2020-03-17-000090-a.2.a2-12ad3f12",
-    "Text - UA-2020-03-17-000090-a.2.a2-12AD3F12",
-    "UA-2020-03-17-000090-a.2.a2-12AD3F12 = text",
-    "UA - 2020 - 03 - 17 - 000090 - a.2.a2 - 12AD3F12 text",
-]
 
-valid_not_zoned_complaint_str = [
-    "UA-2020-03-17-000090.2-12AD3F12",
-    "ua-2020-03-17-000090.2-12ad3f12",
-    "Text - UA-2020-03-17-000090.2-12AD3F12",
-    "UA-2020-03-17-000090.2-12AD3F12 = text",
-    "UA - 2020 - 03 - 17 - 000090.2 - 12AD3F12 text",
-]
+def generate_complaint_test_data(complaint_str):
+    return [
+        (complaint_str, "default"),
+        (complaint_str.lower(), "lowercase"),
+        ("Text {} text".format(complaint_str), "additional text"),
+        (" ".join(complaint_str), "replace whitespaces"),
+        (complaint_str.replace("c", "с"), "replace cyrillic to latin - c"),
+        (complaint_str.replace("a", "а"), "replace cyrillic to latin - a"),
+        (complaint_str.replace("e", "е"), "replace cyrillic to latin - e"),
+        (complaint_str.replace("C", "С"), "replace cyrillic to latin - C"),
+        (complaint_str.replace("A", "А"), "replace cyrillic to latin - A"),
+        (complaint_str.replace("E", "Е"), "replace cyrillic to latin - E"),
+    ]
 
 
 class GetPaymentParamsTestCase(unittest.TestCase):
@@ -59,7 +48,7 @@ class GetPaymentParamsTestCase(unittest.TestCase):
     """
 
     def test_valid_zoned_complaint(self):
-        for complaint_str in valid_zoned_complaint_str:
+        for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_STR):
             params = get_payment_params(complaint_str)
             self.assertIsNotNone(params)
             self.assertIn("complaint", params)
@@ -70,13 +59,14 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "code": params["code"].lower(),
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.a2".lower(),
-                    "code": "12AD3F12".lower(),
-                }
+                    "complaint": "UA-2020-03-17-000090-a.c2".lower(),
+                    "code": "12ABCDEF".lower(),
+                },
+                "Failed: {}".format(info)
             )
 
     def test_valid_zoned_complaint_multiple(self):
-        for complaint_str in valid_zoned_complaint_multiple_str:
+        for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_MULTIPLE_STR):
             params = get_payment_params(complaint_str)
             self.assertIsNotNone(params)
             self.assertIn("complaint", params)
@@ -87,13 +77,14 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "code": params["code"].lower(),
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.a112".lower(),
-                    "code": "12AD3F12".lower(),
-                }
+                    "complaint": "UA-2020-03-17-000090-a.c112".lower(),
+                    "code": "12ABCDEF".lower(),
+                },
+                "Failed: {}".format(info)
             )
 
     def test_valid_zoned_complaint_second_stage(self):
-        for complaint_str in valid_zoned_complaint_second_stage_str:
+        for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_SECOND_STAGE_STR):
             params = get_payment_params(complaint_str)
             self.assertIsNotNone(params)
             self.assertIn("complaint", params)
@@ -104,13 +95,14 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "code": params["code"].lower(),
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.2.a2".lower(),
-                    "code": "12AD3F12".lower(),
-                }
+                    "complaint": "UA-2020-03-17-000090-a.2.c2".lower(),
+                    "code": "12ABCDEF".lower(),
+                },
+                "Failed: {}".format(info)
             )
 
     def test_valid_not_zoned_complaint(self):
-        for complaint_str in valid_not_zoned_complaint_str:
+        for complaint_str, info in generate_complaint_test_data(VALID_NOT_ZONED_COMPLAINT_STR):
             params = get_payment_params(complaint_str)
             self.assertIsNotNone(params)
             self.assertIn("complaint", params)
@@ -122,8 +114,9 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                 },
                 {
                     "complaint": "UA-2020-03-17-000090.2".lower(),
-                    "code": "12AD3F12".lower(),
-                }
+                    "code": "12ABCDEF".lower(),
+                },
+                "Failed: {}".format(info)
             )
 
     def test_invalid_complaint(self):

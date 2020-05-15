@@ -16,6 +16,18 @@ PAYMENT_RE = re.compile(
     re.IGNORECASE
 )
 
+PAYMENT_REPLACE_MAPPING = {
+    # delete whitespaces
+    "\s+": "",
+    # replace cyrillic to latin
+    "с": "c",
+    "С": "C",
+    "а": "a",
+    "А": "A",
+    "е": "e",
+    "Е": "E",
+}
+
 STATUS_COMPLAINT_DRAFT = "draft"
 STATUS_COMPLAINT_PENDING = "pending"
 STATUS_COMPLAINT_ACCEPTED = "accepted"
@@ -81,10 +93,14 @@ RESOLUTION_MAPPING = {
 }
 
 
+def find_replace(string, dictionary):
+    for item in sorted(dictionary.keys(), key=len, reverse=True):
+        string = re.sub(item, dictionary[item], string)
+    return string
+
+
 def get_payment_params(description):
-    whitespace_pattern = re.compile(r"\s+")
-    description = re.sub(whitespace_pattern, '', description)
-    match = PAYMENT_RE.search(description)
+    match = PAYMENT_RE.search(find_replace(description, PAYMENT_REPLACE_MAPPING))
     if match:
         return match.groupdict()
 
