@@ -2,11 +2,14 @@ from tasks_utils.settings import (
     CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER, RETRY_REQUESTS_EXCEPTIONS,
     EXPONENTIAL_RETRY_BASE, EXPONENTIAL_RETRY_MAX,
 )
-from environment_settings import PUBLIC_API_HOST, API_VERSION, DS_HOST, DS_USER, DS_PASSWORD
+from environment_settings import (
+    PUBLIC_API_HOST, API_VERSION,
+    DS_HOST, DS_USER, DS_PASSWORD,
+    API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
+)
 from celery.utils.log import get_task_logger
 from urllib.parse import unquote
 import requests
-import base64
 import json
 import re
 
@@ -29,10 +32,12 @@ def get_filename_from_response(response):
 
 
 def get_request_retry_countdown(request=None):
-    try:
-        countdown = float(request.headers.get('Retry-After'))
-    except (TypeError, ValueError, AttributeError):
-        countdown = DEFAULT_RETRY_AFTER
+    countdown = DEFAULT_RETRY_AFTER
+    if request:
+        try:
+            countdown = float(request.headers.get('Retry-After'))
+        except (TypeError, ValueError, AttributeError):
+            pass
     return countdown
 
 
@@ -68,7 +73,7 @@ def get_public_api_data(task, uid, document_type="tender"):
                     "JSONDecodeError on edr request with status {}: ".format(response.status_code),
                     extra={"MESSAGE_ID": "RESP_JSON_DECODE_EXCEPTION"}
                 )
-                task.retry(countdown=get_exponential_request_retry_countdown(task, response))
+                raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
             else:
                 return resp_json["data"]
 
@@ -115,6 +120,28 @@ def ds_upload(task, file_name, file_content):
         return response_json["data"]
 
 
+def sign_data(task, data):
+    try:
+        response = requests.post(
+            "{}/sign/file".format(API_SIGN_HOST),
+            files={'file': ('name', data)},
+            auth=(API_SIGN_USER, API_SIGN_PASSWORD),
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as e:
+        logger.exception(e, extra={"MESSAGE_ID": "SIGN_DATA_REQUEST_ERROR"})
+        raise task.retry(exc=e, countdown=get_exponential_request_retry_countdown(task))
+    else:
+        if response.status_code != 200:
+            logger.error(
+                "Signing failure: {} {}".format(response.status_code, response.text),
+                extra={"MESSAGE_ID": "SIGN_DATA_ERROR"}
+            )
+            raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
+        else:
+            return response.content
+
+
 def get_json_or_retry(task, response):
     try:
         resp_json = response.json()
@@ -126,6 +153,6 @@ def get_json_or_retry(task, response):
                 "STATUS_CODE": response.status_code,
             }
         )
-        task.retry(countdown=get_exponential_request_retry_countdown(task, response))
+        raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
     else:
         return resp_json

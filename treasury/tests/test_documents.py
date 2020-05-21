@@ -1,8 +1,4 @@
 from treasury.documents import prepare_documents
-from environment_settings import TREASURY_DB_NAME, TREASURY_ORG_COLLECTION
-from pymongo import UpdateOne, DeleteMany
-from pymongo.errors import PyMongoError
-from celery.exceptions import Retry
 from unittest.mock import patch, Mock, call
 import base64
 import unittest

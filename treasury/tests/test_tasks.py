@@ -383,12 +383,14 @@ class CheckTestCase(unittest.TestCase):
         save_context_mock.assert_not_called()
         send_change_xml_mock.assert_not_called()
 
+    @patch("treasury.tasks.sign_data")
     @patch("treasury.tasks.send_request")
     @patch("treasury.tasks.uuid4")
     @patch("treasury.tasks.render_contract_xml")
     @patch("treasury.tasks.prepare_documents")
     @patch("treasury.tasks.get_contract_context")
-    def test_send_contract_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock, uuid4_mock, send_mock):
+    def test_send_contract_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock,
+                               uuid4_mock, send_mock, sign_data_mock):
         context = dict(
             contract=dict(
                 changes=[
@@ -401,6 +403,7 @@ class CheckTestCase(unittest.TestCase):
         render_xml_mock.return_value = b"<hello/>"
         message_id = "123abc"
         uuid4_mock.return_value = Mock(hex=message_id)
+        sign_data_mock.return_value = b"<signature>"
         contract_id = "55555"
 
         send_contract_xml(contract_id)
@@ -418,19 +421,23 @@ class CheckTestCase(unittest.TestCase):
             ]
         )
         render_xml_mock.assert_called_once_with(context)
+        sign_data_mock.assert_called_once_with(send_contract_xml, render_xml_mock.return_value)
         send_mock.assert_called_once_with(
             send_contract_xml,
             render_xml_mock.return_value,
+            sign=sign_data_mock.return_value,
             message_id=message_id,
             method_name="PrContract"
         )
 
+    @patch("treasury.tasks.sign_data")
     @patch("treasury.tasks.send_request")
     @patch("treasury.tasks.uuid4")
     @patch("treasury.tasks.render_change_xml")
     @patch("treasury.tasks.prepare_documents")
     @patch("treasury.tasks.get_contract_context")
-    def test_send_change_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock, uuid4_mock, send_mock):
+    def test_send_change_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock,
+                             uuid4_mock, send_mock, sign_data_mock):
         context = dict(
             contract=dict(
                 changes=[
@@ -443,6 +450,7 @@ class CheckTestCase(unittest.TestCase):
         render_xml_mock.return_value = b"<hello/>"
         message_id = "123abc"
         uuid4_mock.return_value = Mock(hex=message_id)
+        sign_data_mock.return_value = b"<signature>"
         contract_id = "55555"
 
         send_change_xml(contract_id, "222")
@@ -459,6 +467,7 @@ class CheckTestCase(unittest.TestCase):
         send_mock.assert_called_once_with(
             send_change_xml,
             render_xml_mock.return_value,
+            sign=sign_data_mock.return_value,
             message_id=message_id,
             method_name="PrChange"
         )

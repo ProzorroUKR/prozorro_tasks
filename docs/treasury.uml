@@ -1,0 +1,81 @@
+@startuml
+
+package "Sending Contract Data" as sending  {
+    class Crawler{
+        resource=contracts
+    }
+    class check_contract{
+        ** concurrency_lock **
+        --
+        Skip contracts:
+        - signed before the release
+        - organisation not on the list
+        --
+        logging MESSAGE_IDs:
+        - TREASURY_SKIP_CONTRACT
+    }
+    class "send_contract_xml / send_change_xml" as send_contract_xml{
+        ** concurrency_lock **
+        ** unique_task **
+        --
+        TODO: Should these actions be distinct tasks ?
+        \+ a good practice and less work in case of failures
+        \- large amount data to be transferred between tasks
+        - downloads docs & builds the data xml
+        - signs the data xml
+        - sends request
+        --
+        logging MESSAGE_IDs:
+        - GET_FILE_EXCEPTION
+        - GET_FILE_UNSUCCESSFUL_CODE
+        - SIGN_DATA_REQUEST_ERROR
+        - SIGN_DATA_ERROR
+        - TREASURY_CONTRACT_SENT
+        - TREASURY_UNSUCCESSFUL_CODE
+        - TREASURY_UNSUCCESSFUL_STATUS_CODE
+        - TREASURY_REQUEST_EXCEPTION
+    }
+
+
+    Crawler -right-|> check_contract:contract_id
+    check_contract -right-|> send_contract_xml: contract_id (+ change_id) \n+ saved to db context
+}
+
+
+
+package "Getting Transactions Data" as getting  {
+    mix_actor "Treasury service" as TS
+
+    mix_component tasks_api
+
+    class save_transaction {
+        Saves request data to DS
+        ---
+        logging MESSAGE_IDs:
+        - POST_DOC_API_ERROR
+    }
+
+    class put_transaction {
+        Attaches transaction to its contract
+        ---
+        logging MESSAGE_IDs:
+        - TREASURY_TRANS_EXCEPTION
+        - TREASURY_TRANS_ERROR
+        - TREASURY_TRANS_UNSUCCESSFUL_STATUS
+        - TREASURY_TRANS_SUCCESSFUL
+
+    }
+
+    TS -right-|> tasks_api:"Transaction data "
+    tasks_api -right-|> save_transaction
+    save_transaction --right-|> put_transaction
+}
+
+
+sending -[hidden]-> getting
+
+
+
+hide class circle
+
+@enduml

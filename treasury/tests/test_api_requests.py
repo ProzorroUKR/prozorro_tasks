@@ -29,7 +29,7 @@ class HelpersTestCase(unittest.TestCase):
 
 @patch(
     "treasury.api_requests.Client",
-    lambda _: Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
+    lambda _, **kwargs: Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
 )
 class RequestTestCase(unittest.TestCase):
 
@@ -38,14 +38,16 @@ class RequestTestCase(unittest.TestCase):
         message_id = 13
         method_name = "TestMe"
         xml = b"<hello>World</hello>"
-        result = prepare_request_data(task, xml, message_id, method_name)
+        sign = b"<<sign>>"
+        result = prepare_request_data(task, xml, sign=sign, message_id=message_id, method_name=method_name)
         data = base64.b64encode(xml).decode()
         request = '<soap-env:Envelope xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope/"><soap-env:Body>'\
                   '<ns0:SendRequest xmlns:ns0="https://www.unity-bars.com/ws"><ns0:request>' \
                   f'<ns0:UserLogin>{TREASURY_USER}</ns0:UserLogin>' \
                   f'<ns0:UserPassword>{TREASURY_PASSWORD}</ns0:UserPassword>' \
                   f'<ns0:MessageId>{message_id}</ns0:MessageId><ns0:MethodName>{method_name}</ns0:MethodName>' \
-                  f'<ns0:Data>{data}</ns0:Data><ns0:DataSign></ns0:DataSign></ns0:request></ns0:SendRequest>'\
+                  f'<ns0:Data>{data}</ns0:Data><ns0:DataSign>{base64.b64encode(sign).decode()}</ns0:DataSign>' \
+                  f'</ns0:request></ns0:SendRequest>'\
                   '</soap-env:Body></soap-env:Envelope>'
         self.assertEqual(result, request.encode())
 
@@ -72,6 +74,7 @@ class RequestTestCase(unittest.TestCase):
     def test_send_request(self):
         task = Mock()
         xml = b"<tag>Hi</tag>"
+        sign = b"<sign>"
         message_id = 123
         method_name = "GetRef"
         with open("treasury/tests/fixtures/send_request_response.xml", "rb") as f:
@@ -80,10 +83,10 @@ class RequestTestCase(unittest.TestCase):
         with patch("treasury.api_requests.prepare_request_data") as prepare_data_mock:
             prepare_data_mock.return_value = "<request></request>"
             with patch("treasury.api_requests.Session", lambda: session_mock):
-                result = send_request(task, xml, message_id, method_name=method_name)
+                result = send_request(task, xml, sign=sign, message_id=message_id, method_name=method_name)
 
         prepare_data_mock.assert_called_once_with(
-            task, xml, message_id, method_name
+            task, xml, sign, message_id, method_name
         )
         session_mock.post.assert_called_once_with(
             TREASURY_WSDL_URL,
@@ -98,7 +101,7 @@ class RequestTestCase(unittest.TestCase):
         session_mock = Mock(post=Mock(side_effect=SSLError("Unsafe bla bla")))
         with patch("treasury.api_requests.Session", lambda: session_mock):
             with self.assertRaises(RetryExc):
-                send_request(task, b"", 1, method_name="GetRef")
+                send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
 
     def test_send_request_error(self):
         task = Mock(retry=RetryExc)
@@ -107,7 +110,7 @@ class RequestTestCase(unittest.TestCase):
         session_mock = Mock(post=Mock(return_value=Mock(status_code=500, content=b"Internal error")))
         with patch("treasury.api_requests.Session", lambda: session_mock):
             with self.assertRaises(RetryExc):
-                send_request(task, b"", 1, method_name="GetRef")
+                send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
 
     def test_send_request_unsuccessful_code(self):
         task = Mock(retry=RetryExc)
@@ -119,13 +122,13 @@ class RequestTestCase(unittest.TestCase):
                 with patch("treasury.api_requests.parse_request_response",
                            lambda _: (100, "Duplicate msg_id")):   # this will cause retry, should it?
                     with self.assertRaises(RetryExc):
-                        send_request(task, b"", 1, method_name="GetRef")
+                        send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
         self.assertIs(session_mock.verify, False, "TREASURY_SKIP_REQUEST_VERIFY is True")
 
 
 @patch(
     "treasury.api_requests.Client",
-    lambda _: Client("file://./treasury/tests/fixtures/wdsl.xml")
+    lambda _, **kwargs: Client("file://./treasury/tests/fixtures/wdsl.xml")
 )
 class ResponseTestCase(unittest.TestCase):
 
