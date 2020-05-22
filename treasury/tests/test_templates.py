@@ -100,6 +100,7 @@ test_plan = dict(
 )
 test_tender = dict(
     id="55555",
+    tenderID="UA-2020-55555",
     date=datetime(2006, 5, 7),
     procuringEntity=dict(
         name="My name",
@@ -317,7 +318,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'</breakdown></breakdowns>'
             b'</plan>'
             b'<report>'
-            b'<tenderID>55555</tenderID>'
+            b'<tenderID>UA-2020-55555</tenderID>'
             b'<date>2006-05-07T00:00:00</date>'
             b'<procuringEntityName>My name</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'
@@ -440,7 +441,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<tenderProcurementMethodType>belowAbove</tenderProcurementMethodType>'
             b'</plan>'
             b'<report>'
-            b'<tenderID>55555</tenderID>'
+            b'<tenderID>UA-2020-55555</tenderID>'
             b'<date>2006-05-07T00:00:00</date>'
             b'<procuringEntityName>My name</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'

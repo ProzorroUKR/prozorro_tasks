@@ -34,6 +34,9 @@ def get_value(obj, *keys, formatter=str, default=None):
     if isinstance(obj, list):
         return ", ".join(formatter(e) for e in obj)  # ex.: rationaleTypes
 
+    if obj == "":
+        return None  # this will hide this tag
+
     return formatter(obj)
 
 
@@ -126,7 +129,7 @@ def _build_tender_xml(maker, context):
     initial_bids = context["initial_bids"]
     lot = context.get("lot")
     result = maker.report(
-        maker.tenderID(tender["id"]),
+        maker.tenderID(tender["tenderID"]),
         maker.date(get_date_value(
             lot if lot else tender,
             "date"

@@ -77,8 +77,8 @@ PAYMENTS_SKIP_TENDER_DAYS = int(os.environ.get("PAYMENTS_SKIP_TENDER_DAYS", 10))
 PORTAL_HOST = os.environ.get("PORTAL_HOST", "https://prozorro.gov.ua")
 
 TREASURY_INT_START_DATE = os.environ.get("TREASURY_INT_START_DATE", "2020-03-27")
-TREASURY_WSDL_URL = os.environ.get(
-    "TREASURY_WSDL_URL", "http://46.164.148.178:24310/bars.webservices.prozorro/prozorro/prozorroapi.asmx?WSDL")
+TREASURY_WSDL_URL = os.environ.get("TREASURY_WSDL_URL",
+                                   "http://46.164.148.178:24310/bars.webservices.dksu/prozorro/prozorroapi.asmx?WSDL")
 TREASURY_USER = os.environ.get("TREASURY_USER", "prozorrouser")
 TREASURY_PASSWORD = os.environ.get("TREASURY_PASSWORD", "111111")
 TREASURY_SKIP_REQUEST_VERIFY = os.environ.get("TREASURY_SKIP_REQUEST_VERIFY", False)

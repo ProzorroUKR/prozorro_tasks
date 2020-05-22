@@ -105,14 +105,11 @@ def send_contract_xml(self, contract_id):
     # building request
     document = render_contract_xml(context)
 
-    # with open(f"data_{contract_id}.xml", "wb") as f:
+    # with open(f"data1_{contract_id}.xml", "wb") as f:
     #     f.write(document)
 
     # sign document
     sign = sign_data(self, document)   # TODO: get ready to increase READ_TIMEOUT inside
-
-    # with open(f"sign_{contract_id}.xml", "wb") as f:
-    #     f.write(sign)
 
     # sending changes
     message_id = uuid4().hex
