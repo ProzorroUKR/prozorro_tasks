@@ -3,6 +3,7 @@ from tasks_utils.requests import RETRY_REQUESTS_EXCEPTIONS, get_exponential_requ
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.utils.log import get_task_logger
 from zeep import Client
+from zeep.transports import Transport
 from lxml import etree
 from requests import Session
 import base64
@@ -11,8 +12,10 @@ logger = get_task_logger(__name__)
 
 
 def get_wsdl_client(task):
+    transport = Transport(timeout=CONNECT_TIMEOUT,
+                          operation_timeout=READ_TIMEOUT)
     try:
-        client = Client(TREASURY_WSDL_URL)
+        client = Client(TREASURY_WSDL_URL, transport=transport)
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
         raise task.retry(exc=exc)
@@ -21,8 +24,9 @@ def get_wsdl_client(task):
 
 # -- sending requests --
 
-def send_request(task, xml, message_id, method_name="GetRef"):
-    request_data = prepare_request_data(task, xml, message_id, method_name)
+def send_request(task, xml, sign="", message_id=None, method_name="GetRef"):
+    request_data = prepare_request_data(task, xml, sign, message_id, method_name)
+
     session = Session()
     if TREASURY_SKIP_REQUEST_VERIFY:
         session.verify = False
@@ -34,7 +38,7 @@ def send_request(task, xml, message_id, method_name="GetRef"):
             headers={'content-type': 'text/xml'},
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "GET_DOC_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
         raise task.retry(exc=exc)
     else:
         if response.status_code != 200:
@@ -53,7 +57,7 @@ def send_request(task, xml, message_id, method_name="GetRef"):
         raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
 
 
-def prepare_request_data(task, xml, message_id, method_name):
+def prepare_request_data(task, xml, sign, message_id, method_name):
     # prepare request message
     client = get_wsdl_client(task)
     factory = client.type_factory("ns0")
@@ -63,7 +67,7 @@ def prepare_request_data(task, xml, message_id, method_name):
         MessageId=message_id,
         MethodName=method_name,
         Data=base64.b64encode(xml),
-        DataSign=b"",
+        DataSign=base64.b64encode(sign),
     )
     message_node = client.create_message(client.service, 'SendRequest', message)
     return etree.tostring(message_node)

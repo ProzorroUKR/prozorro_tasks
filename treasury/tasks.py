@@ -8,7 +8,9 @@ from treasury.api_requests import send_request, get_request_response, parse_orga
 from environment_settings import TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES, \
     TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN
 from celery.utils.log import get_task_logger
-from tasks_utils.requests import get_public_api_data, get_request_retry_countdown, ds_upload, get_json_or_retry
+from tasks_utils.requests import (
+    get_public_api_data, get_request_retry_countdown, ds_upload, get_json_or_retry, sign_data
+)
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
 from tasks_utils.datetime import get_now
 from datetime import timedelta
@@ -82,7 +84,7 @@ def check_contract(self, contract_id):
         send_contract_xml.delay(contract["id"])
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 @concurrency_lock
 @unique_task_decorator
 def send_contract_xml(self, contract_id):
@@ -103,16 +105,22 @@ def send_contract_xml(self, contract_id):
     # building request
     document = render_contract_xml(context)
 
+    # with open(f"data1_{contract_id}.xml", "wb") as f:
+    #     f.write(document)
+
+    # sign document
+    sign = sign_data(self, document)   # TODO: get ready to increase READ_TIMEOUT inside
+
     # sending changes
     message_id = uuid4().hex
-    send_request(self, document, message_id=message_id, method_name="PrContract")
+    send_request(self, document, sign=sign, message_id=message_id, method_name="PrContract")
     logger.info(
         "Contract details sent",
         extra={"MESSAGE_ID": "TREASURY_CONTRACT_SENT", "CONTRACT_ID": contract_id, "REQUEST_ID": message_id}
     )
 
 
-@app.task(bind=True, max_retries=None)
+@app.task(bind=True, max_retries=1000)
 @concurrency_lock
 @unique_task_decorator
 def send_change_xml(self, contract_id, change_id):
@@ -129,12 +137,12 @@ def send_change_xml(self, contract_id, change_id):
     context["change"] = change
     document = render_change_xml(context)
 
-    # with open(f"change-{change_id}.xml", "wb") as f:  # TODO remove
-    #     f.write(document)
+    # sign document
+    sign = sign_data(self, document)
 
     # sending request
     message_id = uuid4().hex
-    send_request(self, document, message_id=message_id, method_name="PrChange")
+    send_request(self, document, sign=sign, message_id=message_id, method_name="PrChange")
     logger.info(
         "Contract change sent",
         extra={"MESSAGE_ID": "TREASURY_CONTRACT_CHANGE_SENT",

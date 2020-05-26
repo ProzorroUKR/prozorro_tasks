@@ -6,7 +6,7 @@ import base64
 
 
 def prepare_documents(task, item):
-    if "documents" in item:
+    if item.get("documents"):
         # get rid of prev versions of files
         documents = {}
         for d in item["documents"]:
