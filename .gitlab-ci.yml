@@ -19,7 +19,7 @@ test:
     expire_in: 30 days
 
 docker build:
-  image: docker:git
+  image: docker:18.09.9-git
   stage: push image
   only:
     - tags
