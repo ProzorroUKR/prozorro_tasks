@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from treasury.templates import render_catalog_xml, render_change_xml, render_contract_xml, \
-    prepare_context, prepare_contract_context
+    prepare_context, prepare_contract_context, format_date
 from unittest.mock import Mock, patch
 from environment_settings import TIMEZONE
 from copy import deepcopy
@@ -15,8 +15,8 @@ test_changes = [
         contractID="1",
         rationale="things change",
         rationaleTypes=["first", "second"],
-        dateSigned=datetime(2012, 2, 3, 4, 5, 6, tzinfo=TIMEZONE),
-        documents="ham="
+        dateSigned=datetime(2012, 2, 3, 4, 5, 6),
+        documents=[]
     ),
     dict(
         id="567",
@@ -175,11 +175,21 @@ test_tender_contract = dict(
             address=dict(stree="Street, 1", city="Kyiv"),
         )
     ],
-    dateSigned=datetime(2001, 12, 3),
+    dateSigned="2020-03-11T00:00:00+05:00",
 )
 
 
 class TemplatesTestCase(unittest.TestCase):
+
+    def test_format_date(self):
+        result = format_date("2020-03-11T00:00:00+02:00")
+        self.assertEqual(result, "2020-03-11T00:00:00+02:00")
+
+        result = format_date("2020-03-11T01:02:30")
+        self.assertEqual(result, "2020-03-11T01:02:30")
+
+        result = format_date("2020-03-11T01:02:30+05:00")
+        self.assertEqual(result, "2020-03-11T01:02:30+05:00")
 
     def test_catalog(self):
         context = dict(catalog_id="YourMomBFs")
@@ -232,7 +242,6 @@ class TemplatesTestCase(unittest.TestCase):
             b'<changeRationale>things change</changeRationale>'
             b'<changeRationaleTypes>first, second</changeRationaleTypes>'
             b'<DateSigned>2012-02-03T04:05:06</DateSigned>'
-            b'<changeDocuments>ham=</changeDocuments>'
             b'</root>'
         )
 
@@ -270,7 +279,6 @@ class TemplatesTestCase(unittest.TestCase):
             b'<changeRationale>things change</changeRationale>'
             b'<changeRationaleTypes>first, second</changeRationaleTypes>'
             b'<contractsDateSigned>2012-02-03T04:05:06</contractsDateSigned>'
-            b'<changeDocuments>ham=</changeDocuments>'
             b'</change>'
             b'<change>'
             b'<changeId>567</changeId>'
@@ -391,7 +399,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<awardQualifiedEligible>False</awardQualifiedEligible>'
             b'</bid></bids>'
             b'<awardComplaintPeriodStartDate>2012-04-01T00:00:00</awardComplaintPeriodStartDate>'
-            b'<contractsDateSigned>2001-12-03T00:00:00</contractsDateSigned>'
+            b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Street, 1, Kyiv</contractsSuppliersAddress>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
@@ -448,7 +456,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<mainProcurementCategory>good goods</mainProcurementCategory>'
             b'<startDate>2012-04-01T00:00:00</startDate>'
             b'<awardComplaintPeriodStartDate>2012-04-01T00:00:00</awardComplaintPeriodStartDate>'
-            b'<contractsDateSigned>2001-12-03T00:00:00</contractsDateSigned>'
+            b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Street, 1, Kyiv</contractsSuppliersAddress>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'

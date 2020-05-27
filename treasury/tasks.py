@@ -105,9 +105,6 @@ def send_contract_xml(self, contract_id):
     # building request
     document = render_contract_xml(context)
 
-    # with open(f"data1_{contract_id}.xml", "wb") as f:
-    #     f.write(document)
-
     # sign document
     sign = sign_data(self, document)   # TODO: get ready to increase READ_TIMEOUT inside
 
@@ -156,7 +153,12 @@ def send_change_xml(self, contract_id, change_id):
 def request_org_catalog(self):
     document = render_catalog_xml(dict(catalog_id="RefOrgs"))
     message_id = uuid4().hex
-    send_request(self, document, message_id=message_id, method_name="GetRef")
+
+    # sign document
+    sign = sign_data(self, document)
+
+    # send request
+    send_request(self, document, sign=sign, message_id=message_id, method_name="GetRef")
 
     expected_response_time = get_now() + timedelta(seconds=3 * 60)
     receive_org_catalog.apply_async(
