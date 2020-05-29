@@ -16,8 +16,8 @@ from payments.results_db import get_payment_count, get_payment_search_filters
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
 
-CONNECT_TIMEOUT = 3.0
-READ_TIMEOUT = 3.0
+CONNECT_TIMEOUT = 5.0
+READ_TIMEOUT = 5.0
 
 
 def get_tender(params):

@@ -5,6 +5,10 @@ from xlsxwriter import Workbook
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_group_required
+from payments.message_ids import (
+    PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
+    PAYMENTS_SEARCH_INVALID_CODE,
+)
 from payments.tasks import process_payment_data
 from payments.results_db import (
     get_payment_list, get_payment_item, get_combined_filters_or, get_payment_search_filters,
@@ -29,6 +33,7 @@ from payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
     date_representation,
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+    payment_primary_message,
 )
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
@@ -65,8 +70,18 @@ def payment_detail(uid):
         abort(404)
     row = get_payment(data)
     params = data.get("params", None)
-    complaint = get_complaint(params) if params else None
-    tender = get_tender(params) if params else None
+    messages = data.get("messages", [])
+    message_id = payment_primary_message(messages).get("message_id")
+    if params and message_id not in [
+        PAYMENTS_INVALID_PATTERN,
+        PAYMENTS_SEARCH_INVALID_COMPLAINT,
+        PAYMENTS_SEARCH_INVALID_CODE,
+    ]:
+        complaint = get_complaint(params)
+        tender = get_tender(params)
+    else:
+        complaint = None
+        tender = None
     return render_template(
         "payments/payment_detail.html",
         row=row,
