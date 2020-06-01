@@ -33,12 +33,6 @@
                 {% endif %}
             </span>
         </button>
-        {% if 'date_resolution_from' in request.args or 'date_resolution_to' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date_resolution_from', 'date_resolution_to']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
         {% endwith %}
         {% endwith %}
     </div>
