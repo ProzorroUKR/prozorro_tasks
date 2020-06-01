@@ -57,7 +57,7 @@ def verify_auth_id(user_id):
         return user_id
 
 
-def login_group_required(group):
+def login_groups_required(groups):
     def decorator(func):
         @wraps(func)
         def decorated(*args, **kwargs):
@@ -66,12 +66,16 @@ def login_group_required(group):
 
             if request.method != 'OPTIONS':
                 user_id = auth.authenticate(authorization, None)
-                if not verify_auth_group(user_id, group):
+                if not any([verify_auth_group(user_id, group) for group in groups]):
                     raise UnauthorizedError(scheme=auth.scheme, realm=auth.realm)
 
             return func(*args, **kwargs)
         return decorated
     return decorator
+
+
+def login_group_required(group):
+    return login_groups_required([group])
 
 
 def ip_group_required(group):

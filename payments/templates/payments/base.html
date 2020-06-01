@@ -204,6 +204,17 @@
 </style>
 
 {% endblock %}
+
+
+{% block main %}
+
+<div class="container-fluid">
+    {% block content %}{% endblock %}}
+</div>
+
+{% endblock %}
+
+
 {% block scripts %}
 
 {{ super() }}

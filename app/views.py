@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 
-from app.auth import login_group_required
+from app.auth import login_groups_required
 from app.utils import (
     typing_is_dict,
     typing_is_list,
@@ -26,6 +26,6 @@ bp.add_app_template_filter(prozorro_api_complaint_path, "prozorro_api_complaint_
 
 
 @bp.route("/", methods=["GET"])
-@login_group_required("admins")
+@login_groups_required(["admins", "accountants"])
 def index():
     return render_template("index.html")

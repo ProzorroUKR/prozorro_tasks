@@ -32,6 +32,10 @@
             min-height: 100vh;
         }
 
+        html, body, header, .wrapper, .view {
+            height: 100%;
+        }
+
         .navbar-brand-prozorro {
             padding-left: 50px;
             background-size: auto 70%;
@@ -63,11 +67,11 @@
         </div>
     </nav>
 
-    <div class="container-fluid flex-fill">
-        {% block content %}{% endblock %}
+    <div class="flex-fill">
+        {% block main %}{% endblock %}
     </div>
 
-    <footer class="page-footer font-small blue pt-4 mt-5">
+    <footer class="page-footer font-small blue pt-4">
         <div class="container-fluid text-center text-md-left">
             <div class="row">
                 <div class="col-md-6 mt-md-0 mt-3">
