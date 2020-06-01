@@ -1,4 +1,5 @@
 import io
+from datetime import datetime, timedelta
 
 from xlsxwriter import Workbook
 
@@ -123,7 +124,10 @@ def report():
         data = list(get_payment_list(filters))
         rows = get_report(data)
     else:
-        rows = []
+        return redirect(url_for(
+            "payments_views.report",
+            date=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"))
+        )
     return render_template(
         "payments/payment_report.html",
         rows=rows,

@@ -16,29 +16,39 @@
     </button>
     {% endwith %}
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
-       type="button"
-       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити
-    </a>
+    <div class="dropdown mb-2">
+        <a class="btn btn-sm btn-primary btn-payment" href="#" role="button" id="dropdownMenuLink"
+           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-angle-double-down mr-2"></i> Завантажити
+        </a>
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) }}"
-       type="button"
-       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'state'|complaint_funds_description }}"
-    </a>
+        <div class="dropdown-menu pr-3 pl-1 pt-1 pb-1">
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
-       type="button"
-       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'complainant'|complaint_funds_description }}"
-    </a>
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
+               type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+                Всі
+            </a>
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
-       type="button"
-       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2   ">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'unknown'|complaint_funds_description }}"
-    </a>
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) }}"
+               type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+                {{ 'state'|complaint_funds_description }}
+            </a>
+
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
+               type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+                {{ 'complainant'|complaint_funds_description}}
+            </a>
+
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
+               type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+                {{ 'unknown'|complaint_funds_description }}
+            </a>
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive mb-2">
