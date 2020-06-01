@@ -114,6 +114,15 @@ def processing_message_failed_description(message):
         return MESSAGE_ID_DESCRIPTION_DICT.get(message_id, message_id)
 
 
+def processing_date(data):
+    primary_message = payment_primary_message(data.get("messages", []))
+    if primary_message.get("message_id") in PAYMENTS_FAILED_MESSAGE_ID_LIST:
+        return date_representation(primary_message.get("createdAt"))
+    resolution = data.get("resolution")
+    if resolution:
+        return date_representation(resolution.get("date"))
+
+
 def payment_primary_message(messages):
     for priority in MESSAGE_ID_PRIORITY:
         for message in messages or []:
