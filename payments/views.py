@@ -12,8 +12,13 @@ from payments.message_ids import (
 )
 from payments.tasks import process_payment_data
 from payments.results_db import (
-    get_payment_list, get_payment_item, get_combined_filters_or, get_payment_search_filters,
-    get_payment_report_filters,
+    get_payment_list,
+    get_payment_item,
+    get_combined_filters_or,
+    get_payment_search_filters,
+    get_payment_report_success_filters,
+    get_payment_report_failed_filters,
+    get_combined_filters_and,
 )
 from payments.context import (
     url_for_search,
@@ -50,16 +55,35 @@ bp.add_app_template_filter(complaint_funds_description, "complaint_funds_descrip
 @bp.route("/", methods=["GET"])
 @login_group_required("accountants")
 def payment_list():
-    kwargs = get_payment_search_params()
-    filters = get_payment_search_filters(**kwargs)
-    rows = list(get_payment_list(filters, **kwargs))
+    report_kwargs = get_report_params()
+    date_from = report_kwargs.get("date_resolution_from")
+    date_to = report_kwargs.get("date_resolution_to")
+    data_success_filters = get_payment_report_success_filters(
+        resolution_exists=True,
+        resolution_date_from=date_from,
+        resolution_date_to=date_to,
+    )
+    data_failed_filters = get_payment_report_failed_filters(
+        message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
+        message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+        message_ids_date_from=date_from,
+        message_ids_date_to=date_to,
+    )
+    report_filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+
+    search_kwargs = get_payment_search_params()
+    search_filters = get_payment_search_filters(**search_kwargs)
+
+    filters = get_combined_filters_and([search_filters, report_filters])
+
+    rows = list(get_payment_list(filters, **search_kwargs, **report_kwargs))
     data = get_payments(rows)
     return render_template(
         "payments/payment_list.html",
         rows=data,
         message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
-        pagination=get_payment_pagination(filters=filters, **kwargs)
+        pagination=get_payment_pagination(filters=filters, **search_kwargs, **report_kwargs)
     )
 
 
@@ -109,30 +133,34 @@ def payment_retry(uid):
 @login_group_required("accountants")
 def report():
     kwargs = get_report_params()
-    date = kwargs.get("date")
-    if date:
-        data_success_filters = get_payment_report_filters(
+    date_from = kwargs.get("date_resolution_from")
+    date_to = kwargs.get("date_resolution_to")
+    if date_from and date_to:
+        data_success_filters = get_payment_report_success_filters(
             resolution_exists=True,
-            resolution_date=date,
+            resolution_date_from=date_from,
+            resolution_date_to=date_to,
         )
-        data_failed_filters = get_payment_report_filters(
+        data_failed_filters = get_payment_report_failed_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
-            message_ids_date=date,
+            message_ids_date_from=date_from,
+            message_ids_date_to=date_to,
         )
         filters = get_combined_filters_or([data_success_filters, data_failed_filters])
         data = list(get_payment_list(filters))
         rows = get_report(data)
     else:
+        date = datetime.now() - timedelta(days=1)
         return redirect(url_for(
             "payments_views.report",
-            date=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"))
-        )
+            date_resolution_from=date.strftime("%Y-%m-%d"),
+            date_resolution_to=date.strftime("%Y-%m-%d")
+        ))
     return render_template(
         "payments/payment_report.html",
         rows=rows,
         url_for_search=url_for_search,
-        resolution_date=date,
         **kwargs
     )
 
@@ -141,36 +169,41 @@ def report():
 @login_group_required("accountants")
 def report_download():
     kwargs = get_report_params()
-    date = kwargs.get("date")
+    date_from = kwargs.get("date_resolution_from")
+    date_to = kwargs.get("date_resolution_to")
     funds = kwargs.get("funds") or 'all'
 
-    if not date:
+    if not date_from and not date_to:
         abort(404)
         return
 
     if funds in ["state", "complainant"]:
-        filters = get_payment_report_filters(
+        filters = get_payment_report_success_filters(
             resolution_exists=True,
             resolution_funds=funds,
-            resolution_date=date
+            resolution_date_from=date_from,
+            resolution_date_to=date_to,
         )
     elif funds in ["unknown"]:
-        filters = get_payment_report_filters(
+        filters = get_payment_report_failed_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
-            message_ids_date=date,
+            message_ids_date_from=date_from,
+            message_ids_date_to=date_to,
         )
         rows = list(get_payment_list(filters))
     elif funds in ["all"]:
         rows = list()
-        filters_success = get_payment_report_filters(
+        filters_success = get_payment_report_success_filters(
             resolution_exists=True,
-            resolution_date=date
+            resolution_date_from=date_from,
+            resolution_date_to=date_to,
         )
-        filters_failed = get_payment_report_filters(
+        filters_failed = get_payment_report_failed_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
-            message_ids_date=date
+            message_ids_date_from=date_from,
+            message_ids_date_to=date_to,
         )
         filters = get_combined_filters_or([filters_success, filters_failed])
     else:
@@ -185,7 +218,17 @@ def report_download():
         data[index] = [str(index) if index else " "] + row
 
     headers = data.pop(0)
-    filename = "{}-{}-report".format(date.date().isoformat(), funds)
+    if date_from == date_to:
+        filename = "{}-{}-report".format(
+            date_from.date().isoformat(),
+            funds
+        )
+    else:
+        filename = "{}-{}-{}-report".format(
+            date_from.date().isoformat(),
+            date_to.date().isoformat(),
+            funds
+        )
     bytes_io = io.BytesIO()
 
     workbook = Workbook(bytes_io)

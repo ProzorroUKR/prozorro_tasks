@@ -134,7 +134,8 @@ def data_to_uid(data):
 def get_payment_search_filters(
     search=None,
     payment_type=None,
-    payment_date=None,
+    payment_date_from=None,
+    payment_date_to=None,
     **kwargs
 ):
     filters = []
@@ -142,18 +143,19 @@ def get_payment_search_filters(
         filters.append({"$text": {"$search": search}})
     if payment_type is not None:
         filters.append({"payment.type": payment_type})
-    if payment_date is not None:
-        filters.append({"payment.date_oper": {"$regex": "^" + payment_date.strftime("%Y-%m-%d")}})
+    if payment_date_from is not None and payment_date_to is not None:
+        filters.append({"payment.date_oper": {
+            "$gte": payment_date_from.strftime("%Y-%m-%d"),
+            "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
+        }})
     return get_combined_filters_and(filters) if filters else {}
 
 
-def get_payment_report_filters(
+def get_payment_report_success_filters(
     resolution_exists=None,
-    resolution_date=None,
+    resolution_date_to=None,
+    resolution_date_from=None,
     resolution_funds=None,
-    message_ids_include=None,
-    message_ids_date=None,
-    message_ids_exclude=None,
     **kwargs
 ):
     filters = []
@@ -161,24 +163,35 @@ def get_payment_report_filters(
         filters.append({"resolution": {"$exists": resolution_exists}})
     if resolution_funds is not None:
         filters.append({"resolution.funds": resolution_funds})
-    if resolution_date is not None:
+    if resolution_date_from is not None and resolution_date_to is not None:
         filters.append({"resolution.date": {
-            "$gte": resolution_date.isoformat(),
-            "$lt": (resolution_date + timedelta(days=1)).isoformat()
+            "$gte": resolution_date_from.isoformat(),
+            "$lt": (resolution_date_to + timedelta(days=1)).isoformat()
         }})
+    return get_combined_filters_and(filters) if filters else {}
+
+
+def get_payment_report_failed_filters(
+    message_ids_include=None,
+    message_ids_date_from=None,
+    message_ids_date_to=None,
+    message_ids_exclude=None,
+    **kwargs
+):
+    filters = []
     if message_ids_include is not None:
         filters.append({"messages.message_id": {"$in": message_ids_include}})
-    if message_ids_include is not None or message_ids_date is not None:
-        messages_match_filter = {}
-        if message_ids_include is not None:
-            messages_match_filter.update({"message_id": {"$in": message_ids_include}})
-        if message_ids_date is not None:
-            message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
-            messages_match_filter.update({"createdAt": {
-                "$gte": message_ids_date,
-                "$lt": (message_ids_date + timedelta(days=1))
-            }})
-        filters.append({"messages" : {"$elemMatch": messages_match_filter}})
+    messages_match_filter = {}
+    if message_ids_include is not None:
+        messages_match_filter.update({"message_id": {"$in": message_ids_include}})
+    if message_ids_date_from is not None and message_ids_date_to is not None:
+        message_ids_date_from = UTC.normalize(TIMEZONE.localize(message_ids_date_from))
+        message_ids_date_to = UTC.normalize(TIMEZONE.localize(message_ids_date_to))
+        messages_match_filter.update({"createdAt": {
+            "$gte": message_ids_date_from,
+            "$lt": message_ids_date_to + timedelta(days=1)
+        }})
+    filters.append({"messages" : {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
         filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
     return get_combined_filters_and(filters) if filters else {}

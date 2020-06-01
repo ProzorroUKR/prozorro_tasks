@@ -95,22 +95,26 @@ def get_payment_search_params():
     limit = get_int_param("limit", DEFAULT_LIMIT)
     payment_type = get_string_param("type")
     query = get_string_param("query")
-    payment_date = get_date_param("date", '%Y-%m-%d')
+    payment_date_from = get_date_param("date_oper_from", "%Y-%m-%d")
+    payment_date_to = get_date_param("date_oper_to", "%Y-%m-%d")
     return dict(
         limit=limit,
         page=page,
         search=query,
         payment_type=payment_type,
-        payment_date=payment_date,
+        payment_date_from=payment_date_from,
+        payment_date_to=payment_date_to,
     )
 
 
 def get_report_params():
-    date = get_date_param("date", '%Y-%m-%d')
     funds = get_string_param("funds")
+    date_from = get_date_param("date_resolution_from", "%Y-%m-%d")
+    date_to = get_date_param("date_resolution_to", "%Y-%m-%d")
     return dict(
-        date=date,
         funds=funds,
+        date_resolution_from=date_from,
+        date_resolution_to=date_to,
     )
 
 def get_payment_pagination(filters=None, **kwargs):

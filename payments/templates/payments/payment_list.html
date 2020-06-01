@@ -11,7 +11,7 @@
           class="input-group mb-3 mr-2">
         {% with query=request.args.get("query") %}
         <button type="submit"
-                class="btn btn-sm {% if query %}btn-primary{% else %}btn-dark{% endif %} btn-payment">
+                class="btn btn-sm btn-dark btn-payment">
             <i class="fas fa-search"></i>
         </button>
         <input type="text"
@@ -35,26 +35,24 @@
         {% endwith %}
     </form>
 
-    <div class="btn-group mb-3 mr-2" role="group">
+    <div class="btn-group mr-2 mb-3" role="group">
         {% with type=request.args.get("type") %}
-        <button class="btn btn-sm {% if type %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
-                type="button"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false">
+        <div class="btn-group"
+             role="group"
+             type="button"
+             data-toggle="dropdown"
+             aria-haspopup="true"
+             aria-expanded="false">
+            <button class="btn btn-sm btn-dark btn-payment text-nowrap">
+                Тип операції
+            </button>
             {% if type %}
-            {{ type or '' }}
-            {% else %}
-            Тип операції
+            <button class="btn btn-sm btn-primary btn-payment text-nowrap">
+                {{ type or '' }}
+            </button>
             {% endif %}
-        </button>
-        {% if 'type' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'type']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
-        <div class="dropdown-menu" aria-labelledby="typeMenuButton">
+        </div>
+        <div class="dropdown-menu">
             <h6 class="dropdown-header">Тип операції</h6>
             <a class="dropdown-item dropdown-item-payment{% if type=='debit' %} active{% endif %}"
                href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='debit')) }}">debit</a>
@@ -62,32 +60,95 @@
                href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='credit')) }}">credit</a>
         </div>
         {% endwith %}
+        {% if 'type' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'type']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
     </div>
 
     <div class="btn-group mb-3 mr-2" role="group">
-        {% with date=request.args.get("date") %}
-        <button class="btn btn-sm {% if date %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
+        {% with date_from=request.args.get("date_oper_from") %}
+        {% with date_to=request.args.get("date_oper_to") %}
+        <button class="btn btn-sm btn-dark btn-payment text-nowrap"
                 type="button"
-                data-toggle="datepicker"
-                data-href="{{ url_for(request.url_rule.endpoint) }}">
-            {% if date %}
-            <i class="fas fa-calendar-alt mr-2"></i> {{ date or '' }}
-            {% else %}
+                data-toggle="daterange"
+                data-target="rangePickerOper">
             Дата операції
-            {% endif %}
         </button>
-        {% if 'date' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date']) }}"
+        <button id="rangePickerOper"
+                class="btn btn-sm {% if date_from or date_to %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
+                type="button"
+                data-toggle="daterange"
+                data-href="{{ url_for(request.url_rule.endpoint) }}"
+                data-start-initial="{{ date_from or ''}}"
+                data-end-initial="{{ date_to  or ''}}"
+                data-start-param="date_oper_from"
+                data-end-param="date_oper_to">
+            <i class="fas fa-calendar-alt{% if date_from or date_to %} mr-2{% endif %}"></i>
+            <span>
+                {% if date_from and date_to %}
+                {{ date_from }} - {{ date_to }}
+                {% elif date_from %}
+                від {{ date_from }}
+                {% elif date_to %}
+                до {{ date_to }}
+                {% endif %}
+            </span>
+        </button>
+        {% if 'date_oper_from' in request.args or 'date_oper_to' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date_oper_from', 'date_oper_to']) }}"
            class="btn btn-sm btn-primary btn-payment">
             <i class="fas fa-times"></i>
         </a>
         {% endif %}
         {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="btn-group mb-3 mr-2" role="group">
+        {% with date_from=request.args.get("date_resolution_from") %}
+        {% with date_to=request.args.get("date_resolution_to") %}
+        <button class="btn btn-sm btn-dark btn-payment text-nowrap"
+                type="button"
+                data-toggle="daterange"
+                data-target="rangePickerResolution">
+            Дата завершення обробки
+        </button>
+        <button id="rangePickerResolution"
+                class="btn btn-sm {% if date_from or date_to %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
+                type="button"
+                data-toggle="daterange"
+                data-href="{{ url_for(request.url_rule.endpoint) }}"
+                data-start-initial="{{ date_from or ''}}"
+                data-end-initial="{{ date_to  or ''}}"
+                data-start-param="date_resolution_from"
+                data-end-param="date_resolution_to">
+            <i class="fas fa-calendar-alt{% if date_from or date_to %} mr-2{% endif %}"></i>
+            <span>
+                {% if date_from and date_to %}
+                {{ date_from }} - {{ date_to }}
+                {% elif date_from %}
+                від {{ date_from }}
+                {% elif date_to %}
+                до {{ date_to }}
+                {% endif %}
+            </span>
+        </button>
+        {% if 'date_resolution_from' in request.args or 'date_resolution_to' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date_resolution_from', 'date_resolution_to']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+        {% endwith %}
+        {% endwith %}
     </div>
 </div>
 
 
-<div class="table-responsive">
+<div class="table-responsive mb-3">
     {% include 'payments/partials/table_payments.html' %}
 </div>
 
@@ -103,25 +164,36 @@
 
 <script type="text/javascript">
     $(function () {
-        function updateQueryStringParameter(uri, key, value) {
-            var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-            var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-            if (uri.match(re)) {
-                return uri.replace(re, '$1' + key + "=" + value + '$2');
-            }
-            else {
-                return uri + separator + key + "=" + value;
-            }
-        }
+        var $picker = $('[data-toggle="daterange"][data-href]');
 
-        var picker = $('[data-toggle="datepicker"]');
-        picker.datepicker({
-            format: 'yyyy-mm-dd',
+        $picker.each(function () {
+            $(this).daterangepicker({
+                "locale": rangePickerLocale,
+                "opens": "center",
+                "startDate": $(this).data('start-initial') || undefined,
+                "endDate": $(this).data('end-initial') || undefined,
+                "buttonClasses": 'btn btn-sm btn-payment',
+                "applyButtonClasses": 'btn-primary',
+                "cancelButtonClasses": 'btn-warning',
+                "showCustomRangeLabel": false,
+                "ranges": rangePickerRanges,
+                "alwaysShowCalendars": true,
+            });
+
+            $(this).on('apply.daterangepicker', function (ev, picker) {
+                window.location.href = updateQueryStringParameter(
+                    updateQueryStringParameter(
+                        window.location.href,
+                        $(this).data('start-param'), picker.startDate.format('YYYY-MM-DD')
+                    ), $(this).data('end-param'), picker.endDate.format('YYYY-MM-DD')
+                );
+            });
         });
-        picker.on('pick.datepicker', function (e) {
-            window.location.href = updateQueryStringParameter(
-                window.location.href, 'date', picker.datepicker('getDate', true)
-            );
+
+        $('[data-toggle="daterange"][data-target]').each(function () {
+            $(this).click(function () {
+                $picker.filter('#' + $(this).data('target')).click();
+            })
         });
     });
 </script>

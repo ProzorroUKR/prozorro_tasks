@@ -34,12 +34,12 @@
         padding: 0;
     }
 
-    .dropdown-item-payment {
-        font-size: .75rem;
-    }
-
     .dropdown .btn.btn-payment {
         height: 100%;
+    }
+
+    .dropdown-item-payment {
+        font-size: .75rem;
     }
 
     .dropdown-item-payment.active {
@@ -170,13 +170,9 @@
         height: 100%;
     }
 
-    .pagination-page-info {
-        font-size: .75rem;
-        padding-bottom: 1rem;
-    }
-
-    .pagination {
-        margin-top: 1rem;
+    .pagination .page-item .page-link,
+    .pagination .page-item.active .page-link {
+        border-radius: 0;
     }
 
     .table-failed, .table-failed > td, .table-failed > th {
@@ -190,6 +186,73 @@
     .waves-input-wrapper {
         border-radius: 0;
     }
+
+    .daterangepicker {
+        border-radius: 0;
+    }
+
+    .daterangepicker .active {
+        background-color: #4285f4 !important;
+    }
 </style>
+
+{% endblock %}
+{% block scripts %}
+
+{{ super() }}
+
+<script type="text/javascript">
+    function updateQueryStringParameter(uri, key, value) {
+        var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+        var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+        if (uri.match(re)) {
+            return uri.replace(re, '$1' + key + "=" + value + '$2');
+        } else {
+            return uri + separator + key + "=" + value;
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    var rangePickerLocale = {
+        "format": 'YYYY-MM-DD',
+        "separator": " - ",
+        "applyLabel": "Застосувати",
+        "cancelLabel": "Відмінити",
+        "fromLabel": "З",
+        "toLabel": "До",
+        "customRangeLabel": "В",
+        "daysOfWeek": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+        "monthNames": [
+            "Січень",
+            "Лютий",
+            "Березень",
+            "Квітень",
+            "Травень",
+            "Червень",
+            "Липень",
+            "Серпень",
+            "Вересень",
+            "Жовтень",
+            "Листопад",
+            "Грудень"
+        ],
+        "firstDay": 1
+    }
+</script>
+
+<script type="text/javascript">
+    var rangePickerRanges = {
+        "Сьогодні": [moment(), moment()],
+        "Вчора": [moment().subtract(1, "days"), moment().subtract(1, "days")],
+        "Останні 7 днів": [moment().subtract(6, "days"), moment()],
+        "Останні 30 днів": [moment().subtract(29, "days"), moment()],
+        "Поточний місяць": [moment().startOf("month"), moment().endOf("month")],
+        "Останній місяць": [
+            moment().subtract(1, 'month').startOf('month'),
+            moment().subtract(1, 'month').endOf('month')
+        ]
+    }
+</script>
 
 {% endblock %}
