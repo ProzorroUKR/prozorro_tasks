@@ -66,25 +66,36 @@ def url_for_search(endpoint, exclude=None, include=None):
     return url_for(endpoint, **args)
 
 
-def get_payment_search_params():
+def get_string_param(name, default=None):
+    return request.args.get(name, default)
+
+
+def get_int_param(name, default=None):
     try:
-        page = int(request.args.get("page", DEFAULT_PAGE))
+        param = int(request.args.get(name, default))
     except ValueError:
-        page = DEFAULT_PAGE
-    try:
-        limit = int(request.args.get("limit", DEFAULT_LIMIT))
-    except ValueError:
-        limit = DEFAULT_LIMIT
-    payment_type = request.args.get("type", None)
-    query = request.args.get("query", None)
-    date_str = request.args.get("date")
+        param = default
+    return param
+
+
+def get_date_param(name, date_format, default=None):
+    date_str = request.args.get(name)
     if date_str:
         try:
-            payment_date = datetime.strptime(date_str, '%Y-%m-%d')
+            date = datetime.strptime(date_str, date_format)
         except ValueError:
-            payment_date = None
+            date = default
     else:
-        payment_date = None
+        date = default
+    return date
+
+
+def get_payment_search_params():
+    page = get_int_param("page", DEFAULT_PAGE)
+    limit = get_int_param("limit", DEFAULT_LIMIT)
+    payment_type = get_string_param("type")
+    query = get_string_param("query")
+    payment_date = get_date_param("date", '%Y-%m-%d')
     return dict(
         limit=limit,
         page=page,
@@ -95,15 +106,8 @@ def get_payment_search_params():
 
 
 def get_report_params():
-    date_str = request.args.get("date")
-    if date_str:
-        try:
-            date = datetime.strptime(date_str, '%Y-%m-%d')
-        except ValueError:
-            date = None
-    else:
-        date = None
-    funds = request.args.get("funds", None)
+    date = get_date_param("date", '%Y-%m-%d')
+    funds = get_string_param("funds")
     return dict(
         date=date,
         funds=funds,
