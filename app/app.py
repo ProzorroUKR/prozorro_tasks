@@ -5,7 +5,6 @@ import urllib3
 from flask import Flask
 from flask.logging import default_handler
 from pythonjsonlogger.jsonlogger import JsonFormatter
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.middleware import RequestId
 from app.views import bp as app_views_bp

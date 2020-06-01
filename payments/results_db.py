@@ -23,7 +23,7 @@ def init_indexes():
     drop_indexes()
     indexes = [
         dict(keys="createdAt", name="created_at"),
-        dict(keys=[('payment.description', pymongo.TEXT)], name="payment_description_text")
+        dict(keys=[("payment.description", pymongo.TEXT)], name="payment_description_text"),
     ]
     for kwargs in indexes:
         try:
@@ -76,8 +76,8 @@ def push_payment_message(data, message_id, message):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$push': {
-            'messages': {
+        {"$push": {
+            "messages": {
                 "message_id": message_id,
                 "message": message,
                 "createdAt": datetime.utcnow()
@@ -105,7 +105,7 @@ def set_payment_params(data, params):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$set': {'params': params}}
+        {"$set": {"params": params}}
     )
 
 
@@ -114,7 +114,7 @@ def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$set': {'resolution': resolution}}
+        {"$set": {"resolution": resolution}}
     )
 
 
@@ -134,6 +134,7 @@ def data_to_uid(data):
 def get_payment_search_filters(
     search=None,
     payment_type=None,
+    payment_date=None,
     **kwargs
 ):
     filters = []
@@ -141,6 +142,8 @@ def get_payment_search_filters(
         filters.append({"$text": {"$search": search}})
     if payment_type is not None:
         filters.append({"payment.type": payment_type})
+    if payment_date is not None:
+        filters.append({"payment.date_oper": {"$regex": "^" + payment_date.strftime("%Y-%m-%d")}})
     return get_combined_filters_and(filters) if filters else {}
 
 

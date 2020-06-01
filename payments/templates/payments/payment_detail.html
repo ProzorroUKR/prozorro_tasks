@@ -4,14 +4,6 @@
 
 {% include 'payments/partials/nav_tabs.html' %}
 
-{% include 'payments/partials/btn_refresh.html' %}
-
-{% if row.payment and row.payment.value.type.value == "credit" %}
-{% with data=row %}
-{% include 'payments/partials/btn_retry.html' %}
-{% endwith %}
-{% endif %}
-
 <h1>{{ row.payment.title }}</h1>
 <div class="table-responsive collapse show mb-2">
     {% with data=row.payment.value %}
@@ -25,7 +17,7 @@
     data-target="#extraBlock"
     aria-expanded="true"
     aria-controls="extraBlock">
-    <i class="fas fa-sm fa-info-circle float-right text-success"></i>
+    <i class="fas fa-sm fa-info-circle float-right text-light"></i>
     {{ row.extra.title }}
 </h5>
 <div class="table-responsive collapse show mb-2" id="extraBlock">
@@ -41,7 +33,7 @@
     data-target="#resolutionBlock"
     aria-expanded="true"
     aria-controls="resolutionBlock">
-    <i class="fas fa-sm fa-clipboard-check float-right text-success"></i>
+    <i class="fas fa-sm fa-clipboard-check float-right text-light"></i>
     {{ row.resolution.title }}
 </h5>
 <div class="table-responsive collapse show mb-2" id="resolutionBlock">
@@ -57,12 +49,18 @@
     data-target="#logBlock"
     aria-expanded="true"
     aria-controls="logBlock">
-    <i class="fas fa-sm fa-clipboard-list float-right text-success"></i>
+    <i class="fas fa-sm fa-clipboard-list float-right text-light"></i>
     Події
 </h5>
 <div class="table-responsive collapse show mb-2" id="logBlock">
     {% include 'payments/partials/table_log.html' %}
 </div>
+{% endif %}
+
+{% if row.payment and row.payment.value.type.value == "credit" %}
+{% with data=row %}
+{% include 'payments/partials/btn_retry.html' %}
+{% endwith %}
 {% endif %}
 
 {% if complaint %}
@@ -71,7 +69,7 @@
     data-target="#apiBlock"
     aria-expanded="true"
     aria-controls="apiBlock">
-    <i class="fas fa-sm fa-cogs float-right text-success"></i>
+    <i class="fas fa-sm fa-cogs float-right text-light"></i>
     Посилання на API
 </h5>
 <div class="table-responsive collapse show mb-2" id="apiBlock">
@@ -85,7 +83,7 @@
     data-target="#portalBlock"
     aria-expanded="true"
     aria-controls="portalBlock">
-    <i class="fas fa-sm fa-columns float-right text-success"></i>
+    <i class="fas fa-sm fa-columns float-right text-light"></i>
     Посилання на портал
 </h5>
 <div class="table-responsive collapse show mb-2" id="portalBlock">
@@ -99,7 +97,7 @@
     data-target="#complaintBlock"
     aria-expanded="false"
     aria-controls="complaintBlock">
-    <i class="fas fa-sm fa-plus-circle float-right text-success"></i>
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
     Скарга
 </h5>
 <div class="table-responsive collapse mb-2" id="complaintBlock">
@@ -115,7 +113,7 @@
     data-target="#tenderBlock"
     aria-expanded="false"
     aria-controls="tenderBlock">
-    <i class="fas fa-sm fa-plus-circle float-right text-success"></i>
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
     Закупівля
 </h5>
 <div class="table-responsive collapse mb-5" id="tenderBlock">

@@ -58,7 +58,7 @@ def payment_list():
         rows=data,
         message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
-        pagination=get_payment_pagination(**kwargs)
+        pagination=get_payment_pagination(filters=filters, **kwargs)
     )
 
 
@@ -71,8 +71,8 @@ def payment_detail(uid):
     row = get_payment(data)
     params = data.get("params", None)
     messages = data.get("messages", [])
-    message_id = payment_primary_message(messages).get("message_id")
-    if params and message_id not in [
+    primary_message = payment_primary_message(messages)
+    if params and primary_message and primary_message.get("message_id") not in [
         PAYMENTS_INVALID_PATTERN,
         PAYMENTS_SEARCH_INVALID_COMPLAINT,
         PAYMENTS_SEARCH_INVALID_CODE,

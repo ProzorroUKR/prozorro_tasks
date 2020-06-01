@@ -13,16 +13,23 @@
         border-radius: 0;
         border: 0;
     }
+
     .modal-payment > .modal-dialog > .modal-content > .modal-body {
         font-size: .75rem;
     }
 
-    .btn-payment {
+    .btn.btn-payment {
         border-radius: 0;
-        font-size: .75rem;
+        text-align: center;
     }
 
-    .btn-payment > .dropdown > .dropdown-menu {
+    .btn-toolbar .btn.btn-payment {
+        margin: 0;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .dropdown > .dropdown-menu {
         border-radius: 0;
         padding: 0;
     }
@@ -31,30 +38,41 @@
         font-size: .75rem;
     }
 
+    .dropdown .btn.btn-payment {
+        height: 100%;
+    }
+
     .dropdown-item-payment.active {
         background-color: #343a40;
     }
 
+    .input-group .input-payment {
+        border-radius: 0;
+    }
+
     .input-payment {
         border-radius: 0;
-        font-size: .75rem;
+        font-size: .64rem;
+    }
+
+    .input-payment[type="text"] {
+        font-size: .65rem;
+        height: 100%;
+    }
+
+    .input-group-prepend .input-payment.input-group-text {
+        border-radius: 0;
+        font-size: .64rem;
     }
 
     .nav-payments {
-        margin-bottom: 1rem;
+        padding: 0;
     }
 
-    .nav-payments > .nav-item > .nav-link {
-        color: #343a40;
+    .nav-payments > .nav-item > .btn {
         border-radius: 0;
-        background-color: rgba(0, 0, 0, .05);
-        border: 1px solid #dee2e6;
-    }
-
-    .nav-payments > .nav-item > .nav-link.active {
-        color: #ffffff;
-        background-color: #343a40;
-        border: 1px solid #343a40;
+        width: 100%;
+        margin: 0;
     }
 
     .table-payments {
@@ -62,8 +80,20 @@
         margin-bottom: 0;
     }
 
+    .table-payments td {
+        font-size: .75rem;
+    }
+
+    .table-payments th {
+        font-size: .75rem;
+    }
+
     .table-payments + .table-payments {
         margin-top: .4rem;
+    }
+
+    .table-payments .table-secondary {
+        background-color: white;
     }
 
     .table-payments > tbody > tr > td {
@@ -149,40 +179,16 @@
         margin-top: 1rem;
     }
 
-    .pagination > .page-item > .page-link {
-        background-color: rgba(0, 0, 0, .05);
-    }
-
-    .pagination > .page-item:last-child > .page-link {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    .pagination > .page-item:first-child > .page-link {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-
-    .pagination > .page-item > .page-link {
-        color: #343a40;
-    }
-
-    .pagination > .page-item.active > .page-link {
-        background-color: #343a40;
-        border-color: #343a40;
-        color: #ffffff;
-    }
-
-    .pagination > .page-item.disabled > .page-link {
-        color: #aaaaaa;
-    }
-
     .table-failed, .table-failed > td, .table-failed > th {
         background-color: #e1cdff;
     }
 
     .bg-failed {
         background-color: #625790 !important;
+    }
+
+    .waves-input-wrapper {
+        border-radius: 0;
     }
 </style>
 

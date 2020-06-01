@@ -2,17 +2,128 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
-{% include 'payments/partials/btn_refresh.html' %}
 
-{% include 'payments/partials/toolbar_filters.html' %}
+<div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
+
+    <form action="{{ url_for(request.url_rule.endpoint) }}"
+          method="GET"
+          accept-charset="UTF-8"
+          class="input-group mb-3 mr-2">
+        {% with query=request.args.get("query") %}
+        <button type="submit"
+                class="btn btn-sm {% if query %}btn-primary{% else %}btn-dark{% endif %} btn-payment">
+            <i class="fas fa-search"></i>
+        </button>
+        <input type="text"
+               placeholder="ПОШУК"
+               name="query"
+               class="form-control input-payment"
+               value="{{ query or '' }}"
+               aria-label="Search"
+               aria-describedby="searchGroupAddon">
+        {% for arg in request.args %}
+        {% if arg not in ['page', 'query'] %}
+        <input type="hidden" name="{{ arg }}" value="{{ request.args.get(arg) }}"/>
+        {% endif %}
+        {% endfor %}
+        {% if 'query' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'query']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+        {% endwith %}
+    </form>
+
+    <div class="btn-group mb-3 mr-2" role="group">
+        {% with type=request.args.get("type") %}
+        <button class="btn btn-sm {% if type %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
+                type="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false">
+            {% if type %}
+            {{ type or '' }}
+            {% else %}
+            Тип операції
+            {% endif %}
+        </button>
+        {% if 'type' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'type']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+        <div class="dropdown-menu" aria-labelledby="typeMenuButton">
+            <h6 class="dropdown-header">Тип операції</h6>
+            <a class="dropdown-item dropdown-item-payment{% if type=='debit' %} active{% endif %}"
+               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='debit')) }}">debit</a>
+            <a class="dropdown-item dropdown-item-payment{% if type=='credit' %} active{% endif %}"
+               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='credit')) }}">credit</a>
+        </div>
+        {% endwith %}
+    </div>
+
+    <div class="btn-group mb-3 mr-2" role="group">
+        {% with date=request.args.get("date") %}
+        <button class="btn btn-sm {% if date %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
+                type="button"
+                data-toggle="datepicker"
+                data-href="{{ url_for(request.url_rule.endpoint) }}">
+            {% if date %}
+            <i class="fas fa-calendar-alt mr-2"></i> {{ date or '' }}
+            {% else %}
+            Дата операції
+            {% endif %}
+        </button>
+        {% if 'date' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
 
 <div class="table-responsive">
     {% include 'payments/partials/table_payments.html' %}
 </div>
+
 {{ pagination.links }}
+
 {% endblock %}
 
 {% block scripts %}
+
 {{ super() }}
+
 {% include 'payments/partials/modal_retry.html' %}
+
+<script type="text/javascript">
+    $(function () {
+        function updateQueryStringParameter(uri, key, value) {
+            var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+            var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+            if (uri.match(re)) {
+                return uri.replace(re, '$1' + key + "=" + value + '$2');
+            }
+            else {
+                return uri + separator + key + "=" + value;
+            }
+        }
+
+        var picker = $('[data-toggle="datepicker"]');
+        picker.datepicker({
+            format: 'yyyy-mm-dd',
+        });
+        picker.on('pick.datepicker', function (e) {
+            window.location.href = updateQueryStringParameter(
+                window.location.href, 'date', picker.datepicker('getDate', true)
+            );
+        });
+    });
+</script>
+
 {% endblock %}

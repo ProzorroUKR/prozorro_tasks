@@ -3,44 +3,48 @@
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
 <div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
-    <div class="input-group mb-2 mr-2">
-        <div class="input-group-prepend">
-            <span class="input-group-text input-payment" id="generateDateInfo">Дата</span>
-        </div>
-        <input type="text" placeholder="yyyy-mm-dd" class="form-control input-payment" id="generateDate"
-               aria-describedby="generateDateInfo" data-toggle="datepicker"
-               data-href="{{ url_for(request.url_rule.endpoint) }}" data-initial="{{ request.args.get('date') or '' }}">
-    </div>
+    {% with date=request.args.get("date") %}
+    <button class="btn btn-sm {% if date %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap mb-2 mr-2"
+            type="button"
+            data-toggle="datepicker"
+            data-href="{{ url_for(request.url_rule.endpoint) }}">
+        {% if date %}
+        <i class="fas fa-calendar-alt mr-2"></i> {{ date or '' }}
+        {% else %}
+        Дата завершення обробки
+        {% endif %}
+    </button>
+    {% endwith %}
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
+       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити
     </a>
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) }}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
+       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'state'|complaint_funds_description }}"
     </a>
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
+       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'complainant'|complaint_funds_description }}"
     </a>
 
     <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
        type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2   ">
+       class="btn btn-sm btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2   ">
         <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'unknown'|complaint_funds_description }}"
     </a>
 </div>
 
 <div class="table-responsive mb-2">
-{% with data=rows %}
-{% include 'payments/partials/table_report.html' %}
-{% endwith %}
+    {% with data=rows %}
+    {% include 'payments/partials/table_report.html' %}
+    {% endwith %}
 </div>
 
 {% endblock %}
@@ -55,8 +59,6 @@
         var picker = $('[data-toggle="datepicker"]');
         picker.datepicker({
             format: 'yyyy-mm-dd',
-            autoPick: !!picker.data("initial"),
-            date: picker.data("initial")
         });
         picker.on('pick.datepicker', function (e) {
             window.location.href = picker.data("href") + '?date=' + picker.datepicker('getDate', true);

@@ -77,11 +77,20 @@ def get_payment_search_params():
         limit = DEFAULT_LIMIT
     payment_type = request.args.get("type", None)
     query = request.args.get("query", None)
+    date_str = request.args.get("date")
+    if date_str:
+        try:
+            payment_date = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            payment_date = None
+    else:
+        payment_date = None
     return dict(
         limit=limit,
         page=page,
+        search=query,
         payment_type=payment_type,
-        search=query
+        payment_date=payment_date,
     )
 
 
@@ -100,13 +109,13 @@ def get_report_params():
         funds=funds,
     )
 
-def get_payment_pagination(**kwargs):
+def get_payment_pagination(filters=None, **kwargs):
     return Pagination(
         bs_version=4,
         link_size="sm",
         show_single_page=True,
         record_name="payments",
-        total=get_payment_count(get_payment_search_filters(**kwargs), **kwargs),
+        total=get_payment_count(filters, **kwargs),
         per_page_parameter="limit",
         page_parameter="page",
         **kwargs
