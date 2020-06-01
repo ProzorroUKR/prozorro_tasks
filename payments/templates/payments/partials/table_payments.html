@@ -1,6 +1,7 @@
 {% if rows %}
 <table class="table table-bordered table-striped table-payments">
     <tr class="thead-dark">
+        <th class="text-center">#</th>
         {% for name, item in rows[0].items() %}
         {% if name not in ['id', 'messages', 'params'] %}
         <th>{{ item.title }}</th>
@@ -11,6 +12,7 @@
     </tr>
     {% for row in rows %}
     <tr>
+        <td class="text-center align-middle">{{ loop.index + page * limit - limit }}</td>
         {% for name, item in row.items() %}
         {% if item.value|typing_is_dict %}
         <td class="cell-{{ name }}">

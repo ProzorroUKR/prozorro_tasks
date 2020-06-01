@@ -83,7 +83,9 @@ def payment_list():
         rows=data,
         message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
-        pagination=get_payment_pagination(filters=filters, **search_kwargs, **report_kwargs)
+        pagination=get_payment_pagination(filters=filters, **search_kwargs, **report_kwargs),
+        **search_kwargs,
+        **report_kwargs
     )
 
 

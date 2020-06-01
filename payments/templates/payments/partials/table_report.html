@@ -2,6 +2,7 @@
 <table class="table table-bordered table-striped table-payments">
     {% for row in data[0:1] %}
     <tr class="thead-dark">
+        <th class="text-center">#</th>
         {% for header in row %}
         <th>{{ header }}</th>
         {% endfor %}
@@ -9,10 +10,11 @@
     {% endfor %}
     {% for row in data[1:] %}
     <tr>
+        <td class="text-center align-middle">{{ loop.index }}</td>
         {% for field in row %}
-            <td>
-                {{ field }}
-            </td>
+        <td>
+            {{ field }}
+        </td>
         {% endfor %}
     </tr>
     {% endfor %}
