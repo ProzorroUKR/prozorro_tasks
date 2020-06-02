@@ -8,7 +8,8 @@ from payments.data import (
     processing_message_list_description,
     processing_message_failed_list_description,
     processing_date,
-    complainant,
+    complainant_id,
+    complainant_name,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -161,11 +162,18 @@ EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
     "method": processing_date,
 }
 
-EXTRA_COMPLAINANT = {
+EXTRA_COMPLAINANT_ID = {
     "type": "object",
-    "title": "Скаржник",
+    "title": "Код скаржника",
     "path": "params",
-    "method": complainant,
+    "method": complainant_id,
+}
+
+EXTRA_COMPLAINANT_NAME = {
+    "type": "object",
+    "title": "Найменування скаржника",
+    "path": "params",
+    "method": complainant_name,
 }
 
 EXTRA_SCHEME = {
@@ -174,7 +182,8 @@ EXTRA_SCHEME = {
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
-    "complainant_id": EXTRA_COMPLAINANT,
+    "complainant_id": EXTRA_COMPLAINANT_ID,
+    "complainant_name": EXTRA_COMPLAINANT_NAME,
 }
 
 ROOT_ID_SCHEME_ITEM = {
@@ -236,6 +245,8 @@ REPORT_SCHEME = {
     "payment_okpo": PAYMENT_OKPO_SCHEME_ITEM,
     "payment_mfo": PAYMENT_MFO_SCHEME_ITEM,
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
+    "complainant_id": EXTRA_COMPLAINANT_ID,
+    "complainant_name": EXTRA_COMPLAINANT_NAME,
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,

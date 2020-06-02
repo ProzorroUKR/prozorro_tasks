@@ -4,6 +4,7 @@ import urllib3
 
 from flask import Flask
 from flask.logging import default_handler
+from flask_caching import Cache
 from pythonjsonlogger.jsonlogger import JsonFormatter
 
 from app.middleware import RequestId
@@ -17,7 +18,11 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+cache = Cache(config={'CACHE_TYPE': 'simple'})
+
 app = Flask(__name__, template_folder="templates")
+
+cache.init_app(app)
 
 default_handler.setFormatter(JsonFormatter(
     "%(levelname)s %(asctime)s %(module)s %(process)d "

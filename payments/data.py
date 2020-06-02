@@ -59,7 +59,6 @@ from payments.messages import (
     DESC_PROCESSING_DEFAULT,
     DESC_PROCESSING_NEUTRAL,
 )
-from payments.utils import request_complaint_data
 
 
 def complaint_status_description(status):
@@ -124,21 +123,27 @@ def processing_date(data):
         return date_representation(resolution.get("date"))
 
 
-def complainant(params):
-    try:
-        response = request_complaint_data(**params)
-    except Exception as exc:
-        pass
-    else:
-        data = response.json()["data"]
-        author = data.get("author", {})
+def complainant_id(params):
+    from payments.cached import get_complaint
+    complaint = get_complaint(params)
+    if complaint:
+        author = complaint.get("author", {})
         identifier = author.get("identifier", {})
-        complainant = identifier.get('id')
-        if complainant:
-            name = identifier.get('legalName')
-            if name:
-                complainant += " ({name})".format(name=name)
-            return complainant
+        scheme = identifier.get("scheme")
+        if scheme == "UA-EDR":
+            complainant_id = identifier.get("id")
+            return complainant_id
+
+
+def complainant_name(params):
+    from payments.cached import get_complaint
+    complaint = get_complaint(params)
+    if complaint:
+        author = complaint.get("author", {})
+        identifier = author.get("identifier", {})
+        complainant = identifier.get("id")
+        complainant_name = identifier.get("legalName")
+        return complainant_name
 
 
 def payment_primary_message(messages):

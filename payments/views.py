@@ -24,15 +24,15 @@ from payments.context import (
     url_for_search,
     get_payment_search_params,
     get_payment_pagination,
-    get_tender,
-    get_complaint,
     get_report,
     get_payments,
     get_payment,
     get_report_params,
 )
 from payments.data import (
-    complaint_status_description, complaint_reject_description, complaint_funds_description,
+    complaint_status_description,
+    complaint_reject_description,
+    complaint_funds_description,
     PAYMENTS_MESSAGE_IDS,
     payment_message_list_status,
     payment_message_status,
@@ -104,6 +104,7 @@ def payment_detail(uid):
         PAYMENTS_SEARCH_INVALID_COMPLAINT,
         PAYMENTS_SEARCH_INVALID_CODE,
     ]:
+        from payments.cached import get_tender, get_complaint
         complaint = get_complaint(params)
         tender = get_tender(params)
     else:

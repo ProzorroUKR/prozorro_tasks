@@ -1,10 +1,8 @@
 from datetime import datetime
 
-import requests
 from flask import request, url_for
 from flask_paginate import Pagination
 
-from environment_settings import PUBLIC_API_HOST, API_VERSION
 from payments.schemes import (
     get_scheme_value,
     get_scheme_data,
@@ -15,45 +13,6 @@ from payments.results_db import get_payment_count
 
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
-
-CONNECT_TIMEOUT = 5.0
-READ_TIMEOUT = 5.0
-
-
-def get_tender(params):
-    url_pattern = "{host}/api/{version}/tenders/{tender_id}"
-    url = url_pattern.format(
-        host=PUBLIC_API_HOST,
-        version=API_VERSION,
-        timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-        **params
-    )
-    try:
-        response = requests.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
-    except Exception as exc:
-        pass
-    else:
-        tender = response.json()["data"]
-        return tender
-
-
-def get_complaint(params):
-    if params.get("item_type"):
-        url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
-    else:
-        url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
-    url = url_pattern.format(
-        host=PUBLIC_API_HOST,
-        version=API_VERSION,
-        **params
-    )
-    try:
-        response = requests.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
-    except Exception as exc:
-        pass
-    else:
-        complaint = response.json()["data"]
-        return complaint
 
 
 def url_for_search(endpoint, exclude=None, include=None):
