@@ -76,13 +76,13 @@ def get_report_params():
         date_resolution_to=date_to,
     )
 
-def get_payment_pagination(filters=None, **kwargs):
+def get_payment_pagination(total=None, **kwargs):
     return Pagination(
         bs_version=4,
         link_size="sm",
         show_single_page=True,
         record_name="payments",
-        total=get_payment_count(filters, **kwargs),
+        total=total,
         per_page_parameter="limit",
         page_parameter="page",
         **kwargs

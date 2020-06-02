@@ -19,6 +19,7 @@ from payments.results_db import (
     get_payment_report_success_filters,
     get_payment_report_failed_filters,
     get_combined_filters_and,
+    get_payment_count,
 )
 from payments.context import (
     url_for_search,
@@ -76,13 +77,19 @@ def payment_list():
     filters = get_combined_filters_and([search_filters, report_filters])
 
     rows = list(get_payment_list(filters, **search_kwargs, **report_kwargs))
+    total = get_payment_count(filters, **search_kwargs, **report_kwargs)
     data = get_payments(rows)
     return render_template(
         "payments/payment_list.html",
         rows=data,
         message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
-        pagination=get_payment_pagination(filters=filters, **search_kwargs, **report_kwargs),
+        pagination=get_payment_pagination(
+            total=total,
+            **search_kwargs,
+            **report_kwargs
+        ),
+        total=total,
         **search_kwargs,
         **report_kwargs
     )

@@ -12,7 +12,7 @@
     </tr>
     {% for row in rows %}
     <tr>
-        <td class="text-center align-middle">{{ loop.index + page * limit - limit }}</td>
+        <td class="text-center align-middle">{{ total - (loop.index + page * limit - limit) + 1 }}</td>
         {% for name, item in row.items() %}
         {% if item.value|typing_is_dict %}
         <td class="cell-{{ name }}">
