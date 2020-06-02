@@ -61,15 +61,15 @@
                 {{ 'state'|complaint_funds_description }}
             </a>
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }} text-nowrap"
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
                type="button"
-               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 {{ 'complainant'|complaint_funds_description}}
             </a>
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }} text-nowrap"
+            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
                type="button"
-               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %}">
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 {{ 'unknown'|complaint_funds_description }}
             </a>
         </div>
