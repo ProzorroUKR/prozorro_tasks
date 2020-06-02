@@ -182,8 +182,11 @@
                 window.location.href = updateQueryStringParameter(
                     updateQueryStringParameter(
                         window.location.href,
-                        $(this).data('start-param'), picker.startDate.format('YYYY-MM-DD')
-                    ), $(this).data('end-param'), picker.endDate.format('YYYY-MM-DD')
+                        $(this).data('start-param'),
+                        picker.startDate.format('YYYY-MM-DD')
+                    ),
+                    $(this).data('end-param'),
+                    picker.endDate.format('YYYY-MM-DD')
                 );
             });
         });
