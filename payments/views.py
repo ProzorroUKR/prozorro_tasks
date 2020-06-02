@@ -59,7 +59,6 @@ def payment_list():
     date_from = report_kwargs.get("date_resolution_from")
     date_to = report_kwargs.get("date_resolution_to")
     data_success_filters = get_payment_report_success_filters(
-        resolution_exists=True,
         resolution_date_from=date_from,
         resolution_date_to=date_to,
     )
