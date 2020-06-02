@@ -164,7 +164,7 @@ EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
 
 EXTRA_COMPLAINANT_ID = {
     "type": "object",
-    "title": "Код скаржника",
+    "title": "Код ЄДРПОУ скаржника",
     "path": "params",
     "method": complainant_id,
 }
