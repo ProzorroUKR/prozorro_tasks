@@ -1,9 +1,6 @@
 from tasks_utils.requests import download_file
-from environment_settings import TREASURY_DATETIME_FMT
-from environment_settings import TIMEZONE
 from datetime import datetime
 from lxml import etree, builder
-import dateutil.parser
 import yaml
 
 
@@ -16,10 +13,9 @@ def _render_tree(xml):
 
 
 def format_date(dt):
-    if dt:
-        if not isinstance(dt, datetime):
-            dt = dateutil.parser.parse(dt).astimezone(TIMEZONE)
-        return dt.strftime(TREASURY_DATETIME_FMT)
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    return dt
 
 
 def get_value(obj, *keys, formatter=str, default=None):
@@ -32,7 +28,7 @@ def get_value(obj, *keys, formatter=str, default=None):
         obj = list(obj.values())  # deliveryAddress
 
     if isinstance(obj, list):
-        return ", ".join(formatter(e) for e in obj)  # ex.: rationaleTypes
+        obj = ", ".join(formatter(e) for e in obj)  # ex.: rationaleTypes
 
     if obj == "":
         return None  # this will hide this tag

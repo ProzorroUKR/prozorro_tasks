@@ -19,9 +19,6 @@ class TestCase(BaseTestCase):
             data=xml,
             headers={"Content-Type": "application/xml"}
         )
-        # self.assertEqual(response.status_code, 200)
-        print("AAAAAA")
-        print(response.data)
         self.assertEqual(
             response.data,
             b'<xml><Body><Response>'

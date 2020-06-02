@@ -11,12 +11,15 @@ import unittest
        Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class CheckTestCase(unittest.TestCase):
 
+    @patch("treasury.tasks.sign_data")
     @patch("treasury.tasks.get_now")
     @patch("treasury.tasks.uuid4")
     @patch("treasury.tasks.receive_org_catalog")
     @patch("treasury.tasks.render_catalog_xml")
     @patch("treasury.tasks.send_request")
-    def test_get_org_catalog(self, send_request_mock, render_xml_mock, receive_catalog_mock, uuid4_mock, get_now_mock):
+    def test_get_org_catalog(self, send_request_mock, render_xml_mock, receive_catalog_mock, uuid4_mock,
+                             get_now_mock, sign_data_mock):
+        sign_data_mock.return_value = b"<signature>"
         get_now_mock.return_value = datetime(2007, 1, 1)
         render_xml_mock.return_value = b"<request>da</request>"
 
@@ -27,6 +30,7 @@ class CheckTestCase(unittest.TestCase):
         send_request_mock.assert_called_once_with(
             request_org_catalog,
             render_xml_mock.return_value,
+            sign=sign_data_mock.return_value,
             message_id=message_id,
             method_name="GetRef",
         )
