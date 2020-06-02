@@ -8,6 +8,7 @@ from payments.data import (
     processing_message_list_description,
     processing_message_failed_list_description,
     processing_date,
+    complainant,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -160,12 +161,20 @@ EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
     "method": processing_date,
 }
 
+EXTRA_COMPLAINANT = {
+    "type": "object",
+    "title": "Скаржник",
+    "path": "params",
+    "method": complainant,
+}
+
 EXTRA_SCHEME = {
     "user": EXTRA_USER_SCHEME_ITEM,
     "created": EXTRA_CREATED_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
+    "complainant_id": EXTRA_COMPLAINANT,
 }
 
 ROOT_ID_SCHEME_ITEM = {

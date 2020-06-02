@@ -11,7 +11,7 @@ from payments.schemes import (
     ROOT_SCHEME,
     REPORT_SCHEME,
 )
-from payments.results_db import get_payment_count, get_payment_search_filters
+from payments.results_db import get_payment_count
 
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
