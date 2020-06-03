@@ -30,10 +30,41 @@
         text-align: center;
     }
 
-    .btn-toolbar .btn.btn-payment {
+    .btn.btn-payment-filter {
         margin: 0;
         padding-right: 1rem;
         padding-left: 1rem;
+    }
+
+    .btn.btn-payment-filter:hover {
+        z-index: auto;
+    }
+
+    .btn.btn-payment-light {
+        color: #495057 !important;
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    .btn-group .btn.btn-payment-light + .btn {
+        border-left: 0 !important;
+    }
+
+    .input-group .btn.btn-payment-light + input {
+        border-left: 0 !important;
+    }
+
+    .btn-group > .btn.btn-payment-filter:not(:first-child) {
+        margin: 0;
+    }
+
+    .group-payment-filter {
+        height: 100%;
+    }
+
+    .group-payment-filter .dropdown-menu {
+        border-radius: 0;
+        padding: 2px;
     }
 
     .dropdown > .dropdown-menu {
@@ -53,23 +84,13 @@
         background-color: #343a40;
     }
 
-    .input-group .input-payment {
-        border-radius: 0;
-    }
-
     .input-payment {
         border-radius: 0;
         font-size: .64rem;
     }
 
     .input-payment[type="text"] {
-        font-size: .65rem;
         height: 100%;
-    }
-
-    .input-group-prepend .input-payment.input-group-text {
-        border-radius: 0;
-        font-size: .64rem;
     }
 
     .nav-payments {
@@ -79,6 +100,7 @@
     .nav-payments > .nav-item > .btn {
         border-radius: 0;
         width: 100%;
+        height: 100%;
         margin: 0;
     }
 
@@ -135,6 +157,7 @@
         text-align: center;
         vertical-align: middle;
         width: 0.7rem;
+        border: 0;
     }
 
     .table-payments > tbody > tr > td.cell-action.cell-lg {
@@ -218,59 +241,5 @@
 {% block scripts %}
 
 {{ super() }}
-
-<script type="text/javascript">
-    function updateQueryStringParameter(uri, key, value) {
-        var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-        var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-        if (uri.match(re)) {
-            return uri.replace(re, '$1' + key + "=" + value + '$2');
-        } else {
-            return uri + separator + key + "=" + value;
-        }
-    }
-</script>
-
-<script type="text/javascript">
-    var rangePickerLocale = {
-        "format": 'YYYY-MM-DD',
-        "separator": " - ",
-        "applyLabel": "Застосувати",
-        "cancelLabel": "Відмінити",
-        "fromLabel": "З",
-        "toLabel": "До",
-        "customRangeLabel": "В",
-        "daysOfWeek": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
-        "monthNames": [
-            "Січень",
-            "Лютий",
-            "Березень",
-            "Квітень",
-            "Травень",
-            "Червень",
-            "Липень",
-            "Серпень",
-            "Вересень",
-            "Жовтень",
-            "Листопад",
-            "Грудень"
-        ],
-        "firstDay": 1
-    }
-</script>
-
-<script type="text/javascript">
-    var rangePickerRanges = {
-        "Сьогодні": [moment(), moment()],
-        "Вчора": [moment().subtract(1, "days"), moment().subtract(1, "days")],
-        "Останні 7 днів": [moment().subtract(6, "days"), moment()],
-        "Останні 30 днів": [moment().subtract(29, "days"), moment()],
-        "Поточний місяць": [moment().startOf("month"), moment().endOf("month")],
-        "Останній місяць": [
-            moment().subtract(1, 'month').startOf('month'),
-            moment().subtract(1, 'month').endOf('month')
-        ]
-    }
-</script>
 
 {% endblock %}

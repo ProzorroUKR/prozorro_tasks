@@ -2,76 +2,57 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
-<div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
+<div class="btn-toolbar mt-3" role="toolbar">
 
-    <div class="btn-group mb-3 mr-2" role="group">
-        {% with date_from=request.args.get("date_resolution_from") %}
-        {% with date_to=request.args.get("date_resolution_to") %}
-        <button class="btn btn-sm btn-dark btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-target="rangePickerResolution">
-            Дата завершення обробки
-        </button>
-        <button id="rangePickerResolution"
-                class="btn btn-sm {% if date_from or date_to %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-href="{{ url_for(request.url_rule.endpoint) }}"
-                data-start-initial="{{ date_from or ''}}"
-                data-end-initial="{{ date_to  or ''}}"
-                data-start-param="date_resolution_from"
-                data-end-param="date_resolution_to">
-            <i class="fas fa-calendar-alt{% if date_from or date_to %} mr-2{% endif %}"></i>
-            <span>
-                {% if date_from and date_to %}
-                {{ date_from }} - {{ date_to }}
-                {% elif date_from %}
-                від {{ date_from }}
-                {% elif date_to %}
-                до {{ date_to }}
-                {% endif %}
-            </span>
-        </button>
+    <div class="mb-3 mr-2">
+        {% with label='Дата завершення обробки' %}
+        {% with arg_from='date_resolution_from' %}
+        {% with arg_to='date_resolution_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
         {% endwith %}
         {% endwith %}
     </div>
 
     <div class="dropdown mb-3">
-        <button class="btn btn-sm btn-primary btn-payment"
-           role="button"
-           data-toggle="dropdown"
-           aria-haspopup="true"
-           aria-expanded="false">
+        <button class="btn btn-sm btn-primary btn-payment btn-payment-filter"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false">
             <i class="fas fa-angle-double-down mr-2"></i>
             Завантажити
         </button>
 
         <div class="dropdown-menu pr-3 pl-1 pt-1 pb-1">
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
-               type="button"
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', exclude=['funds']) %}
+            <a href="{{ href }}" type="button"
                class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 Всі
             </a>
+            {% endwith %}
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) }}"
-               type="button"
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) %}
+            <a href="{{ href }}" type="button"
                class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 {{ 'state'|complaint_funds_description }}
             </a>
+            {% endwith %}
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
-               type="button"
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) %}
+            <a href="{{ href }}" type="button"
                class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 {{ 'complainant'|complaint_funds_description}}
             </a>
+            {% endwith %}
 
-            <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
-               type="button"
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) %}
+            <a href="{{ href }}" type="button"
                class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
                 {{ 'unknown'|complaint_funds_description }}
             </a>
+            {% endwith %}
         </div>
     </div>
 </div>
@@ -88,41 +69,8 @@
 {% block scripts %}
 
 {{ super() }}
-<script type="text/javascript">
-    $(function () {
-        var $picker = $('[data-toggle="daterange"][data-href]');
 
-        $picker.each(function () {
-            $(this).daterangepicker({
-                "locale": rangePickerLocale,
-                "opens": "center",
-                "startDate": $(this).data('start-initial') || undefined,
-                "endDate": $(this).data('end-initial') || undefined,
-                "buttonClasses": 'btn btn-sm btn-payment',
-                "applyButtonClasses": 'btn-primary',
-                "cancelButtonClasses": 'btn-warning',
-                "showCustomRangeLabel": false,
-                "ranges": rangePickerRanges,
-                "alwaysShowCalendars": true,
-            });
-
-            $(this).on('apply.daterangepicker', function (ev, picker) {
-                window.location.href = updateQueryStringParameter(
-                    updateQueryStringParameter(
-                        window.location.href,
-                        $(this).data('start-param'), picker.startDate.format('YYYY-MM-DD')
-                    ), $(this).data('end-param'), picker.endDate.format('YYYY-MM-DD')
-                );
-            });
-        });
-
-        $('[data-toggle="daterange"][data-target]').each(function () {
-            $(this).click(function () {
-                $picker.filter('#' + $(this).data('target')).click();
-            })
-        });
-    });
-</script>
+{% include 'payments/partials/filter_rangepicker_script.html' %}
 
 {% endblock %}
 

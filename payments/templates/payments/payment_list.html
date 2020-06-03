@@ -3,183 +3,54 @@
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
 
-<div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
+<div class="btn-toolbar mt-3" role="toolbar">
 
-    <form action="{{ url_for(request.url_rule.endpoint) }}"
-          method="GET"
-          accept-charset="UTF-8"
-          class="input-group mb-3 mr-2">
-        <button type="submit"
-                class="btn btn-sm btn-dark btn-payment">
-            <i class="fas fa-search"></i>
-        </button>
-        <input type="text"
-               placeholder="ПОШУК"
-               name="query"
-               class="form-control input-payment"
-               value="{{ query or '' }}"
-               aria-label="Search"
-               aria-describedby="searchGroupAddon">
-        {% for arg in request.args %}
-        {% if arg not in ['page', 'query'] %}
-        <input type="hidden" name="{{ arg }}" value="{{ request.args.get(arg) }}"/>
-        {% endif %}
-        {% endfor %}
-        {% if 'query' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'query']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
-    </form>
-
-    <div class="btn-group mr-2 mb-3" role="group">
-        {% with type=request.args.get("type") %}
-        <div class="btn-group"
-             role="group"
-             type="button"
-             data-toggle="dropdown"
-             aria-haspopup="true"
-             aria-expanded="false">
-            <button class="btn btn-sm btn-dark btn-payment text-nowrap">
-                Тип операції
-            </button>
-            {% if type %}
-            <button class="btn btn-sm btn-primary btn-payment text-nowrap">
-                {{ type or '' }}
-            </button>
-            {% endif %}
-        </div>
-        <div class="dropdown-menu">
-            <h6 class="dropdown-header">Тип операції</h6>
-            <a class="dropdown-item dropdown-item-payment{% if type=='debit' %} active{% endif %}"
-               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='debit')) }}">debit</a>
-            <a class="dropdown-item dropdown-item-payment{% if type=='credit' %} active{% endif %}"
-               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(type='credit')) }}">credit</a>
-        </div>
+    <div class="mb-3 mr-2">
+        {% with arg='query' %}
+        {% include 'payments/partials/filter_search.html' %}
         {% endwith %}
-        {% if 'type' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'type']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
     </div>
 
-    <div class="btn-group mr-2 mb-3" role="group">
-        {% with source=request.args.get("source") %}
-        <div class="btn-group"
-             role="group"
-             type="button"
-             data-toggle="dropdown"
-             aria-haspopup="true"
-             aria-expanded="false">
-            <button class="btn btn-sm btn-dark btn-payment text-nowrap">
-                Метод операції
-            </button>
-            {% if source %}
-            <button class="btn btn-sm btn-primary btn-payment text-nowrap">
-                {{ source or '' }}
-            </button>
-            {% endif %}
-        </div>
-        <div class="dropdown-menu">
-            <h6 class="dropdown-header">Метод операції</h6>
-            <a class="dropdown-item dropdown-item-payment{% if source=='card' %} active{% endif %}"
-               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(source='card')) }}">
-                card
-            </a>
-            <a class="dropdown-item dropdown-item-payment{% if source=='account' %} active{% endif %}"
-               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(source='account')) }}">
-                account
-            </a>
-        </div>
+    <div class="mb-3 mr-2">
+        {% with label='Тип операції' %}
+        {% with arg='type' %}
+        {% with choices=['debit', 'credit'] %}
+        {% include 'payments/partials/filter_dropdown.html' %}
         {% endwith %}
-        {% if 'source' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'source']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
-    </div>
-
-    <div class="btn-group mb-3 mr-2" role="group">
-        {% with date_from=request.args.get("date_oper_from") %}
-        {% with date_to=request.args.get("date_oper_to") %}
-        <button class="btn btn-sm btn-dark btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-target="rangePickerOper">
-            Дата операції
-        </button>
-        <button id="rangePickerOper"
-                class="btn btn-sm {% if date_from or date_to %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-href="{{ url_for(request.url_rule.endpoint) }}"
-                data-start-initial="{{ date_from or ''}}"
-                data-end-initial="{{ date_to  or ''}}"
-                data-start-param="date_oper_from"
-                data-end-param="date_oper_to">
-            <i class="fas fa-calendar-alt{% if date_from or date_to %} mr-2{% endif %}"></i>
-            <span>
-                {% if date_from and date_to %}
-                {{ date_from }} - {{ date_to }}
-                {% elif date_from %}
-                від {{ date_from }}
-                {% elif date_to %}
-                до {{ date_to }}
-                {% endif %}
-            </span>
-        </button>
-        {% if 'date_oper_from' in request.args or 'date_oper_to' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date_oper_from', 'date_oper_to']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
         {% endwith %}
         {% endwith %}
     </div>
 
-    <div class="btn-group mb-3 mr-2" role="group">
-        {% with date_from=request.args.get("date_resolution_from") %}
-        {% with date_to=request.args.get("date_resolution_to") %}
-        <button class="btn btn-sm btn-dark btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-target="rangePickerResolution">
-            Дата завершення обробки
-        </button>
-        <button id="rangePickerResolution"
-                class="btn btn-sm {% if date_from or date_to %}btn-primary{% else %}btn-dark{% endif %} btn-payment text-nowrap"
-                type="button"
-                data-toggle="daterange"
-                data-href="{{ url_for(request.url_rule.endpoint) }}"
-                data-start-initial="{{ date_from or ''}}"
-                data-end-initial="{{ date_to  or ''}}"
-                data-start-param="date_resolution_from"
-                data-end-param="date_resolution_to">
-            <i class="fas fa-calendar-alt{% if date_from or date_to %} mr-2{% endif %}"></i>
-            <span>
-                {% if date_from and date_to %}
-                {{ date_from }} - {{ date_to }}
-                {% elif date_from %}
-                від {{ date_from }}
-                {% elif date_to %}
-                до {{ date_to }}
-                {% endif %}
-            </span>
-        </button>
-        {% if 'date_resolution_from' in request.args or 'date_resolution_to' in request.args %}
-        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'date_resolution_from', 'date_resolution_to']) }}"
-           class="btn btn-sm btn-primary btn-payment">
-            <i class="fas fa-times"></i>
-        </a>
-        {% endif %}
+    <div class="mb-3 mr-2">
+        {% with label='Метод операції' %}
+        {% with arg='source' %}
+        {% with choices=['card', 'account'] %}
+        {% include 'payments/partials/filter_dropdown.html' %}
+        {% endwith %}
         {% endwith %}
         {% endwith %}
     </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата операції' %}
+        {% with arg_from='date_oper_from' %}
+        {% with arg_to='date_oper_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата завершення обробки' %}
+        {% with arg_from='date_resolution_from' %}
+        {% with arg_to='date_resolution_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
 </div>
 
 
@@ -195,45 +66,7 @@
 
 {{ super() }}
 
+{% include 'payments/partials/filter_rangepicker_script.html' %}
 {% include 'payments/partials/modal_retry.html' %}
-
-<script type="text/javascript">
-    $(function () {
-        var $picker = $('[data-toggle="daterange"][data-href]');
-
-        $picker.each(function () {
-            $(this).daterangepicker({
-                "locale": rangePickerLocale,
-                "opens": "center",
-                "startDate": $(this).data('start-initial') || undefined,
-                "endDate": $(this).data('end-initial') || undefined,
-                "buttonClasses": 'btn btn-sm btn-payment',
-                "applyButtonClasses": 'btn-primary',
-                "cancelButtonClasses": 'btn-warning',
-                "showCustomRangeLabel": false,
-                "ranges": rangePickerRanges,
-                "alwaysShowCalendars": true,
-            });
-
-            $(this).on('apply.daterangepicker', function (ev, picker) {
-                window.location.href = updateQueryStringParameter(
-                    updateQueryStringParameter(
-                        window.location.href,
-                        $(this).data('start-param'),
-                        picker.startDate.format('YYYY-MM-DD')
-                    ),
-                    $(this).data('end-param'),
-                    picker.endDate.format('YYYY-MM-DD')
-                );
-            });
-        });
-
-        $('[data-toggle="daterange"][data-target]').each(function () {
-            $(this).click(function () {
-                $picker.filter('#' + $(this).data('target')).click();
-            })
-        });
-    });
-</script>
 
 {% endblock %}
