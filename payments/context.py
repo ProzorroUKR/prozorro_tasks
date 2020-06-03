@@ -53,6 +53,7 @@ def get_payment_search_params():
     page = get_int_param("page", DEFAULT_PAGE)
     limit = get_int_param("limit", DEFAULT_LIMIT)
     payment_type = get_string_param("type")
+    payment_source = get_string_param("source")
     query = get_string_param("query")
     payment_date_from = get_date_param("date_oper_from", "%Y-%m-%d")
     payment_date_to = get_date_param("date_oper_to", "%Y-%m-%d")
@@ -61,6 +62,7 @@ def get_payment_search_params():
         page=page,
         search=query,
         payment_type=payment_type,
+        payment_source=payment_source,
         payment_date_from=payment_date_from,
         payment_date_to=payment_date_to,
     )

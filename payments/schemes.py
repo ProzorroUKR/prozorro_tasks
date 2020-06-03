@@ -47,6 +47,13 @@ PAYMENT_TYPE_SCHEME_ITEM = {
     "default": "",
 }
 
+PAYMENT_SOURCE_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Метод операції",
+    "path": "payment.source",
+    "default": "",
+}
+
 PAYMENT_ACCOUNT_SCHEME_ITEM = {
     "type": "object",
     "title": "Номер рахунку",
@@ -81,6 +88,7 @@ PAYMENT_SCHEME = {
     "currency": PAYMENT_CURRENCY_SCHEME_ITEM,
     "date_oper": PAYMENT_DATE_OPER_SCHEME_ITEM,
     "type": PAYMENT_TYPE_SCHEME_ITEM,
+    "source": PAYMENT_SOURCE_SCHEME_ITEM,
     "account": PAYMENT_ACCOUNT_SCHEME_ITEM,
     "okpo": PAYMENT_OKPO_SCHEME_ITEM,
     "mfo": PAYMENT_MFO_SCHEME_ITEM,

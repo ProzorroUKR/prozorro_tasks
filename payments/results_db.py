@@ -19,6 +19,20 @@ get_mongodb_collection = partial(
 )
 
 
+UUID_KEYS = [
+    "description",
+    "amount",
+    "currency",
+    "date_oper",
+    "type",
+    "source",
+    "account",
+    "okpo",
+    "mfo",
+    "name",
+]
+
+
 def init_indexes():
     drop_indexes()
     indexes = [
@@ -44,6 +58,12 @@ def drop_indexes():
 def init_index(**kwargs):
     collection = get_mongodb_collection()
     collection.create_index(**kwargs)
+
+
+def data_to_uid(data):
+    return args_to_uid(sorted([
+        value for key, value in data.items() if key in UUID_KEYS
+    ]))
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
@@ -127,13 +147,10 @@ def get_payment_item_by_params(params, message_ids=None):
     return collection.find_one(get_combined_filters_and(filters))
 
 
-def data_to_uid(data):
-    return args_to_uid(sorted(data.values()))
-
-
 def get_payment_search_filters(
     search=None,
     payment_type=None,
+    payment_source=None,
     payment_date_from=None,
     payment_date_to=None,
     **kwargs
@@ -143,6 +160,8 @@ def get_payment_search_filters(
         filters.append({"$text": {"$search": search}})
     if payment_type is not None:
         filters.append({"payment.type": payment_type})
+    if payment_source is not None:
+        filters.append({"payment.source": payment_source})
     if payment_date_from is not None and payment_date_to is not None:
         filters.append({"payment.date_oper": {
             "$gte": payment_date_from.strftime("%Y-%m-%d"),

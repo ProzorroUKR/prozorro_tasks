@@ -66,6 +66,43 @@
         {% endif %}
     </div>
 
+    <div class="btn-group mr-2 mb-3" role="group">
+        {% with source=request.args.get("source") %}
+        <div class="btn-group"
+             role="group"
+             type="button"
+             data-toggle="dropdown"
+             aria-haspopup="true"
+             aria-expanded="false">
+            <button class="btn btn-sm btn-dark btn-payment text-nowrap">
+                Метод операції
+            </button>
+            {% if source %}
+            <button class="btn btn-sm btn-primary btn-payment text-nowrap">
+                {{ source or '' }}
+            </button>
+            {% endif %}
+        </div>
+        <div class="dropdown-menu">
+            <h6 class="dropdown-header">Метод операції</h6>
+            <a class="dropdown-item dropdown-item-payment{% if source=='card' %} active{% endif %}"
+               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(source='card')) }}">
+                card
+            </a>
+            <a class="dropdown-item dropdown-item-payment{% if source=='account' %} active{% endif %}"
+               href="{{ url_for_search(request.url_rule.endpoint, exclude=['page'], include=dict(source='account')) }}">
+                account
+            </a>
+        </div>
+        {% endwith %}
+        {% if 'source' in request.args %}
+        <a href="{{ url_for_search(request.url_rule.endpoint, exclude=['page', 'source']) }}"
+           class="btn btn-sm btn-primary btn-payment">
+            <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+    </div>
+
     <div class="btn-group mb-3 mr-2" role="group">
         {% with date_from=request.args.get("date_oper_from") %}
         {% with date_to=request.args.get("date_oper_to") %}
