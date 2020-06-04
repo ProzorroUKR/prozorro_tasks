@@ -19,7 +19,7 @@ PAYMENT_RE = re.compile(
 PAYMENT_REPLACE_MAPPING = {
     # delete whitespaces
     "\s+": "",
-    # replace cyrillic to latin
+    # replace cyrillic with latin
     "а": "a",
     "А": "A",
     "В": "B",
@@ -27,6 +27,15 @@ PAYMENT_REPLACE_MAPPING = {
     "С": "C",
     "е": "e",
     "Е": "E",
+    # replace letters with numbers
+    "l": "1",
+    "I": "1",
+    "І": "1",
+    "O": "0",
+    "О": "0",
+    # replace punctuation marks
+    ",": ".",
+    "[^\w\.\,\s]+": "-",
 }
 
 STATUS_COMPLAINT_DRAFT = "draft"
