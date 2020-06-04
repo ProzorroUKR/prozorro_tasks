@@ -9,7 +9,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Спробувати обробити дані оплати ще раз.</p>
+                <p>Спробувати обробити дані операції ще раз.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-payment btn-secondary" data-dismiss="modal">Закрити</button>
@@ -21,7 +21,7 @@
 <script type="text/javascript">
     $('#modalRetry').on('show.bs.modal', function (event) {
         var modal = $(this);
-        modal.find('.modal-title').text('Повторити обробку оплати');
+        modal.find('.modal-title').text('Повторити обробку операції');
         modal.find('.modal-footer a').attr('href', $(event.relatedTarget).attr('href'));
     })
 </script>

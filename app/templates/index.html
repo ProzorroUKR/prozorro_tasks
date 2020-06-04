@@ -1,13 +1,23 @@
 {% extends "base.html" %}
-{% block content %}
-    <div class="jumbotron">
-        <h1 class="text-center display-4">Integrations</h1>
-        <hr class="my-4">
-        <div class="text-center">
-            <h3>Get Started</h3>
-            <div class="btn-group" role="group" aria-label="Start with">
-                <a class="btn btn-outline-primary" href="/payments">Payments</a>
+{% block main %}
+
+<div class="view full-page-intro"
+     style="background-image: url({{ url_for('static', filename='img.png') }}); background-size: cover;">
+    <div class="mask rgba-stylish-strong">
+        <div class="container">
+            <div class="row">
+                <div class="mask flex-center">
+                    <div class="text-white text-center py-5 px-4">
+                        <div>
+                            <h2 class="card-title h1-responsive pt-3 mb-5 font-bold">
+                                <strong>Prozorro Integrations UI</strong>
+                            </h2>
+                            <a href="/payments" class="btn btn-outline-white btn-md"><i class="fas fa-clone left"></i> Payments</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}

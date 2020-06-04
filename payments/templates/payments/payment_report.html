@@ -2,45 +2,65 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
-<div class="btn-toolbar mt-3" role="toolbar" aria-label="Filters">
-    <div class="input-group mb-2 mr-2">
-        <div class="input-group-prepend">
-            <span class="input-group-text input-payment" id="generateDateInfo">Дата</span>
-        </div>
-        <input type="text" placeholder="yyyy-mm-dd" class="form-control input-payment" id="generateDate"
-               aria-describedby="generateDateInfo" data-toggle="datepicker"
-               data-href="{{ url_for(request.url_rule.endpoint) }}" data-initial="{{ request.args.get('date') or '' }}">
+<div class="btn-toolbar mt-3" role="toolbar">
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата завершення обробки' %}
+        {% with arg_from='date_resolution_from' %}
+        {% with arg_to='date_resolution_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
     </div>
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', exclude=['funds'])}}"
-       type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити
-    </a>
+    <div class="dropdown mb-3">
+        <button class="btn btn-sm btn-primary btn-payment btn-payment-filter"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false">
+            <i class="fas fa-angle-double-down mr-2"></i>
+            Завантажити
+        </button>
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) }}"
-       type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'state'|complaint_funds_description }}"
-    </a>
+        <div class="dropdown-menu pr-3 pl-1 pt-1 pb-1">
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) }}"
-       type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2 mr-2">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'complainant'|complaint_funds_description }}"
-    </a>
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', exclude=['funds']) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                Всі
+            </a>
+            {% endwith %}
 
-    <a href="{{ url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) }}"
-       type="button"
-       class="btn btn-primary btn-payment{%if not rows[1] %} disabled{% endif %} mb-2   ">
-        <i class="fas fa-angle-double-down mr-2"></i> Завантажити "{{ 'unknown'|complaint_funds_description }}"
-    </a>
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'state'|complaint_funds_description }}
+            </a>
+            {% endwith %}
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'complainant'|complaint_funds_description}}
+            </a>
+            {% endwith %}
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'unknown'|complaint_funds_description }}
+            </a>
+            {% endwith %}
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive mb-2">
-{% with data=rows %}
-{% include 'payments/partials/table_report.html' %}
-{% endwith %}
+    {% with data=rows %}
+    {% include 'payments/partials/table_report.html' %}
+    {% endwith %}
 </div>
 
 {% endblock %}
@@ -50,18 +70,7 @@
 
 {{ super() }}
 
-<script type="text/javascript">
-    $(function () {
-        var picker = $('[data-toggle="datepicker"]');
-        picker.datepicker({
-            format: 'yyyy-mm-dd',
-            autoPick: !!picker.data("initial"),
-            date: picker.data("initial")
-        });
-        picker.on('pick.datepicker', function (e) {
-            window.location.href = picker.data("href") + '?date=' + picker.datepicker('getDate', true);
-        });
-    });
-</script>
+{% include 'payments/partials/filter_rangepicker_script.html' %}
 
 {% endblock %}
+

@@ -7,6 +7,9 @@ from payments.data import (
     date_representation,
     processing_message_list_description,
     processing_message_failed_list_description,
+    processing_date,
+    complainant_id,
+    complainant_name,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -44,6 +47,13 @@ PAYMENT_TYPE_SCHEME_ITEM = {
     "default": "",
 }
 
+PAYMENT_SOURCE_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Метод операції",
+    "path": "payment.source",
+    "default": "",
+}
+
 PAYMENT_ACCOUNT_SCHEME_ITEM = {
     "type": "object",
     "title": "Номер рахунку",
@@ -78,6 +88,7 @@ PAYMENT_SCHEME = {
     "currency": PAYMENT_CURRENCY_SCHEME_ITEM,
     "date_oper": PAYMENT_DATE_OPER_SCHEME_ITEM,
     "type": PAYMENT_TYPE_SCHEME_ITEM,
+    "source": PAYMENT_SOURCE_SCHEME_ITEM,
     "account": PAYMENT_ACCOUNT_SCHEME_ITEM,
     "okpo": PAYMENT_OKPO_SCHEME_ITEM,
     "mfo": PAYMENT_MFO_SCHEME_ITEM,
@@ -152,11 +163,35 @@ EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM = {
     "method": processing_message_failed_list_description,
 }
 
+EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Дата завершення обробки платежу",
+    "path": ".",
+    "method": processing_date,
+}
+
+EXTRA_COMPLAINANT_ID = {
+    "type": "object",
+    "title": "Код ЄДРПОУ скаржника",
+    "path": "params",
+    "method": complainant_id,
+}
+
+EXTRA_COMPLAINANT_NAME = {
+    "type": "object",
+    "title": "Найменування скаржника",
+    "path": "params",
+    "method": complainant_name,
+}
+
 EXTRA_SCHEME = {
     "user": EXTRA_USER_SCHEME_ITEM,
     "created": EXTRA_CREATED_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
+    "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
+    "complainant_id": EXTRA_COMPLAINANT_ID,
+    "complainant_name": EXTRA_COMPLAINANT_NAME,
 }
 
 ROOT_ID_SCHEME_ITEM = {
@@ -218,6 +253,9 @@ REPORT_SCHEME = {
     "payment_okpo": PAYMENT_OKPO_SCHEME_ITEM,
     "payment_mfo": PAYMENT_MFO_SCHEME_ITEM,
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
+    "complainant_id": EXTRA_COMPLAINANT_ID,
+    "complainant_name": EXTRA_COMPLAINANT_NAME,
+    "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
     "resolution_reason": RESOLUTION_REASON_SCHEME_ITEM,
@@ -228,7 +266,10 @@ REPORT_SCHEME = {
 def get_scheme_value(data, scheme_info):
     if "scheme" in scheme_info:
         return get_scheme_data(data, scheme_info["scheme"])
-    value = jmespath.search(scheme_info["path"], data)
+    if scheme_info["path"] == ".":
+        value = data
+    else:
+        value = jmespath.search(scheme_info["path"], data)
     if "method" in scheme_info:
         value = scheme_info["method"](value)
     value = value or scheme_info.get("default")

@@ -2,17 +2,71 @@
 
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
-{% include 'payments/partials/btn_refresh.html' %}
 
-{% include 'payments/partials/toolbar_filters.html' %}
+<div class="btn-toolbar mt-3" role="toolbar">
 
-<div class="table-responsive">
+    <div class="mb-3 mr-2">
+        {% with arg='query' %}
+        {% include 'payments/partials/filter_search.html' %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Тип операції' %}
+        {% with arg='type' %}
+        {% with choices=['debit', 'credit'] %}
+        {% include 'payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Метод операції' %}
+        {% with arg='source' %}
+        {% with choices=['card', 'account'] %}
+        {% include 'payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата операції' %}
+        {% with arg_from='date_oper_from' %}
+        {% with arg_to='date_oper_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата завершення обробки' %}
+        {% with arg_from='date_resolution_from' %}
+        {% with arg_to='date_resolution_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+</div>
+
+
+<div class="table-responsive mb-3">
     {% include 'payments/partials/table_payments.html' %}
 </div>
+
 {{ pagination.links }}
+
 {% endblock %}
 
 {% block scripts %}
+
 {{ super() }}
+
+{% include 'payments/partials/filter_rangepicker_script.html' %}
 {% include 'payments/partials/modal_retry.html' %}
+
 {% endblock %}

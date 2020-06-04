@@ -40,6 +40,15 @@ def generate_complaint_test_data(complaint_str):
         (complaint_str.replace("A", "А"), "replace cyrillic to latin - A"),
         (complaint_str.replace("E", "Е"), "replace cyrillic to latin - E"),
         (complaint_str.replace("B", "В"), "replace cyrillic to latin - B"),
+        (complaint_str.replace("-", "--"), "replace double -- with -"),
+        (complaint_str.replace("-", "—"), "replace — with -"),
+        (complaint_str.replace(".", ","), "replace , with ."),
+        (complaint_str.replace("-", "!@#$"), "replace any non alphanumeric with -"),
+        (complaint_str.replace("1", "l"), "replace l with 1"),
+        (complaint_str.replace("1", "I"), "replace I with 1"),
+        (complaint_str.replace("1", "І"), "replace І with 1"),
+        (complaint_str.replace("0", "O"), "replace O with 0"),
+        (complaint_str.replace("0", "О"), "replace О with 0"),
     ]
 
 
@@ -51,9 +60,9 @@ class GetPaymentParamsTestCase(unittest.TestCase):
     def test_valid_zoned_complaint(self):
         for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_STR):
             params = get_payment_params(complaint_str)
-            self.assertIsNotNone(params)
-            self.assertIn("complaint", params)
-            self.assertIn("code", params)
+            self.assertIsNotNone(params, complaint_str)
+            self.assertIn("complaint", params, complaint_str)
+            self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
                     "complaint": params["complaint"].lower(),
@@ -63,15 +72,15 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "complaint": "UA-2020-03-17-000090-a.c2".lower(),
                     "code": "12ABCDEF".lower(),
                 },
-                "Failed: {}".format(info)
+                "Failed: {}, {}".format(info, complaint_str)
             )
 
     def test_valid_zoned_complaint_multiple(self):
         for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_MULTIPLE_STR):
             params = get_payment_params(complaint_str)
-            self.assertIsNotNone(params)
-            self.assertIn("complaint", params)
-            self.assertIn("code", params)
+            self.assertIsNotNone(params, complaint_str)
+            self.assertIn("complaint", params, complaint_str)
+            self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
                     "complaint": params["complaint"].lower(),
@@ -81,15 +90,15 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "complaint": "UA-2020-03-17-000090-a.c112".lower(),
                     "code": "12ABCDEF".lower(),
                 },
-                "Failed: {}".format(info)
+                "Failed: {}, {}".format(info, complaint_str)
             )
 
     def test_valid_zoned_complaint_second_stage(self):
         for complaint_str, info in generate_complaint_test_data(VALID_ZONED_COMPLAINT_SECOND_STAGE_STR):
             params = get_payment_params(complaint_str)
-            self.assertIsNotNone(params)
-            self.assertIn("complaint", params)
-            self.assertIn("code", params)
+            self.assertIsNotNone(params, complaint_str)
+            self.assertIn("complaint", params, complaint_str)
+            self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
                     "complaint": params["complaint"].lower(),
@@ -99,15 +108,15 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "complaint": "UA-2020-03-17-000090-a.2.c2".lower(),
                     "code": "12ABCDEF".lower(),
                 },
-                "Failed: {}".format(info)
+                "Failed: {}, {}".format(info, complaint_str)
             )
 
     def test_valid_not_zoned_complaint(self):
         for complaint_str, info in generate_complaint_test_data(VALID_NOT_ZONED_COMPLAINT_STR):
             params = get_payment_params(complaint_str)
-            self.assertIsNotNone(params)
-            self.assertIn("complaint", params)
-            self.assertIn("code", params)
+            self.assertIsNotNone(params, complaint_str)
+            self.assertIn("complaint", params, complaint_str)
+            self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
                     "complaint": params["complaint"].lower(),
@@ -117,7 +126,7 @@ class GetPaymentParamsTestCase(unittest.TestCase):
                     "complaint": "UA-2020-03-17-000090.2".lower(),
                     "code": "12ABCDEF".lower(),
                 },
-                "Failed: {}".format(info)
+                "Failed: {}, {}".format(info, complaint_str)
             )
 
     def test_invalid_complaint(self):

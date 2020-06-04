@@ -114,6 +114,38 @@ def processing_message_failed_description(message):
         return MESSAGE_ID_DESCRIPTION_DICT.get(message_id, message_id)
 
 
+def processing_date(data):
+    primary_message = payment_primary_message(data.get("messages", []))
+    if primary_message and primary_message.get("message_id") in PAYMENTS_FAILED_MESSAGE_ID_LIST:
+        return date_representation(primary_message.get("createdAt"))
+    resolution = data.get("resolution")
+    if resolution:
+        return date_representation(resolution.get("date"))
+
+
+def complainant_id(params):
+    from payments.cached import get_complaint
+    complaint = get_complaint(params)
+    if complaint:
+        author = complaint.get("author", {})
+        identifier = author.get("identifier", {})
+        scheme = identifier.get("scheme")
+        if scheme == "UA-EDR":
+            complainant_id = identifier.get("id")
+            return complainant_id
+
+
+def complainant_name(params):
+    from payments.cached import get_complaint
+    complaint = get_complaint(params)
+    if complaint:
+        author = complaint.get("author", {})
+        identifier = author.get("identifier", {})
+        complainant = identifier.get("id")
+        complainant_name = identifier.get("legalName")
+        return complainant_name
+
+
 def payment_primary_message(messages):
     for priority in MESSAGE_ID_PRIORITY:
         for message in messages or []:

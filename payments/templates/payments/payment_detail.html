@@ -4,24 +4,23 @@
 
 {% include 'payments/partials/nav_tabs.html' %}
 
-{% include 'payments/partials/btn_refresh.html' %}
-
-{% if row.payment and row.payment.value.type.value == "credit" %}
-{% with data=row %}
-{% include 'payments/partials/btn_retry.html' %}
-{% endwith %}
-{% endif %}
-
 <h1>{{ row.payment.title }}</h1>
-<div class="table-responsive mb-2">
+<div class="table-responsive collapse show mb-2">
     {% with data=row.payment.value %}
     {% include 'payments/partials/table_info.html' %}
     {% endwith %}
 </div>
 
 {% if row and row.extra %}
-<h4 class="mt-4">{{ row.extra.title }}</h4>
-<div class="table-responsive mb-2">
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#extraBlock"
+    aria-expanded="true"
+    aria-controls="extraBlock">
+    <i class="fas fa-sm fa-info-circle float-right text-light"></i>
+    {{ row.extra.title }}
+</h5>
+<div class="table-responsive collapse show mb-2" id="extraBlock">
     {% with data=row.extra.value %}
     {% include 'payments/partials/table_info.html' %}
     {% endwith %}
@@ -29,8 +28,15 @@
 {% endif %}
 
 {% if row and row.resolution.value.type.value %}
-<h4 class="mt-4">{{ row.resolution.title }}</h4>
-<div class="table-responsive mb-2">
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#resolutionBlock"
+    aria-expanded="true"
+    aria-controls="resolutionBlock">
+    <i class="fas fa-sm fa-clipboard-check float-right text-light"></i>
+    {{ row.resolution.title }}
+</h5>
+<div class="table-responsive collapse show mb-2" id="resolutionBlock">
     {% with data=row.resolution.value %}
     {% include 'payments/partials/table_info.html' %}
     {% endwith %}
@@ -38,38 +44,79 @@
 {% endif %}
 
 {% if row and row.messages %}
-<h4 class="mt-4">Події</h4>
-<div class="table-responsive mb-2">
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#logBlock"
+    aria-expanded="true"
+    aria-controls="logBlock">
+    <i class="fas fa-sm fa-clipboard-list float-right text-light"></i>
+    Події
+</h5>
+<div class="table-responsive collapse show mb-2" id="logBlock">
     {% include 'payments/partials/table_log.html' %}
 </div>
 {% endif %}
 
-{% if row and row.params %}
-<h4 class="mt-4">Посилання на API</h4>
-<div class="table-responsive mb-2">
+{% if row.payment and row.payment.value.type.value == "credit" %}
+{% with data=row %}
+{% include 'payments/partials/btn_retry.html' %}
+{% endwith %}
+{% endif %}
+
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#apiBlock"
+    aria-expanded="true"
+    aria-controls="apiBlock">
+    <i class="fas fa-sm fa-cogs float-right text-light"></i>
+    Посилання на API
+</h5>
+<div class="table-responsive collapse show mb-2" id="apiBlock">
     {% include 'payments/partials/table_urls_api.html' %}
 </div>
 {% endif %}
 
-{% if row and row.params %}
-<h4 class="mt-4">Посилання на портал</h4>
-<div class="table-responsive mb-2">
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#portalBlock"
+    aria-expanded="true"
+    aria-controls="portalBlock">
+    <i class="fas fa-sm fa-columns float-right text-light"></i>
+    Посилання на портал
+</h5>
+<div class="table-responsive collapse show mb-2" id="portalBlock">
     {% include 'payments/partials/table_urls_portal.html' %}
 </div>
 {% endif %}
 
-{% if row and row.params %}
-<h4 class="mt-4">Скарга</h4>
-<div class="table-responsive mb-2">
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#complaintBlock"
+    aria-expanded="false"
+    aria-controls="complaintBlock">
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
+    Скарга
+</h5>
+<div class="table-responsive collapse mb-2" id="complaintBlock">
     {% with data=complaint %}
     {% include 'payments/partials/table_dict.html' %}
     {% endwith %}
 </div>
 {% endif %}
 
-{% if row and row.params %}
-<h4 class="mt-4">Закупівля</h4>
-<div class="table-responsive mb-5">
+{% if complaint and tender %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#tenderBlock"
+    aria-expanded="false"
+    aria-controls="tenderBlock">
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
+    Закупівля
+</h5>
+<div class="table-responsive collapse mb-5" id="tenderBlock">
     {% with data=tender %}
     {% include 'payments/partials/table_dict.html' %}
     {% endwith %}

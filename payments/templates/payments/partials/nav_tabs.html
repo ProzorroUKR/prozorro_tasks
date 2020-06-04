@@ -1,7 +1,7 @@
-<ul class="nav nav-pills nav-fill nav-payments">
+<ul class="nav nav-pills md-pills nav-fill nav-payments mt-3 mb-3">
     <li class="nav-item">
         {% with endpoint_list='payments_views.payment_list', endpoint_detail='payments_views.payment_detail' %}
-            <a class="nav-link{% if request.url_rule.endpoint in [endpoint_list, endpoint_detail] %} active{% endif %}"
+            <a class="nav-link btn btn-sm{% if request.url_rule.endpoint in [endpoint_list, endpoint_detail] %} btn-dark{% else %} btn-payment-light{% endif %}"
            href="{{ url_for(endpoint_list) }}">
             Операції
         </a>
@@ -9,7 +9,7 @@
     </li>
     <li class="nav-item">
         {% with endpoint='payments_views.report' %}
-        <a class="nav-link{% if request.url_rule.endpoint == endpoint %} active{% endif %}"
+        <a class="nav-link btn btn-sm{% if request.url_rule.endpoint == endpoint %} btn-dark{% else %} btn-payment-light{% endif %}"
            href="{{ url_for(endpoint) }}">
             Звіти
         </a>

@@ -1,0 +1,86 @@
+<script type="text/javascript">
+    $(function () {
+        function updateQueryStringParameter(uri, key, value) {
+            var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+            var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+            if (uri.match(re)) {
+                return uri.replace(re, '$1' + key + "=" + value + '$2');
+            } else {
+                return uri + separator + key + "=" + value;
+            }
+        }
+
+        var rangePickerLocale = {
+            "format": 'YYYY-MM-DD',
+            "separator": " - ",
+            "applyLabel": "Застосувати",
+            "cancelLabel": "Відмінити",
+            "fromLabel": "З",
+            "toLabel": "До",
+            "customRangeLabel": "В",
+            "daysOfWeek": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+            "monthNames": [
+                "Січень",
+                "Лютий",
+                "Березень",
+                "Квітень",
+                "Травень",
+                "Червень",
+                "Липень",
+                "Серпень",
+                "Вересень",
+                "Жовтень",
+                "Листопад",
+                "Грудень"
+            ],
+            "firstDay": 1
+        };
+
+        var rangePickerRanges = {
+            "Сьогодні": [moment(), moment()],
+            "Вчора": [moment().subtract(1, "days"), moment().subtract(1, "days")],
+            "Останні 7 днів": [moment().subtract(6, "days"), moment()],
+            "Останні 30 днів": [moment().subtract(29, "days"), moment()],
+            "Поточний місяць": [moment().startOf("month"), moment().endOf("month")],
+            "Останній місяць": [
+                moment().subtract(1, 'month').startOf('month'),
+                moment().subtract(1, 'month').endOf('month')
+            ]
+        };
+
+        var $picker = $('.daterange');
+
+        $picker.each(function () {
+            var $this = $(this);
+
+            $this.daterangepicker({
+                "locale": rangePickerLocale,
+                "opens": "center",
+                "startDate": $this.data('start-initial') || undefined,
+                "endDate": $this.data('end-initial') || undefined,
+                "buttonClasses": 'btn btn-sm btn-payment',
+                "applyButtonClasses": 'btn-primary',
+                "cancelButtonClasses": 'btn-warning',
+                "showCustomRangeLabel": false,
+                "ranges": rangePickerRanges,
+                "alwaysShowCalendars": true,
+            });
+
+            $this.on('apply.daterangepicker', function (ev, picker) {
+                window.location.href = updateQueryStringParameter(
+                    updateQueryStringParameter(
+                        window.location.href,
+                        $this.data('start-param'),
+                        picker.startDate.format('YYYY-MM-DD')
+                    ),
+                    $this.data('end-param'),
+                    picker.endDate.format('YYYY-MM-DD')
+                );
+            });
+
+            $this.siblings('[data-toggle="daterange"]').click(function () {
+                $this.click();
+            });
+        });
+    });
+</script>

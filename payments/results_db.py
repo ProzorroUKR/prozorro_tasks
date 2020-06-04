@@ -19,11 +19,25 @@ get_mongodb_collection = partial(
 )
 
 
+UUID_KEYS = [
+    "description",
+    "amount",
+    "currency",
+    "date_oper",
+    "type",
+    "source",
+    "account",
+    "okpo",
+    "mfo",
+    "name",
+]
+
+
 def init_indexes():
     drop_indexes()
     indexes = [
         dict(keys="createdAt", name="created_at"),
-        dict(keys=[('payment.description', pymongo.TEXT)], name="payment_description_text")
+        dict(keys=[("payment.description", pymongo.TEXT)], name="payment_description_text"),
     ]
     for kwargs in indexes:
         try:
@@ -44,6 +58,12 @@ def drop_indexes():
 def init_index(**kwargs):
     collection = get_mongodb_collection()
     collection.create_index(**kwargs)
+
+
+def data_to_uid(data):
+    return args_to_uid(sorted([
+        value for key, value in data.items() if key in UUID_KEYS
+    ]))
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
@@ -76,8 +96,8 @@ def push_payment_message(data, message_id, message):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$push': {
-            'messages': {
+        {"$push": {
+            "messages": {
                 "message_id": message_id,
                 "message": message,
                 "createdAt": datetime.utcnow()
@@ -105,7 +125,7 @@ def set_payment_params(data, params):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$set': {'params': params}}
+        {"$set": {"params": params}}
     )
 
 
@@ -114,7 +134,7 @@ def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
     return collection.update(
         {"_id": data_to_uid(data)},
-        {'$set': {'resolution': resolution}}
+        {"$set": {"resolution": resolution}}
     )
 
 
@@ -127,13 +147,12 @@ def get_payment_item_by_params(params, message_ids=None):
     return collection.find_one(get_combined_filters_and(filters))
 
 
-def data_to_uid(data):
-    return args_to_uid(sorted(data.values()))
-
-
 def get_payment_search_filters(
     search=None,
     payment_type=None,
+    payment_source=None,
+    payment_date_from=None,
+    payment_date_to=None,
     **kwargs
 ):
     filters = []
@@ -141,16 +160,21 @@ def get_payment_search_filters(
         filters.append({"$text": {"$search": search}})
     if payment_type is not None:
         filters.append({"payment.type": payment_type})
+    if payment_source is not None:
+        filters.append({"payment.source": payment_source})
+    if payment_date_from is not None and payment_date_to is not None:
+        filters.append({"payment.date_oper": {
+            "$gte": payment_date_from.strftime("%Y-%m-%d"),
+            "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
+        }})
     return get_combined_filters_and(filters) if filters else {}
 
 
-def get_payment_report_filters(
+def get_payment_report_success_filters(
     resolution_exists=None,
-    resolution_date=None,
+    resolution_date_to=None,
+    resolution_date_from=None,
     resolution_funds=None,
-    message_ids_include=None,
-    message_ids_date=None,
-    message_ids_exclude=None,
     **kwargs
 ):
     filters = []
@@ -158,24 +182,35 @@ def get_payment_report_filters(
         filters.append({"resolution": {"$exists": resolution_exists}})
     if resolution_funds is not None:
         filters.append({"resolution.funds": resolution_funds})
-    if resolution_date is not None:
+    if resolution_date_from is not None and resolution_date_to is not None:
         filters.append({"resolution.date": {
-            "$gte": resolution_date.isoformat(),
-            "$lt": (resolution_date + timedelta(days=1)).isoformat()
+            "$gte": resolution_date_from.isoformat(),
+            "$lt": (resolution_date_to + timedelta(days=1)).isoformat()
         }})
+    return get_combined_filters_and(filters) if filters else {}
+
+
+def get_payment_report_failed_filters(
+    message_ids_include=None,
+    message_ids_date_from=None,
+    message_ids_date_to=None,
+    message_ids_exclude=None,
+    **kwargs
+):
+    filters = []
     if message_ids_include is not None:
         filters.append({"messages.message_id": {"$in": message_ids_include}})
-    if message_ids_include is not None or message_ids_date is not None:
-        messages_match_filter = {}
-        if message_ids_include is not None:
-            messages_match_filter.update({"message_id": {"$in": message_ids_include}})
-        if message_ids_date is not None:
-            message_ids_date = UTC.normalize(TIMEZONE.localize(message_ids_date))
-            messages_match_filter.update({"createdAt": {
-                "$gte": message_ids_date,
-                "$lt": (message_ids_date + timedelta(days=1))
-            }})
-        filters.append({"messages" : {"$elemMatch": messages_match_filter}})
+    messages_match_filter = {}
+    if message_ids_include is not None:
+        messages_match_filter.update({"message_id": {"$in": message_ids_include}})
+    if message_ids_date_from is not None and message_ids_date_to is not None:
+        message_ids_date_from = UTC.normalize(TIMEZONE.localize(message_ids_date_from))
+        message_ids_date_to = UTC.normalize(TIMEZONE.localize(message_ids_date_to))
+        messages_match_filter.update({"createdAt": {
+            "$gte": message_ids_date_from,
+            "$lt": message_ids_date_to + timedelta(days=1)
+        }})
+    filters.append({"messages" : {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
         filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
     return get_combined_filters_and(filters) if filters else {}

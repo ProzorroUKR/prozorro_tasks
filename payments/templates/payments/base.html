@@ -5,22 +5,75 @@
 {{ super() }}
 
 <style type="text/css">
+
+    @media (max-width: 90rem) {
+        body {
+            min-width: 90rem;
+        }
+    }
+
+    [data-toggle="collapse"] {
+        cursor: pointer;
+    }
+
     .modal-payment > .modal-dialog > .modal-content {
         border-radius: 0;
         border: 0;
     }
+
     .modal-payment > .modal-dialog > .modal-content > .modal-body {
         font-size: .75rem;
     }
 
-    .btn-payment {
+    .btn.btn-payment {
         border-radius: 0;
-        font-size: .75rem;
+        text-align: center;
     }
 
-    .btn-payment > .dropdown > .dropdown-menu {
+    .btn.btn-payment-filter {
+        margin: 0;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .btn.btn-payment-filter:hover {
+        z-index: auto;
+    }
+
+    .btn.btn-payment-light {
+        color: #495057 !important;
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    .btn-group .btn.btn-payment-light + .btn {
+        border-left: 0 !important;
+    }
+
+    .input-group .btn.btn-payment-light + input {
+        border-left: 0 !important;
+    }
+
+    .btn-group > .btn.btn-payment-filter:not(:first-child) {
+        margin: 0;
+    }
+
+    .group-payment-filter {
+        height: 100%;
+    }
+
+    .group-payment-filter .dropdown-menu {
+        border-radius: 0;
+        padding: 2px;
+    }
+
+    .dropdown > .dropdown-menu {
         border-radius: 0;
         padding: 0;
+    }
+
+    .dropdown .btn.btn-payment {
+        height: 100%;
     }
 
     .dropdown-item-payment {
@@ -33,24 +86,22 @@
 
     .input-payment {
         border-radius: 0;
-        font-size: .75rem;
+        font-size: .64rem;
+    }
+
+    .input-payment[type="text"] {
+        height: 100%;
     }
 
     .nav-payments {
-        margin-bottom: 1rem;
+        padding: 0;
     }
 
-    .nav-payments > .nav-item > .nav-link {
-        color: #343a40;
+    .nav-payments > .nav-item > .btn {
         border-radius: 0;
-        background-color: rgba(0, 0, 0, .05);
-        border: 1px solid #dee2e6;
-    }
-
-    .nav-payments > .nav-item > .nav-link.active {
-        color: #ffffff;
-        background-color: #343a40;
-        border: 1px solid #343a40;
+        width: 100%;
+        height: 100%;
+        margin: 0;
     }
 
     .table-payments {
@@ -58,8 +109,20 @@
         margin-bottom: 0;
     }
 
+    .table-payments td {
+        font-size: .75rem;
+    }
+
+    .table-payments th {
+        font-size: .75rem;
+    }
+
     .table-payments + .table-payments {
         margin-top: .4rem;
+    }
+
+    .table-payments .table-secondary {
+        background-color: white;
     }
 
     .table-payments > tbody > tr > td {
@@ -94,6 +157,7 @@
         text-align: center;
         vertical-align: middle;
         width: 0.7rem;
+        border: 0;
     }
 
     .table-payments > tbody > tr > td.cell-action.cell-lg {
@@ -136,41 +200,9 @@
         height: 100%;
     }
 
-    .pagination-page-info {
-        font-size: .75rem;
-        padding-bottom: 1rem;
-    }
-
-    .pagination {
-        margin-top: 1rem;
-    }
-
-    .pagination > .page-item > .page-link {
-        background-color: rgba(0, 0, 0, .05);
-    }
-
-    .pagination > .page-item:last-child > .page-link {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    .pagination > .page-item:first-child > .page-link {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-
-    .pagination > .page-item > .page-link {
-        color: #343a40;
-    }
-
-    .pagination > .page-item.active > .page-link {
-        background-color: #343a40;
-        border-color: #343a40;
-        color: #ffffff;
-    }
-
-    .pagination > .page-item.disabled > .page-link {
-        color: #aaaaaa;
+    .pagination .page-item .page-link,
+    .pagination .page-item.active .page-link {
+        border-radius: 0;
     }
 
     .table-failed, .table-failed > td, .table-failed > th {
@@ -180,6 +212,34 @@
     .bg-failed {
         background-color: #625790 !important;
     }
+
+    .waves-input-wrapper {
+        border-radius: 0;
+    }
+
+    .daterangepicker {
+        border-radius: 0;
+    }
+
+    .daterangepicker .active {
+        background-color: #4285f4 !important;
+    }
 </style>
+
+{% endblock %}
+
+
+{% block main %}
+
+<div class="container-fluid pb-5">
+    {% block content %}{% endblock %}
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+{{ super() }}
 
 {% endblock %}

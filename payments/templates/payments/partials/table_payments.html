@@ -1,6 +1,7 @@
 {% if rows %}
 <table class="table table-bordered table-striped table-payments">
     <tr class="thead-dark">
+        <th class="text-center">#</th>
         {% for name, item in rows[0].items() %}
         {% if name not in ['id', 'messages', 'params'] %}
         <th>{{ item.title }}</th>
@@ -11,6 +12,7 @@
     </tr>
     {% for row in rows %}
     <tr>
+        <td class="text-center align-middle">{{ total - (loop.index + page * limit - limit) + 1 }}</td>
         {% for name, item in row.items() %}
         {% if item.value|typing_is_dict %}
         <td class="cell-{{ name }}">
@@ -27,7 +29,7 @@
         {% endif %}
         {% endfor %}
         {% if row.payment and row.payment.value.type.value == 'credit' %}
-        <td class="text-white cell-action cell-lg border-0 bg-primary">
+        <td class="text-white cell-action cell-lg bg-primary">
             {% with path='/payments/' + row.id.value + '/retry' %}
             <a href="{{ path }}" data-toggle="modal" data-target="#modalRetry">
                 <i class="fas fa-sync-alt"></i>
@@ -35,11 +37,11 @@
             {% endwith %}
         </td>
         {% else %}
-        <td class="text-white cell-action cell-action-disabled cell-lg border-0 bg-secondary">
+        <td class="text-white cell-action cell-action-disabled cell-lg bg-dark">
             <i class="fas fa-sync-alt"></i>
         </td>
         {% endif %}
-        <td class="text-white cell-action cell-lg border-0 bg-{{ row.messages|payment_message_list_status or 'dark' }}">
+        <td class="text-white cell-action cell-lg bg-{{ row.messages|payment_message_list_status or 'dark' }}">
             <a href="/payments/{{row.id.value}}">
                 <i class="fas fa-info-circle"></i>
             </a>
