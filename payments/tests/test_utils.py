@@ -44,11 +44,13 @@ def generate_complaint_test_data(complaint_str):
         (complaint_str.replace("-", "—"), "replace — with -"),
         (complaint_str.replace(".", ","), "replace , with ."),
         (complaint_str.replace("-", "!@#$"), "replace any non alphanumeric with -"),
-        (complaint_str.replace("1", "l"), "replace l with 1"),
-        (complaint_str.replace("1", "I"), "replace I with 1"),
-        (complaint_str.replace("1", "І"), "replace І with 1"),
-        (complaint_str.replace("0", "O"), "replace O with 0"),
-        (complaint_str.replace("0", "О"), "replace О with 0"),
+        (complaint_str.replace("1", "l"), "replace latin l with 1"),
+        (complaint_str.replace("1", "I"), "replace latin I with 1"),
+        (complaint_str.replace("1", "І"), "replace cyrillic І with 1"),
+        (complaint_str.replace("1", "i"), "replace latin i with 1"),
+        (complaint_str.replace("1", "і"), "replace cyrillic  with 1"),
+        (complaint_str.replace("0", "O"), "replace latin O with 0"),
+        (complaint_str.replace("0", "О"), "replace cyrillic О with 0"),
     ]
 
 

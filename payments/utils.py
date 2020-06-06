@@ -31,6 +31,8 @@ PAYMENT_REPLACE_MAPPING = {
     "l": "1",
     "I": "1",
     "І": "1",
+    "i": "1",
+    "і": "1",
     "O": "0",
     "О": "0",
     # replace punctuation marks
