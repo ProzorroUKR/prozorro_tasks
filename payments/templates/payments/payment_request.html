@@ -1,0 +1,33 @@
+{% extends "payments/base.html" %}
+
+{% block content %}
+{% include 'payments/partials/nav_tabs.html' %}
+<div class="btn-toolbar mt-3" role="toolbar">
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата операції' %}
+        {% with arg_from='date_from' %}
+        {% with arg_to='date_to' %}
+        {% include 'payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+</div>
+
+<div class="table-responsive mb-3">
+    {% with data=rows %}
+    {% include 'payments/partials/table_dict.html' %}
+    {% endwith %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% include 'payments/partials/filter_rangepicker_script.html' %}
+
+{% endblock %}

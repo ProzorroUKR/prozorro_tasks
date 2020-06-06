@@ -78,6 +78,15 @@ def get_report_params():
         date_resolution_to=date_to,
     )
 
+
+def get_request_params():
+    date_from = get_date_param("date_from", "%Y-%m-%d")
+    date_to = get_date_param("date_to", "%Y-%m-%d")
+    return dict(
+        date_from=date_from,
+        date_to=date_to,
+    )
+
 def get_payment_pagination(total=None, **kwargs):
     return Pagination(
         bs_version=4,

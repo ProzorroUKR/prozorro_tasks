@@ -3,6 +3,13 @@
 {% block content %}
 {% include 'payments/partials/nav_tabs.html' %}
 
+<div class="mb-3 ml-2 float-right">
+    <a href="{{ url_for('payments_views.payment_request') }}"
+       class="btn btn-sm btn-success btn-payment btn-payment-filter">
+        Запит операцій
+    </a>
+</div>
+
 <div class="btn-toolbar mt-3" role="toolbar">
 
     <div class="mb-3 mr-2">
