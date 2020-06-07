@@ -1,7 +1,28 @@
 {% extends "payments/base.html" %}
 
 {% block content %}
+
 {% include 'payments/partials/nav_tabs.html' %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Операції</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
 
 <div class="mb-3 ml-2 float-right">
     <a href="{{ url_for('payments_views.payment_request') }}"

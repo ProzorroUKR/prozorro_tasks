@@ -224,6 +224,20 @@
     .daterangepicker .active {
         background-color: #4285f4 !important;
     }
+
+    .breadcrumbs-payment .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+        font-size: .75rem;
+    }
+
+    .breadcrumbs-payment .breadcrumb-item + .breadcrumb-item::before {
+        content: none;
+    }
+
+    .breadcrumbs-payment .breadcrumb-item.active {
+        color: #455a64;
+    }
 </style>
 
 {% endblock %}
