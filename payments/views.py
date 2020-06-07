@@ -35,15 +35,14 @@ from payments.context import (
     get_request_params,
 )
 from payments.data import (
+    PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     complaint_status_description,
     complaint_reject_description,
     complaint_funds_description,
-    PAYMENTS_MESSAGE_IDS,
     payment_message_list_status,
     payment_message_status,
-    PAYMENTS_FAILED_MESSAGE_ID_LIST,
     date_representation,
-    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     payment_primary_message,
 )
 
@@ -86,7 +85,6 @@ def payment_list():
     return render_template(
         "payments/payment_list.html",
         rows=data,
-        message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
         pagination=get_payment_pagination(
             total=total,

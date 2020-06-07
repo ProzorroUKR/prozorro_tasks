@@ -2,22 +2,15 @@
 <table class="table table-bordered table-striped table-payments">
     {% if row.messages %}
     {% for message in row.messages %}
-    <tr>
-        <td class="table-cell-bg">
-            <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
-            {% if message.createdAt %}
-            <div class="table-content">{{
-                message.createdAt|date_representation }}
-            </div>
-            {% endif %}
+    <tr class="table-{{ message|payment_message_status or 'default' }}">
+        <td>
+            {{ message.createdAt|date_representation }}
         </td>
-        <td class="table-cell-bg">
-            <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
-            <div class="table-content">{{ message.message_id }}</div>
+        <td>
+            {{ message.message_id }}
         </td>
-        <td class="table-cell-bg">
-            <div class="table-bg table-{{ message|payment_message_status or 'default' }}"></div>
-            <div class="table-content">{{ message.message }}</div>
+        <td>
+            {{ message.message }}
         </td>
     </tr>
     {% endfor %}
