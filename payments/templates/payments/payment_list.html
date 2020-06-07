@@ -23,15 +23,23 @@
 {% endwith %}
 
 <div class="mb-3 ml-2 float-right">
-    <a href="{{ url_for('payments_views.payment_request') }}"
+    <a href="{{ url_for('payments_views.status') }}"
+       id="status"
        class="btn btn-sm btn-success btn-payment btn-payment-filter">
+        Статус системи оплат
+    </a>
+</div>
+
+<div class="mb-3 ml-2 float-right">
+    <a href="{{ url_for('payments_views.payment_request') }}"
+       class="btn btn-sm btn-info btn-payment btn-payment-filter">
         Запит операцій
     </a>
 </div>
 
 <div class="mb-3 ml-2 float-right">
     <a href="{{ url_for('payments_views.report') }}"
-       class="btn btn-sm btn-success btn-payment btn-payment-filter">
+       class="btn btn-sm btn-info btn-payment btn-payment-filter">
         Запит звіту
     </a>
 </div>
@@ -101,5 +109,11 @@
 
 {% include 'payments/partials/filter_rangepicker_script.html' %}
 {% include 'payments/partials/modal_retry.html' %}
+
+<script type="text/javascript">
+    $.get("/liqpay/api/v1/healthcheck").fail(function () {
+        $("#status").toggleClass("btn-success btn-danger")
+    });
+</script>
 
 {% endblock %}

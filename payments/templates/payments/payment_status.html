@@ -1,0 +1,39 @@
+{% extends "payments/base.html" %}
+
+{% block content %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Статус системи оплат</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
+
+<div class="table-responsive mb-3">
+    {% with data=rows %}
+    {% include 'payments/partials/table_dict_status.html' %}
+    {% endwith %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% include 'payments/partials/filter_rangepicker_script.html' %}
+
+{% endblock %}

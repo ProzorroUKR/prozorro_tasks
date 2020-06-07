@@ -8,6 +8,7 @@ from flask import Blueprint, render_template, redirect, url_for, abort, make_res
 
 from app.auth import login_group_required
 from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT
+from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
     PAYMENTS_SEARCH_INVALID_CODE,
@@ -291,3 +292,13 @@ def report_download():
     response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return response
+
+
+@bp.route("/status", methods=["GET"])
+@login_group_required("accountants")
+def status():
+    data = health()
+    return render_template(
+        "payments/payment_status.html",
+        rows=data
+    )
