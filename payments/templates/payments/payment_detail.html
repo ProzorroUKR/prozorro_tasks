@@ -2,8 +2,6 @@
 
 {% block content %}
 
-{% include 'payments/partials/nav_tabs.html' %}
-
 {% with href_home=url_for("app_views.index") %}
 {% with href_payments=url_for("payments_views.payment_list") %}
 <div class="breadcrumbs-payment mt-3">

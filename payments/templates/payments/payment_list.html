@@ -2,8 +2,6 @@
 
 {% block content %}
 
-{% include 'payments/partials/nav_tabs.html' %}
-
 {% with href_home=url_for("app_views.index") %}
 {% with href_payments=url_for("payments_views.payment_list") %}
 <div class="breadcrumbs-payment mt-3">
@@ -28,6 +26,13 @@
     <a href="{{ url_for('payments_views.payment_request') }}"
        class="btn btn-sm btn-success btn-payment btn-payment-filter">
         Запит операцій
+    </a>
+</div>
+
+<div class="mb-3 ml-2 float-right">
+    <a href="{{ url_for('payments_views.report') }}"
+       class="btn btn-sm btn-success btn-payment btn-payment-filter">
+        Запит звіту
     </a>
 </div>
 
