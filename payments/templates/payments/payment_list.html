@@ -22,37 +22,39 @@
 {% endwith %}
 {% endwith %}
 
-<div class="mb-3 ml-2 float-right">
-    <a href="{{ url_for('payments_views.status') }}"
-       id="status"
-       class="btn btn-sm btn-success btn-payment btn-payment-filter">
-        Статус системи оплат
-    </a>
+<div class="btn-toolbar btn-toolbar-payment float-right">
+    <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.report') }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter">
+            Запит звіту
+        </a>
+    </div>
+
+    <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.payment_request') }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter">
+            Запит операцій
+        </a>
+    </div>
+
+    <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.status') }}"
+           id="status"
+           class="btn btn-sm btn-success btn-payment btn-payment-filter">
+            Статус системи оплат
+        </a>
+    </div>
 </div>
 
-<div class="mb-3 ml-2 float-right">
-    <a href="{{ url_for('payments_views.payment_request') }}"
-       class="btn btn-sm btn-info btn-payment btn-payment-filter">
-        Запит операцій
-    </a>
-</div>
+<div class="btn-toolbar btn-toolbar-payment float-left" role="toolbar">
 
-<div class="mb-3 ml-2 float-right">
-    <a href="{{ url_for('payments_views.report') }}"
-       class="btn btn-sm btn-info btn-payment btn-payment-filter">
-        Запит звіту
-    </a>
-</div>
-
-<div class="btn-toolbar mt-3" role="toolbar">
-
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with arg='query' %}
         {% include 'payments/partials/filter_search.html' %}
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Тип операції' %}
         {% with arg='type' %}
         {% with choices=['debit', 'credit'] %}
@@ -62,7 +64,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Метод операції' %}
         {% with arg='source' %}
         {% with choices=['card', 'account'] %}
@@ -72,7 +74,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Дата операції' %}
         {% with arg_from='date_oper_from' %}
         {% with arg_to='date_oper_to' %}
@@ -82,7 +84,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Дата завершення обробки' %}
         {% with arg_from='date_resolution_from' %}
         {% with arg_to='date_resolution_to' %}

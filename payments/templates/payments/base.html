@@ -6,12 +6,6 @@
 
 <style type="text/css">
 
-    @media (max-width: 90rem) {
-        body {
-            min-width: 90rem;
-        }
-    }
-
     [data-toggle="collapse"] {
         cursor: pointer;
     }
@@ -46,11 +40,16 @@
         border: 1px solid #ced4da !important;
     }
 
+    .btn.btn-payment-light.btn-sm {
+        padding-top: calc(.5rem - 1px) !important;
+        padding-bottom: calc(.5rem - 1px) !important;
+    }
+
     .btn-group .btn.btn-payment-light + .btn {
         border-left: 0 !important;
     }
 
-    .input-group .btn.btn-payment-light + input {
+    .btn-group .btn.btn-payment-light + input {
         border-left: 0 !important;
     }
 
@@ -225,6 +224,10 @@
 
     .breadcrumbs-payment .breadcrumb-item.active {
         color: #455a64;
+    }
+
+    .btn-toolbar-payment {
+        margin: 0 -.25rem;
     }
 </style>
 
