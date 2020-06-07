@@ -108,7 +108,6 @@
 {{ super() }}
 
 {% include 'payments/partials/filter_rangepicker_script.html' %}
-{% include 'payments/partials/modal_retry.html' %}
 
 <script type="text/javascript">
     $.get("/liqpay/api/v1/healthcheck").fail(function () {
