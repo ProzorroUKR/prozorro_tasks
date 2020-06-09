@@ -186,55 +186,35 @@ def receive_org_catalog(self, message_id):
                 extra={"MESSAGE_ID": "TREASURY_ORG_CATALOG_UPDATE"})
 
 
-@app.task(bind=True, max_retries=1000)
+@app.task(bind=True, max_retries=10)
 def save_transaction(self, source, transaction):
     document = ds_upload(
         self,
         file_name=f"Transaction_{transaction['transaction_id']}_{transaction['data']['status']}.xml",
         file_content=source
     )
-    document["documentType"] = "dataSource"
-    transaction["data"]["documents"] = [document]
+    transaction["data"]["dataSource"] = document.get('url')
     put_transaction.delay(**transaction)
 
 
-@app.task(bind=True, max_retries=1000)
+@app.task(bind=True, max_retries=10)
 def put_transaction(self, contract_id, transaction_id, data):
-    url = f"{API_HOST}/api/{API_VERSION}/contract/{contract_id}/transactions/{transaction_id}"
+    url = f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}/transactions/{transaction_id}"
     session = requests.Session()
     log_context = {
         "CONTRACT_ID": contract_id,
         "TRANSACTION_ID": transaction_id,
     }
-    try:
-        get_response = session.head(
-            url,
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={
-                'Authorization': 'Bearer {}'.format(API_TOKEN),
-            }
-        )
-    except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.warning(
-            "Request exception",
-            extra={
-                "MESSAGE_ID": "TREASURY_TRANS_EXCEPTION",
-                "EXC": exc,
-                **log_context
-            }
-        )
-        raise self.retry(exc=exc)
-    else:
-        log_context["HEAD_RESPONSE_STATUS"] = get_response.status_code
-        if get_response.status_code == 200:  # update
-            request_method = session.patch
-            json_resp = get_json_or_retry(self, get_response)
-            docs_len = len(json_resp.get("data", {}).get("documents", ""))
-            data["documents"] = [{} for _ in range(docs_len)] + data["documents"]
-        else:  # create
-            request_method = session.put
+    resp = session.get(f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}")
 
+    if resp.status_code != 200:
+        logger.error(
+            f"Can not find {contract_id} contract id",
+            extra={"MESSAGE_ID": "TREASURY_TRANS_PRECONDITION_ERROR", **log_context}
+        )
+    else:
         try:
+            request_method = session.put
             response = request_method(
                 url,
                 json={'data': data},
@@ -248,7 +228,7 @@ def put_transaction(self, contract_id, transaction_id, data):
             log_context["RESPONSE_STATUS"] = response.status_code
             if response.status_code == 422:
                 logger.error(
-                    "Incorrect data",
+                    "Incorrect transaction data, Unprocessable Entity",
                     extra={"MESSAGE_ID": "TREASURY_TRANS_ERROR", **log_context}
                 )
             elif response.status_code not in (201, 200):

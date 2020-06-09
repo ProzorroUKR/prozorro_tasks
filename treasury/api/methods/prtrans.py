@@ -21,6 +21,7 @@ class PRTrans:
                     date=fields.msrprd_date,
                     value=dict(
                         amount=fields.doc_sq,
+                        currency="UAH"
                     ),
                     payer=dict(
                         id=fields.doc_iban_a,
