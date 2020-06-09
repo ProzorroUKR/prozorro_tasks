@@ -11,6 +11,7 @@ API_OPT_FIELDS = [
     'tenderID',
     'lots',
     'procurementMethodType',
+    'procurementMethodRationale',
     'next_check',
     'dateModified',
 ]
