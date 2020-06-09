@@ -7,7 +7,6 @@
         <th>{{ item.title }}</th>
         {% endif %}
         {% endfor %}
-        <th>Повт.</th>
         <th>Інф.</th>
     </tr>
     {% for row in rows %}
@@ -28,19 +27,6 @@
         </td>
         {% endif %}
         {% endfor %}
-        {% if row.payment and row.payment.value.type.value == 'credit' %}
-        <td class="text-white cell-action cell-lg bg-primary">
-            {% with path='/payments/' + row.id.value + '/retry' %}
-            <a href="{{ path }}" data-toggle="modal" data-target="#modalRetry">
-                <i class="fas fa-sync-alt"></i>
-            </a>
-            {% endwith %}
-        </td>
-        {% else %}
-        <td class="text-white cell-action cell-action-disabled cell-lg bg-dark">
-            <i class="fas fa-sync-alt"></i>
-        </td>
-        {% endif %}
         <td class="text-white cell-action cell-lg bg-{{ row.messages|payment_message_list_status or 'dark' }}">
             <a href="/payments/{{row.id.value}}">
                 <i class="fas fa-info-circle"></i>

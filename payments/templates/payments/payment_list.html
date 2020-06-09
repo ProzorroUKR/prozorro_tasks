@@ -1,17 +1,53 @@
 {% extends "payments/base.html" %}
 
 {% block content %}
-{% include 'payments/partials/nav_tabs.html' %}
 
-<div class="btn-toolbar mt-3" role="toolbar">
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_home }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Операції</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
 
-    <div class="mb-3 mr-2">
+<div class="btn-toolbar btn-toolbar-payment float-right">
+    <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.report') }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter">
+            Створення звіту
+        </a>
+    </div>
+
+    <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.status') }}"
+           id="status"
+           class="btn btn-sm btn-success btn-payment btn-payment-filter">
+            Статус
+        </a>
+    </div>
+</div>
+
+<div class="btn-toolbar btn-toolbar-payment float-left" role="toolbar">
+
+    <div class="mb-3 mx-1">
         {% with arg='query' %}
         {% include 'payments/partials/filter_search.html' %}
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Тип операції' %}
         {% with arg='type' %}
         {% with choices=['debit', 'credit'] %}
@@ -21,7 +57,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Метод операції' %}
         {% with arg='source' %}
         {% with choices=['card', 'account'] %}
@@ -31,7 +67,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Дата операції' %}
         {% with arg_from='date_oper_from' %}
         {% with arg_to='date_oper_to' %}
@@ -41,7 +77,7 @@
         {% endwith %}
     </div>
 
-    <div class="mb-3 mr-2">
+    <div class="mb-3 mx-1">
         {% with label='Дата завершення обробки' %}
         {% with arg_from='date_resolution_from' %}
         {% with arg_to='date_resolution_to' %}
@@ -67,6 +103,11 @@
 {{ super() }}
 
 {% include 'payments/partials/filter_rangepicker_script.html' %}
-{% include 'payments/partials/modal_retry.html' %}
+
+<script type="text/javascript">
+    $.get("/liqpay/api/v1/healthcheck").fail(function () {
+        $("#status").toggleClass("btn-success btn-danger")
+    });
+</script>
 
 {% endblock %}

@@ -36,8 +36,8 @@ PAYMENT_REPLACE_MAPPING = {
     "O": "0",
     "О": "0",
     # replace punctuation marks
-    ",": ".",
-    "[^\w\.\,\s]+": "-",
+    "[^\w]*[\,]+[^\w]*": ".",
+    "[^\w\.\,]+": "-",
 }
 
 STATUS_COMPLAINT_DRAFT = "draft"
@@ -106,7 +106,7 @@ RESOLUTION_MAPPING = {
 
 
 def find_replace(string, dictionary):
-    for item in sorted(dictionary.keys(), key=len, reverse=True):
+    for item in dictionary.keys():
         string = re.sub(item, dictionary[item], string)
     return string
 

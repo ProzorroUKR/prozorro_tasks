@@ -1,11 +1,14 @@
 import io
 from datetime import datetime, timedelta
 
+import requests
 from xlsxwriter import Workbook
 
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_group_required
+from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT
+from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
     PAYMENTS_SEARCH_INVALID_CODE,
@@ -29,17 +32,17 @@ from payments.context import (
     get_payments,
     get_payment,
     get_report_params,
+    get_request_params,
 )
 from payments.data import (
+    PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     complaint_status_description,
     complaint_reject_description,
     complaint_funds_description,
-    PAYMENTS_MESSAGE_IDS,
     payment_message_list_status,
     payment_message_status,
-    PAYMENTS_FAILED_MESSAGE_ID_LIST,
     date_representation,
-    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     payment_primary_message,
 )
 
@@ -82,7 +85,6 @@ def payment_list():
     return render_template(
         "payments/payment_list.html",
         rows=data,
-        message_ids=PAYMENTS_MESSAGE_IDS,
         url_for_search=url_for_search,
         pagination=get_payment_pagination(
             total=total,
@@ -92,6 +94,30 @@ def payment_list():
         total=total,
         **search_kwargs,
         **report_kwargs
+    )
+
+
+@bp.route("/request", methods=["GET"])
+@login_group_required("accountants")
+def payment_request():
+    kwargs = get_request_params()
+    date_from = kwargs.get("date_from")
+    date_to = kwargs.get("date_to")
+    if date_from and date_to and LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
+        url = "{}/api/v1/getRegistry".format(LIQPAY_INTEGRATION_API_HOST)
+        response = requests.post(url, json={
+            "account": LIQPAY_PROZORRO_ACCOUNT,
+            "date_from": int(date_from.timestamp() * 1000),
+            "date_to": int(date_to.timestamp() * 1000)
+        })
+        data = response.json()
+    else:
+        data = None
+    return render_template(
+        "payments/payment_request.html",
+        url_for_search=url_for_search,
+        rows=data,
+        **kwargs
     )
 
 
@@ -180,7 +206,7 @@ def report_download():
     kwargs = get_report_params()
     date_from = kwargs.get("date_resolution_from")
     date_to = kwargs.get("date_resolution_to")
-    funds = kwargs.get("funds") or 'all'
+    funds = kwargs.get("funds") or "all"
 
     if not date_from and not date_to:
         abort(404)
@@ -243,15 +269,15 @@ def report_download():
     workbook = Workbook(bytes_io)
     worksheet = workbook.add_worksheet()
 
-    properties = {'text_wrap': True}
+    properties = {"text_wrap": True}
     cell_format = workbook.add_format(properties)
-    cell_format.set_align('top')
+    cell_format.set_align("top")
 
     worksheet.add_table(0, 0, len(data), len(headers) - 1, {
-        'first_column': True,
-        'header_row': True,
-        'columns': [{"header": header} for header in headers],
-        'data': data
+        "first_column": True,
+        "header_row": True,
+        "columns": [{"header": header} for header in headers],
+        "data": data
     })
 
     for index, header in enumerate(headers):
@@ -264,3 +290,13 @@ def report_download():
     response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return response
+
+
+@bp.route("/status", methods=["GET"])
+@login_group_required("accountants")
+def status():
+    data = health()
+    return render_template(
+        "payments/payment_status.html",
+        rows=data
+    )
