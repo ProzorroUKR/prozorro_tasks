@@ -103,7 +103,7 @@ def payment_request():
     kwargs = get_request_params()
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
-    if date_from and date_to:
+    if date_from and date_to and LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/api/v1/getRegistry".format(LIQPAY_INTEGRATION_API_HOST)
         response = requests.post(url, json={
             "account": LIQPAY_PROZORRO_ACCOUNT,
