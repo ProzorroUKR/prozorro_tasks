@@ -36,4 +36,177 @@
 
 {% include 'payments/partials/filter_rangepicker_script.html' %}
 
+<script type="text/javascript">
+    $(function () {
+        function create_total_time_point(data, source) {
+            return {
+                x: new Date(data['timestamp'] * 1000),
+                y: data['data'][source]['total_seconds']
+            }
+        }
+
+        function create_available_point(data, source) {
+            return {
+                x: new Date(data['timestamp'] * 1000),
+                y: data['data'][source]['status'] === 'available' ? 1 : 0
+            }
+        }
+
+        function create_unavailable_point(data, source) {
+            return {
+                x: new Date(data['timestamp'] * 1000),
+                y: data['data'][source]['status'] !== 'available' ? 1 : 0
+            }
+        }
+
+        function is_available_point(data, source) {
+            return data['data'][source]['status'] === 'available';
+        }
+
+        function process_helth(data) {
+            var historical = data["historical"];
+
+            $(".chart-status-total-time").each(function () {
+                var source = $(this).data('source');
+
+                var data_available = [];
+                var data_unavailable = [];
+
+                for (var i = 0; i < historical.length; i++) {
+                    if (is_available_point(historical[i], source)) {
+                        data_available.push(create_total_time_point(historical[i], source));
+                    } else {
+                        data_unavailable.push(create_total_time_point(historical[i], source));
+                    }
+                }
+
+                new Chart.Scatter($(this), {
+                    data: {
+                        datasets: [
+                            {
+                                label: "Available",
+                                data: data_available,
+                                backgroundColor: ['#00c851'],
+                            },
+                            {
+                                label: "Unvailable",
+                                data: data_unavailable,
+                                backgroundColor: ['#ff3547'],
+                            },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                }
+                            }],
+                            yAxes: [{
+                                type: 'linear',
+                                scaleLabel: {
+                                    labelString: 'Total seconds',
+                                    display: true
+                                }
+                            }]
+                        },
+                    }
+                });
+
+                $(this).toggleClass("d-none");
+                $(this).siblings(".spinner-wrapper").toggleClass("d-none");
+            });
+
+            $(".chart-status-available").each(function () {
+                var source = $(this).data('source');
+
+                var data_available = [];
+                var data_unavailable = [];
+
+                for (var i = 0; i < historical.length; i++) {
+                    var available = is_available_point(historical[i], source)
+                    if (i > 0 && available !== is_available_point(historical[i - 1], source)) {
+                        data_available.push(create_unavailable_point(historical[i - 1], source));
+                        data_unavailable.push(create_available_point(historical[i - 1], source));
+                    }
+                    data_available.push(create_available_point(historical[i], source));
+                    data_unavailable.push(create_unavailable_point(historical[i], source));
+                }
+
+                new Chart($(this), {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            {
+                                label: "Available",
+                                data: data_available,
+                                backgroundColor: [
+                                    'rgba(0, 200, 81, .5)',
+                                ],
+                                borderColor: [
+                                    'rgba(0, 200, 81, 0)',
+                                ],
+                                lineTension: 0,
+                                pointRadius: 0
+                            },
+                            {
+                                label: "Unvailable",
+                                data: data_unavailable,
+                                backgroundColor: [
+                                    'rgba(255, 53, 71, .5)',
+                                ],
+                                borderColor: [
+                                    'rgba(255, 53, 71, 0)',
+                                ],
+                                lineTension: 0,
+                                pointRadius: 0
+                            },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: {
+                            display: false
+                        },
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
+                                ticks: {
+                                    display: false,
+                                    padding: 0
+                                },
+                                gridLines: {
+                                    display: false,
+                                }
+                            }],
+                            yAxes: [{
+                                type: 'linear',
+                                ticks: {
+                                    display: false,
+                                },
+                                gridLines: {
+                                    display: false
+                                }
+                            }]
+                        },
+                    }
+                });
+
+                $(this).parent('.chart-status-wrapper').toggleClass("d-none");
+            });
+        }
+
+        $.get("/liqpay/api/v1/healthcheck?historical=true").done(function (data) {
+            process_helth(data);
+        }).fail(function ($xhr) {
+            var data = $xhr.responseJSON;
+            process_helth(data);
+        });
+
+    });
+</script>
+
 {% endblock %}

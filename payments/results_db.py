@@ -18,6 +18,11 @@ get_mongodb_collection = partial(
     collection_name="payments_results"
 )
 
+get_mongodb_status_collection = partial(
+    base_get_mongodb_collection,
+    collection_name="payments_status"
+)
+
 
 UUID_KEYS = [
     "description",
@@ -34,35 +39,43 @@ UUID_KEYS = [
 
 
 def init_indexes():
-    drop_indexes()
+    collection = get_mongodb_collection()
+    drop_indexes(collection)
     indexes = [
         dict(keys="createdAt", name="created_at"),
         dict(keys=[("payment.description", pymongo.TEXT)], name="payment_description_text"),
     ]
     for kwargs in indexes:
         try:
-            init_index(**kwargs)
+            init_index(collection, **kwargs)
         except OperationFailure:
             # Index already exists
             pass
 
+    status_collection = get_mongodb_status_collection()
+    try:
+        init_index(status_collection, keys="createdAt", expireAfterSeconds=24 * 3600 * 30)
+    except OperationFailure:
+        # Index already exists
+        pass
+
 
 @log_exc(logger, PyMongoError, "MONGODB_INDEX_DROP_UNEXPECTED_ERROR")
-def drop_indexes():
-    collection = get_mongodb_collection()
+def drop_indexes(collection):
     collection.drop_indexes()
 
 
 @log_exc(logger, PyMongoError, "MONGODB_INDEX_CREATION_UNEXPECTED_ERROR")
 @log_exc(logger, OperationFailure, "MONGODB_INDEX_CREATION_ERROR")
-def init_index(**kwargs):
-    collection = get_mongodb_collection()
+def init_index(collection, **kwargs):
     collection.create_index(**kwargs)
 
 
-def data_to_uid(data):
+def data_to_uid(data, keys=None):
     return args_to_uid(sorted([
-        value for key, value in data.items() if key in UUID_KEYS
+        str(value) if not isinstance(value, dict) else data_to_uid(value)
+        for key, value in data.items()
+        if keys is None or key in keys
     ]))
 
 
@@ -95,7 +108,7 @@ def get_payment_item(uid):
 def push_payment_message(data, message_id, message):
     collection = get_mongodb_collection()
     return collection.update(
-        {"_id": data_to_uid(data)},
+        {"_id": data_to_uid(data, keys=UUID_KEYS)},
         {"$push": {
             "messages": {
                 "message_id": message_id,
@@ -111,7 +124,7 @@ def save_payment_item(data, user):
     collection = get_mongodb_collection()
     try:
         return collection.insert({
-            "_id": data_to_uid(data),
+            "_id": data_to_uid(data, keys=UUID_KEYS),
             "payment": data,
             "user": user,
             "createdAt": datetime.utcnow(),
@@ -124,7 +137,7 @@ def save_payment_item(data, user):
 def set_payment_params(data, params):
     collection = get_mongodb_collection()
     return collection.update(
-        {"_id": data_to_uid(data)},
+        {"_id": data_to_uid(data, keys=UUID_KEYS)},
         {"$set": {"params": params}}
     )
 
@@ -133,7 +146,7 @@ def set_payment_params(data, params):
 def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
     return collection.update(
-        {"_id": data_to_uid(data)},
+        {"_id": data_to_uid(data, keys=UUID_KEYS)},
         {"$set": {"resolution": resolution}}
     )
 
@@ -222,3 +235,27 @@ def get_combined_filters_and(filters):
 
 def get_combined_filters_or(filters):
     return {"$or": filters}
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_STATUS_LIST_MONGODB_EXCEPTION")
+def get_statuses_list(limit=None):
+    collection = get_mongodb_status_collection()
+    cursor = collection.find().sort("createdAt", DESCENDING)
+    if limit:
+        cursor = cursor.limit(limit)
+    return cursor
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_STATUS_SAVE_MONGODB_EXCEPTION")
+def save_status(data):
+    collection = get_mongodb_status_collection()
+    try:
+        data = {
+            "_id": data_to_uid(data),
+            "data": data,
+            "createdAt": datetime.utcnow(),
+        }
+        collection.insert(data)
+        return data
+    except DuplicateKeyError:
+        pass
