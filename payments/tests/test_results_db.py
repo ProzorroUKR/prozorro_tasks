@@ -111,7 +111,18 @@ class ResultsDBTestCase(unittest.TestCase):
         fake_datetime = "test_datetime"
         datetime.utcnow.return_value = fake_datetime
 
-        data = {'test_field': 'test_value'}
+        data = {
+            "description": "test_description",
+            "amount": "test_amount",
+            "currency": "test_currency",
+            "date_oper": "test_date_oper",
+            "type": "test_type",
+            "source": "test_source",
+            "account": "test_account",
+            "okpo": "test_okpo",
+            "mfo": "test_mfo",
+            "name": "test_name"
+        }
         message = 'Test message'
         message_id = 'TEST_MESSAGE_ID'
 
@@ -120,13 +131,15 @@ class ResultsDBTestCase(unittest.TestCase):
         self.assertEqual(result, collection.update.return_value)
         collection.update.assert_called_once_with(
             {"_id": data_to_uid(data)},
-            {'$push': {
-                'messages': {
-                    "message_id": message_id,
-                    "message": message,
-                    "createdAt": fake_datetime
+            {
+                '$push': {
+                    'messages': {
+                        "message_id": message_id,
+                        "message": message,
+                        "createdAt": fake_datetime
+                    }
                 }
-            }})
+            })
 
     @patch("payments.results_db.datetime")
     @patch("payments.results_db.get_mongodb_collection")
@@ -137,7 +150,18 @@ class ResultsDBTestCase(unittest.TestCase):
         fake_datetime = "test_datetime"
         datetime.utcnow.return_value = fake_datetime
 
-        data = {'test_field': 'test_value'}
+        data = {
+            "description": "test_description",
+            "amount": "test_amount",
+            "currency": "test_currency",
+            "date_oper": "test_date_oper",
+            "type": "test_type",
+            "source": "test_source",
+            "account": "test_account",
+            "okpo": "test_okpo",
+            "mfo": "test_mfo",
+            "name": "test_name"
+        }
         user = 'test_user'
 
         result = save_payment_item(data, user)
@@ -168,7 +192,18 @@ class ResultsDBTestCase(unittest.TestCase):
         collection = MagicMock()
         get_collection.return_value = collection
 
-        data = {'test_field': 'test_value'}
+        data = {
+            "description": "test_description",
+            "amount": "test_amount",
+            "currency": "test_currency",
+            "date_oper": "test_date_oper",
+            "type": "test_type",
+            "source": "test_source",
+            "account": "test_account",
+            "okpo": "test_okpo",
+            "mfo": "test_mfo",
+            "name": "test_name"
+        }
         params = {'test_param': 'test_value'}
 
         result = set_payment_params(data, params)
@@ -184,7 +219,18 @@ class ResultsDBTestCase(unittest.TestCase):
         collection = MagicMock()
         get_collection.return_value = collection
 
-        data = {'test_field': 'test_value'}
+        data = {
+            "description": "test_description",
+            "amount": "test_amount",
+            "currency": "test_currency",
+            "date_oper": "test_date_oper",
+            "type": "test_type",
+            "source": "test_source",
+            "account": "test_account",
+            "okpo": "test_okpo",
+            "mfo": "test_mfo",
+            "name": "test_name"
+        }
         params = {'test_param': 'test_value'}
 
         result = set_payment_resolution(data, params)
