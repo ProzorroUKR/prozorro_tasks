@@ -49,7 +49,7 @@ class HealthCheckResource(Resource):
     def _generate_hist_item(self, data):
         return {
             "data": data["data"],
-            "timestamp": int(data["createdAt"].timestamp())
+            "timestamp": int(data["createdAt"].timestamp() * 1000)
         }
 
     def _save_hist_data(self, data, historical):

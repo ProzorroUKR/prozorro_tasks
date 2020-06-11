@@ -250,12 +250,12 @@ def get_statuses_list(limit=None):
 def save_status(data):
     collection = get_mongodb_status_collection()
     try:
-        data = {
+        insert_data = {
             "_id": data_to_uid(data),
-            "data": data,
+            "data": data.copy(),
             "createdAt": datetime.utcnow(),
         }
-        collection.insert(data)
-        return data
+        collection.insert(insert_data)
+        return insert_data
     except DuplicateKeyError:
         pass

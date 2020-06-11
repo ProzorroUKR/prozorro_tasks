@@ -236,15 +236,32 @@
         padding: .5rem 1.6rem;;
     }
 
-    .chart-status-wrapper {
-        overflow: hidden;
-        max-height: 40px;
-        margin-left: -10px;
+    .chart-status-available-wrapper {
+        position: relative;
+        height: 10px;
+        width: 100%;
+        border: 1px solid #9e9e9e;
+        transition: height .5s ease;
     }
 
-    .chart-status-wrapper {
-        max-height: 40px;
+    .card:hover .chart-status-available-wrapper {
+        height: 40px;
     }
+
+    .chart-status-available-wrapper .chart-status-available {
+        height: 100%;
+    }
+
+    .chart-status-total-time-wrapper {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .chart-status-total-time-wrapper .chart-status-total-time {
+        height: 100%;
+    }
+
 </style>
 
 {% endblock %}
@@ -257,7 +274,6 @@
 </div>
 
 {% endblock %}
-
 
 {% block scripts %}
 
