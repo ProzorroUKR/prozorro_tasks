@@ -3,13 +3,8 @@ from .tasks import process_tender
 
 
 def valid_qualification_tender(tender):
-    return (
-                tender['status'] == "active.qualification" and (
-                    tender['procurementMethodType'] in qualification_procedures or
-                    tender['procurementMethodType'] == "reporting" and
-                    tender['procurementMethodRationale'] == "COVID-19"
-                )
-            )
+    return (tender['status'] == "active.qualification" and
+            tender['procurementMethodType'] in qualification_procedures)
 
 
 def valid_pre_qualification_tender(tender):
