@@ -33,6 +33,7 @@ from payments.context import (
     get_payment,
     get_report_params,
     get_request_params,
+    get_int_param,
 )
 from payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
@@ -295,8 +296,12 @@ def report_download():
 @bp.route("/status", methods=["GET"])
 @login_group_required("accountants")
 def status():
+    days = get_int_param("days", default=0)
+    if not days:
+        return redirect(url_for("payments_views.status", days=1))
     data = health()
     return render_template(
         "payments/payment_status.html",
+        url_for_search=url_for_search,
         rows=data
     )
