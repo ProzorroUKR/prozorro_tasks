@@ -6,7 +6,7 @@ from xlsxwriter import Workbook
 
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
-from app.auth import login_group_required
+from app.auth import login_groups_required
 from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT, LIQPAY_API_PROXIES
 from payments.health import health
 from payments.message_ids import (
@@ -58,7 +58,7 @@ bp.add_app_template_filter(complaint_funds_description, "complaint_funds_descrip
 
 
 @bp.route("/", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_list():
     report_kwargs = get_report_params()
     date_from = report_kwargs.get("date_resolution_from")
@@ -99,7 +99,7 @@ def payment_list():
 
 
 @bp.route("/request", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_request():
     kwargs = get_request_params()
     date_from = kwargs.get("date_from")
@@ -123,7 +123,7 @@ def payment_request():
 
 
 @bp.route("/<uid>", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_detail(uid):
     data = get_payment_item(uid)
     if not data:
@@ -152,7 +152,7 @@ def payment_detail(uid):
 
 
 @bp.route("/<uid>/retry", methods=["GET"])
-@login_group_required("admins")
+@login_groups_required(["admins"])
 def payment_retry(uid):
     data = get_payment_item(uid)
     if not data:
@@ -166,7 +166,7 @@ def payment_retry(uid):
 
 
 @bp.route("/report", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def report():
     kwargs = get_report_params()
     date_from = kwargs.get("date_resolution_from")
@@ -202,7 +202,7 @@ def report():
 
 
 @bp.route("/report/download", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def report_download():
     kwargs = get_report_params()
     date_from = kwargs.get("date_resolution_from")
@@ -294,7 +294,7 @@ def report_download():
 
 
 @bp.route("/status", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def status():
     days = get_int_param("days", default=0)
     if not days:
