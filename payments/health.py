@@ -1,5 +1,7 @@
 import json
 import time
+from datetime import datetime, timedelta
+
 import kombu
 
 from contextlib import contextmanager
@@ -15,8 +17,12 @@ from environment_settings import (
     CELERY_BROKER_URL,
 )
 from liqpay_int.utils import generate_liqpay_status_params, liqpay_request
+from payments.results_db import get_statuses_list, save_status
 from payments.utils import request_head, request_complaint_search
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
+
+
+HEATH_DATA_INTERVAL_SECONDS = 10 * 60
 
 
 def response_health_status(response):
@@ -185,3 +191,25 @@ def health():
         status == "available" for status in health_statuses
     ]) else "unavailable"
     return dict(status=health_overall, **health_data)
+
+
+def save_health_data(data):
+    historical = list(get_statuses_list(limit=1))
+    if len(historical):
+        historical_last = historical[0]
+        delta = datetime.now() - historical_last["createdAt"]
+        status_changed = False
+        for key in historical_last["data"].keys():
+            if key != "status":
+                prev_status = historical_last["data"].get(key, {}).get("status")
+                curr_status = data.get(key, {}).get("status")
+                if prev_status != curr_status:
+                    status_changed = True
+        if delta > timedelta(seconds=HEATH_DATA_INTERVAL_SECONDS) or status_changed:
+            return save_status(data)
+    else:
+        return save_status(data)
+
+
+def get_health_data():
+    return list(get_statuses_list())

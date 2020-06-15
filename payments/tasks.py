@@ -7,6 +7,7 @@ from pymongo.errors import PyMongoError
 from celery_worker.celery import app
 from celery.utils.log import get_task_logger
 
+from payments.health import health, save_health_data
 from payments.logging import PaymentResultsLoggerAdapter
 from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
@@ -547,3 +548,10 @@ def process_complaint_resolution(self, payment_data, complaint_data, *args, **kw
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_CRAWLER_RESOLUTION_SAVE_SUCCESS
         })
+
+
+
+@app.task(bind=True, max_retries=10)
+def check_payments_status(self):
+    data = health()
+    save_health_data(data)

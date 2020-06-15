@@ -67,4 +67,8 @@ beat_schedule = {
         'task': 'treasury.tasks.request_org_catalog',
         'schedule': crontab(hour=6, minute=0),
     },
+    'check-payments-status-every-hour': {
+        'task': 'payments.tasks.check_payments_status',
+        'schedule': crontab(minute=0),
+    },
 }
