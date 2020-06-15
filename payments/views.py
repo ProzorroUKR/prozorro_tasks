@@ -253,11 +253,17 @@ def report_download():
     for index, row in enumerate(data):
         data[index] = [str(index) if index else " "] + row
 
+    funds_description = complaint_funds_description(funds)
+
     headers = data.pop(0)
     if date_from == date_to:
         filename = "{}-{}-report".format(
             date_from.date().isoformat(),
             funds
+        )
+        title = "{}: {}".format(
+            funds_description,
+            date_from.date().isoformat()
         )
     else:
         filename = "{}-{}-{}-report".format(
@@ -265,25 +271,38 @@ def report_download():
             date_to.date().isoformat(),
             funds
         )
+        title = "{}: {} - {}".format(
+            funds_description,
+            date_from.date().isoformat(),
+            date_to.date().isoformat(),
+        )
     bytes_io = io.BytesIO()
 
     workbook = Workbook(bytes_io)
     worksheet = workbook.add_worksheet()
 
-    properties = {"text_wrap": True}
-    cell_format = workbook.add_format(properties)
-    cell_format.set_align("top")
+    title_properties = {"text_wrap": True}
+    title_cell_format = workbook.add_format(title_properties)
+    title_cell_format.set_align("center")
 
-    worksheet.add_table(0, 0, len(data), len(headers) - 1, {
+    worksheet.merge_range(0, 0, 0, len(headers) - 1, title, title_cell_format)
+
+    worksheet.add_table(1, 0, len(data) + 1, len(headers) - 1, {
         "first_column": True,
         "header_row": True,
         "columns": [{"header": header} for header in headers],
         "data": data
     })
 
+    table_properties = {"text_wrap": True}
+    table_cell_format = workbook.add_format(table_properties)
+    table_cell_format.set_align("top")
+
     for index, header in enumerate(headers):
-        max_len = max(max(map(lambda x: len(x[index]), data)) if data else 0, len(header))
-        worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+        min_default_len = 7 if index != 0 else 3
+        max_default_len = 15 if index != 1 else 25
+        max_len = max(max(map(lambda x: len(x[index]), data)) if data else 0, min_default_len)
+        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
 
     workbook.close()
 

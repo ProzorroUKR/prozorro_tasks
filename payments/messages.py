@@ -27,6 +27,7 @@ DESC_REJECT_REASON_COMPLAINT_PERIOD_ENDED = "" \
 DESC_REJECT_REASON_INCORRECT_PAYMENT = "" \
 "Отримана сума оплати не співпадає з розрахованою для даної скарги"
 
+DESC_FUNDS_ALL = "Всі платежі"
 DESC_FUNDS_STATE = "Перерахунок до держбюджету"
 DESC_FUNDS_COMPLAINANT = "Повернення коштів скаржнику"
 DESC_FUNDS_UNKNOWN = "Помилкові платежі"

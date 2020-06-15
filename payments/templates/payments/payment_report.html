@@ -49,7 +49,7 @@
             {% with href=url_for_search(request.url_rule.endpoint + '_download', exclude=['funds']) %}
             <a href="{{ href }}" type="button"
                class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
-                Всі
+                {{ 'all'|complaint_funds_description }}
             </a>
             {% endwith %}
 
