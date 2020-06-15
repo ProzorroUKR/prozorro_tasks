@@ -241,24 +241,26 @@ ROOT_SCHEME = {
     "params": ROOT_PARAMS_SCHEME_ITEM,
 }
 
+REPORT_AMOUNT_SCHEME_ITEM = {
+    "type": "object",
+    "title": "Сума, UAH",
+    "path": "payment",
+    "method": lambda x: x.get("amount") if x.get("currency")=="UAH" else None,
+    "default": "",
+}
+
 REPORT_SCHEME = {
     "payment_description": PAYMENT_DESCRIPTION_SCHEME_ITEM,
-    "payment_amount": PAYMENT_AMOUNT_SCHEME_ITEM,
-    "payment_currency": PAYMENT_CURRENCY_SCHEME_ITEM,
+    "payment_amount": REPORT_AMOUNT_SCHEME_ITEM,
     "payment_date_oper": PAYMENT_DATE_OPER_SCHEME_ITEM,
-    "resolution_type": RESOLUTION_TYPE_SCHEME_ITEM,
-    "resolution_date": RESOLUTION_DATE_SCHEME_ITEM,
-    "payment_type": PAYMENT_TYPE_SCHEME_ITEM,
     "payment_account": PAYMENT_ACCOUNT_SCHEME_ITEM,
     "payment_okpo": PAYMENT_OKPO_SCHEME_ITEM,
-    "payment_mfo": PAYMENT_MFO_SCHEME_ITEM,
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
     "complainant_id": EXTRA_COMPLAINANT_ID,
     "complainant_name": EXTRA_COMPLAINANT_NAME,
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,
-    "resolution_reason": RESOLUTION_REASON_SCHEME_ITEM,
     "resolution_funds": RESOLUTION_FUNDS_SCHEME_ITEM,
 }
 
