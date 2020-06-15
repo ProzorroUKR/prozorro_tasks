@@ -159,7 +159,7 @@ def date_representation(dt):
         return None
     if type(dt) is str:
         dt = dateutil.parser.parse(dt)
-    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat()
+    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat(sep=" ")
 
 
 DESC_REJECT_REASON_DICT = {
