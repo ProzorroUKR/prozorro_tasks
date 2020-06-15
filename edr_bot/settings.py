@@ -18,6 +18,8 @@ qualification_procedures = (
     'competitiveDialogueEU.stage2',
     'esco',
     'closeFrameworkAgreementUA',
+)
+qualification_procedures_limited = (
     'reporting',
 )
 ID_PASSPORT_LEN = 9
