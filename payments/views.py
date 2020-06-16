@@ -301,7 +301,7 @@ def report_download():
     for index, header in enumerate(headers):
         min_default_len = 7 if index != 0 else 3
         max_default_len = 15 if index != 1 else 25
-        max_len = max(max(map(lambda x: len(x[index]), data)) if data else 0, min_default_len)
+        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
         worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
 
     workbook.close()
