@@ -429,8 +429,8 @@ class TemplatesTestCase(unittest.TestCase):
         context["tender"]["milestones"] = []
         context["tender"]["bids"] = []
         result = render_contract_xml(context)
-        self.assertEqual(
-            result,
+
+        expected_result = (
             b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root method_name="PrContract">'
             b'<contract>'
@@ -463,6 +463,18 @@ class TemplatesTestCase(unittest.TestCase):
             b'<ContractsContractID>123</ContractsContractID>'
             b'</report>'
             b'</root>'
+        )
+
+        self.assertEqual(
+            result,
+            expected_result
+        )
+
+        del context["contract"]["changes"]
+        result = render_contract_xml(context)
+        self.assertEqual(
+            result,
+            expected_result
         )
 
     def test_contract_context(self):

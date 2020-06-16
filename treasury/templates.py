@@ -211,7 +211,7 @@ def render_contract_xml(context):
                 maker.changeRationaleTypes(get_value(change, "rationaleTypes")),
                 maker.contractsDateSigned(get_date_value(change, "dateSigned")),
                 maker.changeDocuments(get_value(change, "documents")),
-            ) for change in contract.get("changes"))
+            ) for change in contract.get("changes", ""))
         ),
     ]
     plan = _build_plan_xml(maker, context)
