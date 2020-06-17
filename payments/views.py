@@ -6,8 +6,8 @@ from xlsxwriter import Workbook
 
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
-from app.auth import login_group_required
-from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT
+from app.auth import login_groups_required
+from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT, LIQPAY_API_PROXIES
 from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
@@ -58,7 +58,7 @@ bp.add_app_template_filter(complaint_funds_description, "complaint_funds_descrip
 
 
 @bp.route("/", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_list():
     report_kwargs = get_report_params()
     date_from = report_kwargs.get("date_resolution_from")
@@ -99,14 +99,14 @@ def payment_list():
 
 
 @bp.route("/request", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_request():
     kwargs = get_request_params()
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
     if date_from and date_to and LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/api/v1/getRegistry".format(LIQPAY_INTEGRATION_API_HOST)
-        response = requests.post(url, json={
+        response = requests.post(url, proxies=LIQPAY_API_PROXIES, json={
             "account": LIQPAY_PROZORRO_ACCOUNT,
             "date_from": int(date_from.timestamp() * 1000),
             "date_to": int(date_to.timestamp() * 1000)
@@ -123,7 +123,7 @@ def payment_request():
 
 
 @bp.route("/<uid>", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def payment_detail(uid):
     data = get_payment_item(uid)
     if not data:
@@ -152,7 +152,7 @@ def payment_detail(uid):
 
 
 @bp.route("/<uid>/retry", methods=["GET"])
-@login_group_required("admins")
+@login_groups_required(["admins"])
 def payment_retry(uid):
     data = get_payment_item(uid)
     if not data:
@@ -166,7 +166,7 @@ def payment_retry(uid):
 
 
 @bp.route("/report", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def report():
     kwargs = get_report_params()
     date_from = kwargs.get("date_resolution_from")
@@ -202,7 +202,7 @@ def report():
 
 
 @bp.route("/report/download", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def report_download():
     kwargs = get_report_params()
     date_from = kwargs.get("date_resolution_from")
@@ -253,11 +253,17 @@ def report_download():
     for index, row in enumerate(data):
         data[index] = [str(index) if index else " "] + row
 
+    funds_description = complaint_funds_description(funds)
+
     headers = data.pop(0)
     if date_from == date_to:
         filename = "{}-{}-report".format(
             date_from.date().isoformat(),
             funds
+        )
+        title = "{}: {}".format(
+            funds_description,
+            date_from.date().isoformat()
         )
     else:
         filename = "{}-{}-{}-report".format(
@@ -265,25 +271,38 @@ def report_download():
             date_to.date().isoformat(),
             funds
         )
+        title = "{}: {} - {}".format(
+            funds_description,
+            date_from.date().isoformat(),
+            date_to.date().isoformat(),
+        )
     bytes_io = io.BytesIO()
 
     workbook = Workbook(bytes_io)
     worksheet = workbook.add_worksheet()
 
-    properties = {"text_wrap": True}
-    cell_format = workbook.add_format(properties)
-    cell_format.set_align("top")
+    title_properties = {"text_wrap": True}
+    title_cell_format = workbook.add_format(title_properties)
+    title_cell_format.set_align("center")
 
-    worksheet.add_table(0, 0, len(data), len(headers) - 1, {
+    worksheet.merge_range(0, 0, 0, len(headers) - 1, title, title_cell_format)
+
+    worksheet.add_table(1, 0, len(data) + 1, len(headers) - 1, {
         "first_column": True,
         "header_row": True,
         "columns": [{"header": header} for header in headers],
         "data": data
     })
 
+    table_properties = {"text_wrap": True}
+    table_cell_format = workbook.add_format(table_properties)
+    table_cell_format.set_align("top")
+
     for index, header in enumerate(headers):
-        max_len = max(max(map(lambda x: len(x[index]), data)) if data else 0, len(header))
-        worksheet.set_column(index, index, min(max_len + 5, 50), cell_format)
+        min_default_len = 7 if index != 0 else 3
+        max_default_len = 15 if index != 1 else 25
+        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
+        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
 
     workbook.close()
 
@@ -294,7 +313,7 @@ def report_download():
 
 
 @bp.route("/status", methods=["GET"])
-@login_group_required("accountants")
+@login_groups_required(["admins", "accountants"])
 def status():
     days = get_int_param("days", default=0)
     if not days:

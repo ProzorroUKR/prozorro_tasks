@@ -58,6 +58,7 @@ from payments.messages import (
     DESC_FUNDS_UNKNOWN,
     DESC_PROCESSING_DEFAULT,
     DESC_PROCESSING_NEUTRAL,
+    DESC_FUNDS_ALL,
 )
 
 
@@ -158,7 +159,7 @@ def date_representation(dt):
         return None
     if type(dt) is str:
         dt = dateutil.parser.parse(dt)
-    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat()
+    return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat(sep=" ")
 
 
 DESC_REJECT_REASON_DICT = {
@@ -173,6 +174,7 @@ DESC_REJECT_REASON_DICT = {
 
 
 DESC_FUNDS_DICT = {
+    "all": DESC_FUNDS_ALL,
     "state": DESC_FUNDS_STATE,
     "complainant": DESC_FUNDS_COMPLAINANT,
     "unknown": DESC_FUNDS_UNKNOWN
