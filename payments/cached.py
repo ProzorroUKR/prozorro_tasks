@@ -9,20 +9,24 @@ CACHE_TIMEOUT = 60 * 10
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def get_tender(params):
     try:
-        response = request_tender_data(tender_id=params.get("tender_id"), timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
-    except Exception as exc:
-        pass
-    else:
+        response = request_tender_data(
+            tender_id=params.get("tender_id"),
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT)
+        )
         tender = response.json()["data"]
         return tender
+    except Exception as exc:
+        pass
 
 
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def get_complaint(params):
     try:
-        response = request_complaint_data(**params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
-    except Exception as exc:
-        pass
-    else:
+        response = request_complaint_data(
+            **params,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT)
+        )
         complaint = response.json()["data"]
         return complaint
+    except Exception as exc:
+        pass
