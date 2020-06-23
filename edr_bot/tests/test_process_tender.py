@@ -84,6 +84,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'awards': [
                             {
                                 'status': 'cancelled',
@@ -156,6 +157,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'lots': [
                             {
                                 'id': "test321",
@@ -202,6 +204,43 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
+                        'awards': [
+                            {
+                                "id": item_id,
+                                "status": "pending",
+                                "suppliers": [
+                                    {
+                                        "identifier": {
+                                            "scheme": "UA-EDR",
+                                            "id": code,
+                                        },
+                                    }
+                                ],
+                            },
+                        ]
+                    },
+                }),
+                headers={'X-Request-ID': response_id}
+            )
+            process_tender(tender_id)
+
+        get_edr_data.apply_async.assert_not_called()
+
+    @patch("edr_bot.tasks.get_edr_data")
+    def test_handle_200_response_award_invalid_reporting_rationale(self, get_edr_data):
+        code = "758234578270346"
+        response_id = uuid4().hex
+        tender_id, item_name, item_id = "f" * 32, "award", "a" * 32
+
+        with patch("edr_bot.tasks.requests") as requests_mock:
+            requests_mock.get.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={
+                    'data': {
+                        'id': tender_id,
+                        'procurementMethodType': 'reporting',
+                        'procurementMethodRationale': 'notCOVID-19',
                         'awards': [
                             {
                                 "id": item_id,
@@ -236,6 +275,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'bids': [
                             {
                                 'id': 'qwerty',
@@ -334,6 +374,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'bids': [
                             {
                                 'id': bid_id,
@@ -367,6 +408,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'qualifications': [
                             {
                                 "id": item_id,
@@ -394,6 +436,7 @@ class TestHandlerCase(unittest.TestCase):
                 json=Mock(return_value={
                     'data': {
                         'id': tender_id,
+                        'procurementMethodType': 'aboveThresholdEU',
                         'bids': [
                             {
                                 'id': 'qwerty',

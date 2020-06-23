@@ -64,6 +64,9 @@ def process_tender(self, tender_id, *args, **kwargs):
 
         tender_data = response.json()["data"]
 
+        if not should_process_tender(tender_data):
+            return
+
         # --------
         i = 0  # spread in time tasks that belongs to a single tender CS-3854
         if 'awards' in tender_data:
@@ -131,6 +134,15 @@ def process_qualification(response, tender, qualification, item_number):
                 item_id=qualification['id']
             )
         )
+
+
+def should_process_tender(tender):
+    if (
+        tender['procurementMethodType'] == "reporting" and
+        tender.get('procurementMethodRationale') != "COVID-19"
+    ):
+        return False
+    return True
 
 
 def should_process_item(item):
