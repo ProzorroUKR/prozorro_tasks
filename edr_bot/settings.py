@@ -19,4 +19,7 @@ qualification_procedures = (
     'esco',
     'closeFrameworkAgreementUA',
 )
+qualification_procedures_limited = (
+    'reporting',
+)
 ID_PASSPORT_LEN = 9
