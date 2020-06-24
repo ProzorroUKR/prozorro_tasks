@@ -1,10 +1,13 @@
-from treasury.tasks import check_contract, send_contract_xml, send_change_xml, request_org_catalog, receive_org_catalog, save_transaction, put_transaction
-from environment_settings import API_HOST, API_VERSION, API_TOKEN
+from treasury.tasks import (
+    check_contract, send_contract_xml, send_change_xml, request_org_catalog,
+    receive_org_catalog, send_transactions_results
+)
 from celery.exceptions import Retry
-from requests.exceptions import ConnectionError
 from unittest.mock import patch, Mock, call
 from datetime import datetime
 import unittest
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
+from environment_settings import TREASURY_WSDL_URL
 
 
 @patch('celery_worker.locks.get_mongodb_collection',
@@ -503,135 +506,65 @@ class CheckTestCase(unittest.TestCase):
         render_xml_mock.assert_not_called()
         send_mock.assert_not_called()
 
+    @patch("treasury.tasks.render_transactions_confirmation_xml")
+    @patch("treasury.tasks.get_now")
+    @patch("treasury.tasks.sign_data")
+    @patch("treasury.tasks.send_request")
+    def test_send_transactions_results(
+            self, send_request_mock, sign_mock, get_now_mock, mock_xml
+    ):
 
-class TransactionsCheckTestCase(unittest.TestCase):
+        get_now_mock.return_value = datetime(2015, 2, 3)
 
-    @patch("treasury.tasks.ds_upload")
-    @patch("treasury.tasks.put_transaction")
-    def test_save_transaction(self, put_transaction_mock, ds_upload_mock):
-        ds_upload_mock.return_value = {
-            "url": "http://whatever",
-        }
-        source = b"abc"
-        transaction = dict(
-            transaction_id="1234",
-            data=dict(
-                status=-1,
-                something="test 1 2",
-            ))
+        with open("treasury/tests/fixtures/transactions_confirmation.xml", "rb") as f:
+            confirmation_data = f.read()
 
-        save_transaction(source, transaction)
+        mock_xml.return_value = confirmation_data
+        sign_mock.return_value = '12345sign'
 
-        ds_upload_mock.assert_called_once_with(
-            save_transaction,
-            file_content=b'abc',
-            file_name='Transaction_1234_-1.xml'
-        )
-        put_transaction_mock.delay.assert_called_once_with(
-            data={
-                'status': -1,
-                'something': "test 1 2",
-                'dataSource': ds_upload_mock.return_value["url"],
+        transactions_statuses = [403, 'Success', 'Success']
+
+        transactions_data = [
+            {
+                'ref': 123,
+                'id_contract': 345,
+                'doc_sq': 400
             },
-            transaction_id='1234'
+            {
+                'ref': 345,
+                'id_contract': 567,
+                'doc_sq': 500
+            },
+            {
+                'ref': 789,
+                'id_contract': 345,
+                'doc_sq': 300
+            }
+        ]
+
+        message_id = '123456_message'
+
+        send_transactions_results(transactions_statuses, transactions_data, message_id)
+
+        mock_xml.assert_called_once_with(
+            date='2015-02-03T00:00:00', rec_count='2', reg_sum='1200', register_id=message_id, status_id='1'
         )
 
-    @patch("treasury.tasks.requests.Session")
-    def test_put_transaction(self, session_mock):
-        session_mock.return_value.get.return_value = Mock(
-            status_code=200,
-        )
-        session_mock.return_value.put.return_value = Mock(
-            status_code=201,
-        )
-        contract_id = "12345"
-        transaction_id = "567"
-        data = {
-            "a": "b",
-            "dataSource": "http://example"
-        }
+        # send_request_mock.assert_called_once_with(
+        #     confirmation_data, '12345sign', message_id, method_name='ConfirmPRTrans')
 
-        # run
-        put_transaction(contract_id, transaction_id, data)
+        mock_xml.reset_mock()
+        transactions_statuses = ['Success', 'Success', 'Success']
+        send_transactions_results(transactions_statuses, transactions_data, message_id)
 
-        # checks
-        session_mock.return_value.get.assert_called_once_with(
-            f'{API_HOST}/api/{API_VERSION}/contracts/{contract_id}',
-        )
-        session_mock.return_value.put.assert_called_once_with(
-            f'{API_HOST}/api/{API_VERSION}/contracts/{contract_id}/transactions/{transaction_id}',
-            json={'data': {
-                'a': 'b',
-                'dataSource': 'http://example'
-            }},
-            headers={'Authorization': f'Bearer {API_TOKEN}'},
-            timeout=(5.0, 30.0)
+        mock_xml.assert_called_once_with(
+            date='2015-02-03T00:00:00', rec_count='3', reg_sum='1200', register_id=message_id, status_id='0'
         )
 
-    @patch("treasury.tasks.requests.Session")
-    def test_put_transaction_get_exc(self, session_mock):
-        session_mock.return_value.get.return_value = Mock(status_code=200)
-        session_mock.return_value.put.side_effect = ConnectionError()
-        contract_id = "12345"
-        transaction_id = "567"
-        data = {
-            "a": "b",
-            "dataSource": "http://example"
-        }
+        mock_xml.reset_mock()
+        transactions_statuses = [400, 400, 400]
+        send_transactions_results(transactions_statuses, transactions_data, message_id)
 
-        # run
-        with patch("treasury.tasks.put_transaction.retry", Retry):
-            with self.assertRaises(Retry):
-                put_transaction(contract_id, transaction_id, data)
-
-        # checks
-        session_mock.return_value.get.assert_called_once()
-        session_mock.return_value.put.assert_called_once()
-
-    @patch("treasury.tasks.requests.Session")
-    def test_get_transaction_exc(self, session_mock):
-        session_mock.return_value.get.return_value = Mock(status_code=404)
-        contract_id = "12345"
-        transaction_id = "567"
-        data = {}
-        put_transaction(contract_id, transaction_id, data)
-        
-        # checks
-        session_mock.return_value.get.assert_called_once()
-        session_mock.return_value.put.assert_not_called()
-
-    @patch("treasury.tasks.requests.Session")
-    def test_put_transaction_retry(self, session_mock):
-        session_mock.return_value.get.return_value = Mock(status_code=200)
-        session_mock.return_value.put.return_value = Mock(status_code=500)
-        contract_id = "12345"
-        transaction_id = "567"
-        data = {}
-
-        class RetryExc(Exception):
-            def __init__(self, **_):
-                pass
-
-        # run
-        with patch("treasury.tasks.put_transaction.retry", RetryExc):
-            with self.assertRaises(RetryExc):
-                put_transaction(contract_id, transaction_id, data)
-
-        # checks
-        session_mock.return_value.get.assert_called_once()
-        session_mock.return_value.put.assert_called_once()
-
-    @patch("treasury.tasks.requests.Session")
-    def test_put_transaction_error_code(self, session_mock):
-        session_mock.return_value.get.return_value = Mock(status_code=200)
-        session_mock.return_value.put.return_value = Mock(status_code=422)
-        contract_id = "12345"
-        transaction_id = "567"
-        data = {}
-
-        # run
-        put_transaction(contract_id, transaction_id, data)
-
-        # checks
-        session_mock.return_value.get.assert_called_once()
-        session_mock.return_value.put.assert_called_once()
+        mock_xml.assert_called_once_with(
+            date='2015-02-03T00:00:00', rec_count='0', reg_sum='1200', register_id=message_id, status_id='-1'
+        )

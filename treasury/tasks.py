@@ -1,21 +1,31 @@
+import asyncio
 from celery_worker.celery import app
 from celery_worker.locks import concurrency_lock, unique_task_decorator
 from treasury.storage import get_contract_context, save_contract_context, update_organisations, get_organisation
 from treasury.documents import prepare_documents
-from treasury.templates import render_contract_xml, render_change_xml, render_catalog_xml, \
-    prepare_context, prepare_contract_context
-from treasury.api_requests import send_request, get_request_response, parse_organisations
-from environment_settings import TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES, \
+from treasury.templates import (
+    render_contract_xml, render_change_xml, render_catalog_xml,
+    prepare_context, prepare_contract_context, render_transactions_confirmation_xml
+)
+from treasury.api_requests import send_request, get_request_response, parse_organisations, prepare_request_data
+from environment_settings import (
+    TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES,
     TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN
+)
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import (
-    get_public_api_data, get_request_retry_countdown, ds_upload, get_json_or_retry, sign_data
+    get_public_api_data, get_request_retry_countdown,
+    ds_upload, get_json_or_retry, sign_data, get_exponential_request_retry_countdown
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
 from tasks_utils.datetime import get_now
 from datetime import timedelta
 from uuid import uuid4
-import requests
+from treasury.exceptions import TransactionsQuantityServerErrorHTTPException
+from environment_settings import TREASURY_WSDL_URL, TREASURY_USER, TREASURY_PASSWORD, TREASURY_SKIP_REQUEST_VERIFY
+from requests import Session
+from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
+from treasury.domain.prtrans import save_transaction_xml, ds_upload, put_transaction, attach_doc_to_contract
 
 
 logger = get_task_logger(__name__)
@@ -187,60 +197,62 @@ def receive_org_catalog(self, message_id):
 
 
 @app.task(bind=True, max_retries=10)
-def save_transaction(self, source, transaction):
-    document = ds_upload(
-        self,
-        file_name=f"Transaction_{transaction['transaction_id']}_{transaction['data']['status']}.xml",
-        file_content=source
-    )
-    transaction["data"]["dataSource"] = document.get('url')
-    put_transaction.delay(**transaction)
+def process_transaction(self, transactions_data, source, message_id):
+    #  celery tasks by default using json serializer, that serialize datetime to str inside transaction data
+
+    transactions_ids = [record["ref"] for record in transactions_data]
+
+    saved_document = save_transaction_xml(transactions_ids, source)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    put_transactions_tasks = [
+        put_transaction(trans, saved_document) for trans in transactions_data
+    ]
+    transactions_statuses = loop.run_until_complete(asyncio.gather(*put_transactions_tasks))
+
+    attach_doc_tasks = [
+        attach_doc_to_contract(
+            saved_document['data'], trans['id_contract'], trans['ref']
+        ) for trans in transactions_data
+    ]
+    loop.run_until_complete(asyncio.gather(*attach_doc_tasks))
+
+    loop.close()
+
+    send_transactions_results.delay(transactions_statuses, transactions_data, message_id)
 
 
 @app.task(bind=True, max_retries=10)
-def put_transaction(self, contract_id, transaction_id, data):
-    url = f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}/transactions/{transaction_id}"
-    session = requests.Session()
-    log_context = {
-        "CONTRACT_ID": contract_id,
-        "TRANSACTION_ID": transaction_id,
-    }
-    resp = session.get(f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}")
+def send_transactions_results(self, transactions_statuses, transactions_data, message_id):
+    successful_trans_quantity = transactions_statuses.count('Success')
+    transactions_quantity = len(transactions_data)
 
-    if resp.status_code != 200:
-        logger.error(
-            f"Can not find {contract_id} contract id",
-            extra={"MESSAGE_ID": "TREASURY_TRANS_PRECONDITION_ERROR", **log_context}
-        )
+    if successful_trans_quantity == 0:
+        status_id = -1  # no records processed
+    elif successful_trans_quantity < transactions_quantity:
+        status_id = 1  # some records are successfully processed
+    elif successful_trans_quantity == transactions_quantity:
+        status_id = 0  # all records are successfully processed
     else:
-        try:
-            request_method = session.put
-            response = request_method(
-                url,
-                json={'data': data},
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                headers={'Authorization': 'Bearer {}'.format(API_TOKEN)},
-            )
-        except RETRY_REQUESTS_EXCEPTIONS as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_TRANS_EXCEPTION", **log_context})
-            raise self.retry(exc=exc)
-        else:
-            log_context["RESPONSE_STATUS"] = response.status_code
-            if response.status_code == 422:
-                logger.error(
-                    "Incorrect transaction data, Unprocessable Entity",
-                    extra={"MESSAGE_ID": "TREASURY_TRANS_ERROR", **log_context}
-                )
-            elif response.status_code not in (201, 200):
-                logger.error(
-                    "Unexpected status",
-                    extra={
-                        "MESSAGE_ID": "TREASURY_TRANS_UNSUCCESSFUL_STATUS",
-                        "RESPONSE_TEXT": response.text, **log_context
-                    })
-                raise self.retry(countdown=get_request_retry_countdown(response))
-            else:
-                logger.info(
-                    "Transaction successfully saved",
-                    extra={"MESSAGE_ID": "TREASURY_TRANS_SUCCESSFUL", **log_context}
-                )
+        raise TransactionsQuantityServerErrorHTTPException()
+
+    transactions_values_sum = sum([trans['doc_sq'] for trans in transactions_data])
+
+    xml_document = render_transactions_confirmation_xml(
+        register_id=str(message_id),
+        status_id=str(status_id),
+        date=get_now().isoformat(),
+        rec_count=str(successful_trans_quantity),
+        reg_sum=str(transactions_values_sum)
+    )
+    sign = sign_data(self, xml_document)
+    # sending changes
+    # message_id = uuid4().hex
+
+    logger.info(f'ConfirmPRTrans requested data: {xml_document}')
+    send_request(self, xml_document, sign, message_id, method_name="ConfirmPRTrans")
+
+    logger.info("PRTrans confirmation xml have been successful sent")
+
