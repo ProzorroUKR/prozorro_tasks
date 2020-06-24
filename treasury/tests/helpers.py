@@ -19,7 +19,7 @@ def prepare_request(xml, message_id=1, method_name="PRTrans",
         MessageId=message_id,
         MethodName=method_name,
         Data=xml,
-        DataSign=b"",
+        DataSign=b"123",
     )
     message_node = client.create_message(client.service, 'SendRequest', message)
     return etree.tostring(message_node)

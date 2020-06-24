@@ -46,3 +46,4 @@ class RequestFields(XMLParser):
     UserPassword: str
     MessageId: str
     Data: str
+    DataSign: str

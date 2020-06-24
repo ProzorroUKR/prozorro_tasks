@@ -4,7 +4,9 @@ from app.utils import generate_auth_id
 from treasury.api.parsers.base import RequestFields
 from treasury.api.builders import XMLResponse
 from treasury.api.methods.method_factory import MethodFactory
+from app.logging import getLogger
 
+logger = getLogger()
 
 bp = Blueprint('treasury', __name__)
 
@@ -18,5 +20,6 @@ def main():
         return XMLResponse(code="10", message="Invalid login or password", status=403)
 
     handler = MethodFactory.create(fields.MethodName)
+    logger.info(f'DataSign: {fields.DataSign}')
     result = handler(fields.Data, fields.MessageId).run()
     return result
