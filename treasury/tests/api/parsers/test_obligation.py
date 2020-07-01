@@ -25,7 +25,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+            b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root>'
             b'<record id="124" result_code="0"/>'
             b'<record id="125" result_code="0"/>'
@@ -57,7 +57,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-              b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+              b'<?xml version="1.0" encoding="windows-1251"?>'
               b'<root>'
               b'<record id="124" result_code="30" result_text="pmt_status is required, pmt_sum is required"/>'
               b'<record id="125" result_code="0"/>'
@@ -90,7 +90,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+            b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root>'
             b'<record id="124" result_code="0"/>'
             b'<record id="125" result_code="30" '
@@ -120,11 +120,10 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-               b'<xml>'
-               b'<Body><Response>'
-               b'<ResultCode>30</ResultCode><ResultMessage>Can not find required record id</ResultMessage>'
-               b'</Response></Body>'
-               b'</xml>'
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Body><Response>'
+            b'<ResultCode>30</ResultCode><ResultMessage>Can not find required record id</ResultMessage>'
+            b'</Response></Body>'
         )
         self.assertEqual(response.status_code, 400)
         db_insert_one_mock.assert_not_called()
@@ -147,11 +146,10 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b'<xml>'
+            b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<Body><Response>'
             b'<ResultCode>30</ResultCode><ResultMessage>Record id has incorrect data type</ResultMessage>'
             b'</Response></Body>'
-            b'</xml>'
         )
         self.assertEqual(response.status_code, 400)
         db_insert_one_mock.assert_not_called()
