@@ -4,8 +4,8 @@ from treasury.tests.helpers import prepare_request
 
 
 class MainApiTestCase(BaseTestCase):
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_password(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_password(self, process_transaction_mock):
         response = self.client.post(
             '/treasury',
             data=prepare_request(b"", password="eee"),
@@ -13,10 +13,11 @@ class MainApiTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b'<xml><Body><Response>'
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Body><Response>'
             b'<ResultCode>10</ResultCode>'
             b'<ResultMessage>Invalid login or password</ResultMessage></Response>'
-            b'</Body></xml>'
+            b'</Body>'
         )
         self.assertEqual(response.status_code, 403)
-        save_transaction_mock.assert_not_called()
+        process_transaction_mock.assert_not_called()

@@ -20,6 +20,9 @@ class XMLObligationDataParser(XMLParser):
     )
     namespaces = {}
 
+    def __init__(self, _data):
+        super().__init__(_data)
+
     def parse(self):
         _parsed_data = []
         records_obj = self.tree_obj.findall("record")

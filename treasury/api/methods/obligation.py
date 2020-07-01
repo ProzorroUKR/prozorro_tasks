@@ -42,4 +42,5 @@ class ObligationXMLResponse:
         etree.SubElement(self.root, 'record', id=str(entry['recordId']), **params)
 
     def convert_to_string(self):
-        return etree.tostring(self.root, encoding='windows-1251')
+        doc_type = b'<?xml version="1.0" encoding="windows-1251"?>'
+        return doc_type + etree.tostring(self.root)

@@ -4,8 +4,8 @@ from treasury.tests.helpers import prepare_request
 
 
 class BaseParserTestCase(BaseTestCase):
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_xml(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_xml(self, process_transaction_mock):
         xml = b"<test>Hello, xml!<test>"
         response = self.client.post(
             '/treasury',
@@ -14,17 +14,18 @@ class BaseParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b"<xml><Body><Response>"
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b"<Body><Response>"
             b"<ResultCode>80</ResultCode>"
             b"<ResultMessage>Invalid request xml: EndTag: '&lt;/' not found, line 1,"
             b" column 24 (&lt;string&gt;, line 1)</ResultMessage>"
-            b"</Response></Body></xml>"
+            b"</Response></Body>"
         )
         self.assertEqual(response.status_code, 400)
-        save_transaction_mock.delay.assert_not_called()
+        process_transaction_mock.assert_not_called()
 
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_bas64(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_bas64(self, process_transaction_mock):
         xml = b"abc"
         response = self.client.post(
             '/treasury',
@@ -33,10 +34,11 @@ class BaseParserTestCase(BaseTestCase):
         )
         self.assertEqual(
             response.data,
-            b'<xml><Body><Response>'
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Body><Response>'
             b'<ResultCode>80</ResultCode>'
             b'<ResultMessage>Data base64 error: Incorrect padding</ResultMessage>'
-            b'</Response></Body></xml>'
+            b'</Response></Body>'
         )
         self.assertEqual(response.status_code, 400)
-        save_transaction_mock.delay.assert_not_called()
+        process_transaction_mock.assert_not_called()

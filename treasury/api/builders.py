@@ -13,12 +13,11 @@ class XMLResponse(Response):
 
 def build_response(code="0", message=""):
     maker = builder.ElementMaker()
-    xml = maker.xml(
-        maker.Body(
-            maker.Response(
-                maker.ResultCode(code),
-                maker.ResultMessage(message)
-            )
+    xml = maker.Body(
+        maker.Response(
+            maker.ResultCode(code),
+            maker.ResultMessage(message)
         )
     )
-    return etree.tostring(xml)
+    doc_type = b'<?xml version="1.0" encoding="UTF-8"?>'
+    return doc_type + etree.tostring(xml, xml_declaration=False)

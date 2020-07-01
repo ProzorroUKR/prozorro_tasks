@@ -29,7 +29,7 @@ class ObligationTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data,
-            b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+            b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root>'
             b'<record id="124" result_code="0"/>'
             b'<record id="125" result_code="0"/>'
@@ -51,7 +51,7 @@ class ObligationTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data,
-            b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+            b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root>'
             b'<record id="124" result_code="30" result_text="MONGODB ACCESS ERROR"/>'
             b'<record id="125" result_code="30" result_text="MONGODB ACCESS ERROR"/>'
@@ -69,7 +69,7 @@ class ObligationTestCase(BaseTestCase):
 
         self.assertEqual(
             response,
-             b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+             b'<?xml version="1.0" encoding="windows-1251"?>'
              b'<root>'
              b'<record id="12034" result_code="0"/>'
              b'<record id="12035" result_code="0"/>'
@@ -89,7 +89,7 @@ class ObligationTestCase(BaseTestCase):
 
         self.assertEqual(
             response,
-            b'<?xml version=\'1.0\' encoding=\'windows-1251\'?>\n'
+            b'<?xml version="1.0" encoding="windows-1251"?>'
             b'<root>'
             b'<record id="12034" result_code="30" result_text="pmt_sum has incorrect data type"/>'
             b'<record id="12035" result_code="30" result_text="MONGODB ACCESS ERROR"/>'
