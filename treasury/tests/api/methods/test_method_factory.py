@@ -6,8 +6,8 @@ from treasury.api.methods.prtrans import PRTrans
 
 
 class MethodFactoryTestCase(BaseTestCase):
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_method(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_method(self, process_transaction_mock):
         response = self.client.post(
             '/treasury',
             data=prepare_request(b"", method_name="eee"),
@@ -21,7 +21,7 @@ class MethodFactoryTestCase(BaseTestCase):
             b'</Response></Body></xml>'
         )
         self.assertEqual(response.status_code, 400)
-        save_transaction_mock.assert_not_called()
+        process_transaction_mock.assert_not_called()
 
     def test_create_method(self):
 

@@ -4,8 +4,8 @@ from treasury.tests.helpers import prepare_request
 
 
 class BaseParserTestCase(BaseTestCase):
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_xml(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_xml(self, process_transaction_mock):
         xml = b"<test>Hello, xml!<test>"
         response = self.client.post(
             '/treasury',
@@ -21,10 +21,10 @@ class BaseParserTestCase(BaseTestCase):
             b"</Response></Body></xml>"
         )
         self.assertEqual(response.status_code, 400)
-        save_transaction_mock.delay.assert_not_called()
+        process_transaction_mock.assert_not_called()
 
-    @patch("treasury.api.methods.prtrans.save_transaction")
-    def test_invalid_bas64(self, save_transaction_mock):
+    @patch("treasury.tasks.process_transaction")
+    def test_invalid_bas64(self, process_transaction_mock):
         xml = b"abc"
         response = self.client.post(
             '/treasury',
@@ -39,4 +39,4 @@ class BaseParserTestCase(BaseTestCase):
             b'</Response></Body></xml>'
         )
         self.assertEqual(response.status_code, 400)
-        save_transaction_mock.delay.assert_not_called()
+        process_transaction_mock.assert_not_called()
