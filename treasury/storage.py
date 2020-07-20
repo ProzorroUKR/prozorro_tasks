@@ -5,6 +5,8 @@ from pymongo import UpdateOne, DeleteMany
 from celery.signals import celeryd_init
 from celery.utils.log import get_task_logger
 from celery_worker.celery import app
+from typing import List, Dict
+from http import HTTPStatus
 import sys
 
 
@@ -91,3 +93,27 @@ def get_organisation(task, code):
         raise task.retry()
     else:
         return result
+
+
+def insert_one(collection_name, data: Dict):
+    try:
+        coll = get_collection(collection_name=collection_name)
+        doc = coll.insert_one(data)
+    except PyMongoError as e:
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_ERROR"})
+        return {"status": HTTPStatus.SERVICE_UNAVAILABLE, "data": "MONGODB ACCESS ERROR"}
+    else:
+        logger.info(f"{data} has been inserted")
+        return {"status": HTTPStatus.CREATED, "data": doc.inserted_id}
+
+
+def insert_many(collection_name, data: List[Dict]):
+    try:
+        coll = get_collection(collection_name=collection_name)
+        coll.insert_many(data)
+    except PyMongoError as e:
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_ERROR"})
+        return {"status": HTTPStatus.SERVICE_UNAVAILABLE, "data": "MONGODB ACCESS ERROR"}
+    else:
+        logger.info(f"{data} has been inserted")
+        return {"status": HTTPStatus.CREATED}

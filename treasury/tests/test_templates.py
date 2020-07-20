@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from treasury.templates import render_catalog_xml, render_change_xml, render_contract_xml, \
-    prepare_context, prepare_contract_context, format_date
+from treasury.templates import (
+    render_catalog_xml, render_change_xml, render_contract_xml, prepare_context,
+    prepare_contract_context, format_date, render_transactions_confirmation_xml,
+)
 from unittest.mock import Mock, patch
-from environment_settings import TIMEZONE
 from copy import deepcopy
 from datetime import datetime
 import unittest
@@ -574,5 +575,27 @@ class TemplatesTestCase(unittest.TestCase):
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
+
+    def test_build_transactions_result_xml(self):
+        params = dict(
+            register_id='123',
+            status_id='456',
+            date=datetime(2015, 2, 3, 4, 5, 6).isoformat(),
+            rec_count=5,
+            reg_sum=45600000.25,
+        )
+        result = render_transactions_confirmation_xml(**params)
+        expected_result = (
+            b'<?xml version="1.0" encoding="windows-1251"?>'
+            b'<root method_name="ConfirmPRTrans">'
+            b'<register_id>123</register_id>'
+            b'<status_id>456</status_id>'
+            b'<date>2015-02-03T04:05:06</date>'
+            b'<rec_count>5</rec_count>'
+            b'<reg_sum>45600000.25</reg_sum>'
+            b'</root>'
+        )
+
+        self.assertEqual(result, expected_result)
 
 

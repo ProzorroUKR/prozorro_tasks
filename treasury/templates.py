@@ -326,3 +326,16 @@ def prepare_context(task, contract, tender, plan):
         initial_bids=initial_bids,
     )
     return context
+
+
+def render_transactions_confirmation_xml(register_id, status_id, date, rec_count, reg_sum):
+    maker = builder.ElementMaker()
+    xml = maker.root(
+        maker.register_id(str(register_id)),
+        maker.status_id(str(status_id)),
+        maker.date(date),
+        maker.rec_count(str(rec_count)),
+        maker.reg_sum(str(reg_sum)),
+        method_name="ConfirmPRTrans",
+    )
+    return _render_tree(xml)
