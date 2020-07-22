@@ -24,6 +24,7 @@ from treasury.domain.prtrans import save_transaction_xml, ds_upload, put_transac
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
     ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
+    DOCUMENT_ATTACH_FAILED_PRECONDITION_STATUS,
 )
 from collections import namedtuple
 
@@ -206,10 +207,16 @@ def process_transaction(self, transactions_data, source, message_id):
     TransactionStatus = namedtuple('TransactionStatus', 'put attach final')
 
     for trans in transactions_data:
-        put_transaction_status = put_transaction(trans)
-        attach_doc_to_transaction_status = attach_doc_to_contract(
-            saved_document['data'], trans['id_contract'], trans['ref']
-        )
+        put_transaction_status, server_id_cookie = put_transaction(trans)
+        # cookies needed for correct attaching doc to the same replica(SERVER_ID) where transaction is
+
+        if put_transaction_status == PUT_TRANSACTION_SUCCESSFUL_STATUS:
+            attach_doc_to_transaction_status = attach_doc_to_contract(
+                saved_document['data'], trans['id_contract'], trans['ref'], server_id_cookie
+            )
+        else:
+            attach_doc_to_transaction_status = DOCUMENT_ATTACH_FAILED_PRECONDITION_STATUS
+
         if (
             put_transaction_status == PUT_TRANSACTION_SUCCESSFUL_STATUS and
             attach_doc_to_transaction_status == ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS

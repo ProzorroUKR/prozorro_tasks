@@ -81,6 +81,9 @@ def put_transaction(transaction):
     }
     try:
         get_response = session.get(f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}")
+        server_id = get_response.cookies.get("SERVER_ID", None)
+        server_id_cookie = {"SERVER_ID": server_id}
+
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         raise ApiServiceError(description=f'Connection Error to Api Service {API_HOST} host, {exc}')
     if get_response.status_code != 200:
@@ -91,10 +94,17 @@ def put_transaction(transaction):
                 "RESPONSE_TEXT": get_response.text, **log_context
             }
         )
-        return get_response.status_code
+        return get_response.status_code, server_id_cookie
+
+    logger.info(
+        f"Cookies before put transaction: {get_response.cookies}",
+        extra={"MESSAGE_ID": "TREASURY_TRANSACTION_COOKIES"}
+    )
+
     response = session.put(
         url, json={'data': data}, timeout=timeout,
         headers={'Authorization': 'Bearer {}'.format(API_TOKEN)},
+        cookies=server_id_cookie
     )
 
     log_context["RESPONSE_STATUS"] = response.status_code
@@ -107,7 +117,7 @@ def put_transaction(transaction):
                 "RESPONSE_TEXT": response.text, **log_context
             }
         )
-        return response.status_code
+        return response.status_code, server_id_cookie
     elif response.status_code not in (201, 200):
         logger.error(
             "Unexpected status",
@@ -115,18 +125,18 @@ def put_transaction(transaction):
                 "MESSAGE_ID": "TREASURY_TRANS_UNSUCCESSFUL_STATUS",
                 "RESPONSE_TEXT": response.text, **log_context
             })
-        return response.status_code
+        return response.status_code, server_id_cookie
     else:
         logger.info(
             "Transaction successfully saved",
             extra={"MESSAGE_ID": "TREASURY_TRANS_SUCCESSFUL", **log_context}
         )
-        return PUT_TRANSACTION_SUCCESSFUL_STATUS
+        return PUT_TRANSACTION_SUCCESSFUL_STATUS, server_id_cookie
 
 
-def attach_doc_to_contract(data, contract_id, transaction_id):
+def attach_doc_to_contract(data, contract_id, transaction_id, server_id_cookie):
 
-    url = "{host}/api/{version}/contracts/{contract_id}/transactions/{transaction_id}/documents".format(
+    post_url = "{host}/api/{version}/contracts/{contract_id}/transactions/{transaction_id}/documents".format(
         host=API_HOST,
         version=API_VERSION,
         contract_id=contract_id,
@@ -149,7 +159,8 @@ def attach_doc_to_contract(data, contract_id, transaction_id):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
             },
-            timeout=timeout
+            timeout=timeout,
+            cookies=server_id_cookie
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         raise ApiServiceError(description=f'Connection Error to Api Service {API_HOST} host, {exc}')
@@ -163,36 +174,41 @@ def attach_doc_to_contract(data, contract_id, transaction_id):
             }
         )
         return get_response.status_code
-    else:
-        response = session.post(
-            url,
-            json={'data': data},
-            headers={
-                'Authorization': 'Bearer {}'.format(API_TOKEN),
-            },
-            timeout=timeout,
-            cookies=get_response.cookies
+
+    logger.info(
+        f"Cookies before attach doc to transaction: {server_id_cookie}",
+        extra={"MESSAGE_ID": "TREASURY_TRANSACTION_COOKIES"}
+    )
+
+    response = session.post(
+        post_url,
+        json={'data': data},
+        headers={
+            'Authorization': 'Bearer {}'.format(API_TOKEN),
+        },
+        timeout=timeout,
+        cookies=server_id_cookie
+    )
+    # handle response code
+    if response.status_code == 422:
+        logger.error("Incorrect document data while attaching doc {} to transaction {}: {}".format(
+            data["title"], transaction_id, response.text
+        ), extra={"MESSAGE_ID": "ATTACH_DOC_DATA_ERROR"})
+        return response.status_code
+    elif response.status_code == 403:
+        logger.warning(
+            "Forbidden, Can't upload document: {}".format(response.text),
+            extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code}
         )
-        # handle response code
-        if response.status_code == 422:
-            logger.error("Incorrect document data while attaching doc {} to transaction {}: {}".format(
-                data["title"], transaction_id, response.text
-            ), extra={"MESSAGE_ID": "ATTACH_DOC_DATA_ERROR"})
-            return response.status_code
-        elif response.status_code == 403:
-            logger.warning(
-                "Forbidden, Can't upload document: {}".format(response.text),
-                extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code}
-            )
-            return response.status_code
-        elif response.status_code != 201:
-            logger.error("Incorrect upload status while attaching doc {} to transaction {}: {}".format(
-                data["title"], transaction_id, response.text
-            ), extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code})
-            return response.status_code
-        else:
-            logger.info(
-                "File {} was successful attached to {} transaction".format(data["title"], transaction_id),
-                extra={"MESSAGE_ID": "SUCCESSFUL_DOC_ATTACHED"}
-            )
-            return ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS
+        return response.status_code
+    elif response.status_code != 201:
+        logger.error("Incorrect upload status while attaching doc {} to transaction {}: {}".format(
+            data["title"], transaction_id, response.text
+        ), extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code})
+        return response.status_code
+    else:
+        logger.info(
+            "File {} was successful attached to {} transaction".format(data["title"], transaction_id),
+            extra={"MESSAGE_ID": "SUCCESSFUL_DOC_ATTACHED"}
+        )
+        return ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS
