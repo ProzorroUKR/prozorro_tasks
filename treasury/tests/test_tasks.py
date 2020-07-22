@@ -521,6 +521,10 @@ class CheckTestCase(unittest.TestCase):
             {
                 "ref": 456,
                 "id_contract": 800000
+            },
+            {
+                "ref": 789,
+                "id_contract": 900000
             }
         ]
         source = "test_source"
@@ -529,12 +533,16 @@ class CheckTestCase(unittest.TestCase):
         save_xml_mock.return_value = {
             "data": "test_save_xml_data"
         }
-        put_mock.side_effect = [PUT_TRANSACTION_SUCCESSFUL_STATUS, PUT_TRANSACTION_SUCCESSFUL_STATUS]
+        put_mock.side_effect = [
+            (PUT_TRANSACTION_SUCCESSFUL_STATUS, 'cookies'),
+            (PUT_TRANSACTION_SUCCESSFUL_STATUS, 'cookies'),
+            (404, 'cookies'),
+        ]
         attach_doc_mock.side_effect = [ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS, 400]
 
         process_transaction(transactions_data, source, message_id)
         send_results_mock.delay.assert_called_once_with(
-            [True, False],
+            [True, False, False],
             transactions_data,
             message_id
         )

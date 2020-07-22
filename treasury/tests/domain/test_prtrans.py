@@ -39,7 +39,10 @@ class TestCase(BaseTestCase):
     @patch('requests.Session')
     def test_put_transaction(self, mock_session):
 
-        mock_get_response_class = type("GetResponse", (object,), {"status_code": 400, "text": "get_response_text"})
+        mock_get_response_class = type(
+            "GetResponse", (object,),
+            {"status_code": 400, "text": "get_response_text", "cookies": {"SERVER_ID": "123_ID"}},
+        )
 
         transaction = {
             'ref': '1',
@@ -67,23 +70,26 @@ class TestCase(BaseTestCase):
         mock_session.return_value.get.return_value = mock_get_response_class
 
         result = put_transaction(transaction)
-        self.assertEqual(result, 400)
+        self.assertEqual(result, (400, {"SERVER_ID": "123_ID"}))
 
         mock_get_response_class.status_code = 200
 
-        mock_put_response = type("PutResponse", (object,), {"status_code": 422, "text": "put_response_text"})
+        mock_put_response = type(
+            "PutResponse", (object,),
+            {"status_code": 422, "text": "put_response_text", "cookies": {"SERVER_ID": "123_ID"}}
+        )
         mock_session.return_value.put.return_value = mock_put_response
 
         result = put_transaction(transaction)
-        self.assertEqual(result, 422)
+        self.assertEqual(result, (422, {"SERVER_ID": "123_ID"}))
 
         mock_put_response.status_code = 301
         result = put_transaction(transaction)
-        self.assertEqual(result, 301)
+        self.assertEqual(result, (301, {"SERVER_ID": "123_ID"}))
 
         mock_put_response.status_code = 201
         result = put_transaction(transaction)
-        self.assertEqual(result, PUT_TRANSACTION_SUCCESSFUL_STATUS)
+        self.assertEqual(result, (PUT_TRANSACTION_SUCCESSFUL_STATUS, {"SERVER_ID": "123_ID"}))
 
     @patch('requests.post')
     def test_ds_upload(self, mock):
@@ -116,7 +122,9 @@ class TestCase(BaseTestCase):
     @patch('requests.Session')
     def test_attach_doc_to_contract(self, mock_session):
         mock_get_response_class = type(
-            "GetResponse", (object,), {"status_code": 400, "text": "get_response_text", "cookies": "some_cookies"})
+            "GetResponse", (object,),
+            {"status_code": 400, "text": "get_response_text", "cookies": {"SERVER_ID": "123_ID"}}
+        )
 
         data = {'data': 'abc', 'title': 'title123'}
         contract_id = 'AA12345'
@@ -124,30 +132,34 @@ class TestCase(BaseTestCase):
 
         mock_session.return_value.get.side_effect = requests.exceptions.ConnectionError()
 
+        _cookies = {"SERVER_ID": "123_ID"}
         with self.assertRaises(ApiServiceError):
-            attach_doc_to_contract(data, contract_id, transaction_id)
+            attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
 
         mock_session.return_value.get.side_effect = None
         mock_session.return_value.get.return_value = mock_get_response_class
 
-        result = attach_doc_to_contract(data, contract_id, transaction_id)
+        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 400)
 
         mock_get_response_class.status_code = 200
-        mock_post_response_class = type("PostResponse", (object,), {"status_code": 201, "text": "get_response_text"})
+        mock_post_response_class = type(
+            "PostResponse", (object,),
+            {"status_code": 201, "text": "get_response_text", "cookies": {"SERVER_ID": "123_ID"}}
+        )
         mock_session.return_value.post.return_value = mock_post_response_class
 
-        result = attach_doc_to_contract(data, contract_id, transaction_id)
+        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS)
 
         mock_get_response_class.status_code = 422
-        result = attach_doc_to_contract(data, contract_id, transaction_id)
+        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 422)
 
         mock_get_response_class.status_code = 403
-        result = attach_doc_to_contract(data, contract_id, transaction_id)
+        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 403)
 
         mock_get_response_class.status_code = 301
-        result = attach_doc_to_contract(data, contract_id, transaction_id)
+        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 301)
