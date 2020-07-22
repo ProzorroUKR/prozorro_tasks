@@ -91,10 +91,15 @@ def put_transaction(transaction):
                 "RESPONSE_TEXT": get_response.text, **log_context
             }
         )
-        return get_response.status_code
+        return get_response.status_code, get_response.cookies
     response = session.put(
         url, json={'data': data}, timeout=timeout,
         headers={'Authorization': 'Bearer {}'.format(API_TOKEN)},
+        cookies=get_response.cookies
+    )
+    logger.info(
+        f"Cookies after put transaction: {response.cookies}",
+        extra={"MESSAGE_ID": "TREASURY_TRANSACTION_COOKIES"}
     )
 
     log_context["RESPONSE_STATUS"] = response.status_code
@@ -107,7 +112,7 @@ def put_transaction(transaction):
                 "RESPONSE_TEXT": response.text, **log_context
             }
         )
-        return response.status_code
+        return response.status_code, response.cookies
     elif response.status_code not in (201, 200):
         logger.error(
             "Unexpected status",
@@ -115,18 +120,18 @@ def put_transaction(transaction):
                 "MESSAGE_ID": "TREASURY_TRANS_UNSUCCESSFUL_STATUS",
                 "RESPONSE_TEXT": response.text, **log_context
             })
-        return response.status_code
+        return response.status_code, response.cookies
     else:
         logger.info(
             "Transaction successfully saved",
             extra={"MESSAGE_ID": "TREASURY_TRANS_SUCCESSFUL", **log_context}
         )
-        return PUT_TRANSACTION_SUCCESSFUL_STATUS
+        return PUT_TRANSACTION_SUCCESSFUL_STATUS, response.cookies
 
 
-def attach_doc_to_contract(data, contract_id, transaction_id):
+def attach_doc_to_contract(data, contract_id, transaction_id, _cookies):
 
-    url = "{host}/api/{version}/contracts/{contract_id}/transactions/{transaction_id}/documents".format(
+    put_url = "{host}/api/{version}/contracts/{contract_id}/transactions/{transaction_id}/documents".format(
         host=API_HOST,
         version=API_VERSION,
         contract_id=contract_id,
@@ -149,7 +154,8 @@ def attach_doc_to_contract(data, contract_id, transaction_id):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
             },
-            timeout=timeout
+            timeout=timeout,
+            cookies=_cookies
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         raise ApiServiceError(description=f'Connection Error to Api Service {API_HOST} host, {exc}')
@@ -164,8 +170,13 @@ def attach_doc_to_contract(data, contract_id, transaction_id):
         )
         return get_response.status_code
     else:
+        logger.info(
+            f"Cookies before attach doc to transaction: {get_response.cookies}",
+            extra={"MESSAGE_ID": "TREASURY_TRANSACTION_COOKIES"}
+        )
+
         response = session.post(
-            url,
+            put_url,
             json={'data': data},
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
