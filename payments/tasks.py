@@ -45,10 +45,10 @@ from payments.utils import (
     get_payment_params,
     check_complaint_code,
     check_complaint_value,
-    request_complaint_search,
-    request_tender_data,
-    request_complaint_data,
-    request_complaint_patch,
+    request_cdb_complaint_search,
+    request_cdb_tender_data,
+    request_cdb_complaint_data,
+    request_cdb_complaint_patch,
     STATUS_COMPLAINT_MISTAKEN,
     STATUS_COMPLAINT_PENDING,
     ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
@@ -112,7 +112,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
     complaint_pretty_id = payment_params.get("complaint")
     client_request_id = uuid4().hex
     try:
-        response = request_complaint_search(
+        response = request_cdb_complaint_search(
             complaint_pretty_id,
             client_request_id=client_request_id,
             cookies=cookies,
@@ -209,7 +209,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     complaint_id = complaint_params.get("complaint_id")
     client_request_id = uuid4().hex
     try:
-        response = request_complaint_data(
+        response = request_cdb_complaint_data(
             tender_id=tender_id,
             item_type=item_type,
             item_id=item_id,
@@ -320,7 +320,7 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, patch_
     complaint_id = complaint_params.get("complaint_id")
     client_request_id = uuid4().hex
     try:
-        response = request_complaint_patch(
+        response = request_cdb_complaint_patch(
             tender_id=tender_id,
             item_type=item_type,
             item_id=item_id,
@@ -386,7 +386,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
     complaint_id = complaint_params.get("complaint_id")
     client_request_id = uuid4().hex
     try:
-        response = request_complaint_data(
+        response = request_cdb_complaint_data(
             tender_id=tender_id,
             item_type=item_type,
             item_id=item_id,
@@ -451,7 +451,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
 def process_tender(self, tender_id, *args, **kwargs):
     client_request_id = uuid4().hex
     try:
-        response = request_tender_data(
+        response = request_cdb_tender_data(
             tender_id,
             client_request_id=client_request_id,
         )

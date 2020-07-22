@@ -154,7 +154,7 @@ def check_complaint_value_currency(complaint_data, payment_data):
     return False
 
 
-def get_complaint_search_url(complaint_pretty_id):
+def get_cdb_complaint_search_url(complaint_pretty_id):
     url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
     return url_pattern.format(
         host=API_HOST,
@@ -163,13 +163,13 @@ def get_complaint_search_url(complaint_pretty_id):
     )
 
 
-def get_complaint_url(tender_id, item_type, item_id, complaint_id):
+def get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=API_HOST):
     if item_type:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
     return url_pattern.format(
-        host=API_HOST,
+        host=host,
         version=API_VERSION,
         tender_id=tender_id,
         item_type=item_type,
@@ -178,16 +178,24 @@ def get_complaint_url(tender_id, item_type, item_id, complaint_id):
     )
 
 
-def get_tender_url(tender_id):
+def get_cdb_tender_url(tender_id, host=PUBLIC_API_HOST):
     url_pattern = "{host}/api/{version}/tenders/{tender_id}"
     return url_pattern.format(
-        host=PUBLIC_API_HOST,
+        host=host,
         version=API_VERSION,
         tender_id=tender_id
     )
 
 
-def get_request_headers(client_request_id=None, authorization=False):
+def get_cdb_spore_url(host=PUBLIC_API_HOST):
+    url_pattern = "{host}/api/{version}/spore"
+    return url_pattern.format(
+        host=host,
+        version=API_VERSION,
+    )
+
+
+def get_cdb_request_headers(client_request_id=None, authorization=False):
     client_request_id = client_request_id or "req-payments-" + str(uuid4())
     headers = {"X-Client-Request-ID": client_request_id}
     if authorization:
@@ -195,48 +203,84 @@ def get_request_headers(client_request_id=None, authorization=False):
     return headers
 
 
-def request_head(client_request_id=None, cookies=None,
-                 host=None, timeout=None):
-    url_pattern = "{host}/api/{version}/spore"
-    url = url_pattern.format(
-        host=host or PUBLIC_API_HOST,
-        version=API_VERSION,
-    )
-    headers = get_request_headers(client_request_id=client_request_id)
+def request_cdb_head(url, client_request_id=None, cookies=None, timeout=None):
+    headers = get_cdb_request_headers(client_request_id=client_request_id)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.head(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_search(complaint_pretty_id, client_request_id=None,
-                             cookies=None, timeout=None):
-    url = get_complaint_search_url(complaint_pretty_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+def request_cdb_get(url, client_request_id=None, cookies=None, timeout=None, authorization=False):
+    headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=authorization)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_tender_data(tender_id, client_request_id=None,
-                        cookies=None, timeout=None):
-    url = get_tender_url(tender_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
-
-
-def request_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None,
-                           cookies=None, timeout=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
-
-
-def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None,
-                            cookies=None, timeout=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+def request_cdb_patch(url, data, client_request_id=None, cookies=None, timeout=None, authorization=True):
+    headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=authorization)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
+
+
+def request_cdb_head_spore(client_request_id=None, cookies=None, timeout=None, host=PUBLIC_API_HOST):
+    url = get_cdb_spore_url(host=host)
+    return request_cdb_head(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_search(complaint_pretty_id, client_request_id=None,
+                                 cookies=None, timeout=None):
+    url = get_cdb_complaint_search_url(complaint_pretty_id)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout,
+        authorization=True
+    )
+
+
+def request_cdb_tender_data(tender_id, client_request_id=None,
+                            cookies=None, timeout=None, host=PUBLIC_API_HOST):
+    url = get_cdb_tender_url(tender_id, host=host)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None,
+                               cookies=None, timeout=None, host=API_HOST):
+    url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None,
+                                cookies=None, timeout=None, host=API_HOST):
+    url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+    return request_cdb_patch(
+        url=url,
+        data=data,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_cookies():
+    client_request_id = uuid4().hex
+    head_response = request_cdb_head_spore(client_request_id=client_request_id, host=API_HOST)
+    return head_response.cookies.get_dict()
 
 
 def get_resolution(complaint_data):
@@ -259,9 +303,3 @@ def get_resolution(complaint_data):
             "reason": reject_reason,
             "funds": funds,
         }
-
-
-def get_cookies():
-    client_request_id = uuid4().hex
-    head_response = request_head(client_request_id=client_request_id, host=API_HOST)
-    return head_response.cookies.get_dict()

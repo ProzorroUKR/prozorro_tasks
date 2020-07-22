@@ -51,9 +51,9 @@ from payments.utils import (
     check_complaint_value,
     check_complaint_status,
     get_payment_params,
-    request_complaint_search,
-    request_complaint_data,
-    get_cookies,
+    request_cdb_complaint_search,
+    request_cdb_complaint_data,
+    request_cdb_cookies,
 )
 
 logger = getLogger()
@@ -92,9 +92,9 @@ class CheckoutResource(Resource):
                 raise PaymentInvalidHTTPException()
 
             complaint_pretty_id = payment_params.get("complaint")
-            cookies = {"SERVER_ID": server_id} if server_id else get_cookies()
+            cookies = {"SERVER_ID": server_id} if server_id else request_cdb_cookies()
 
-            response = request_complaint_search(complaint_pretty_id, cookies=cookies)
+            response = request_cdb_complaint_search(complaint_pretty_id, cookies=cookies)
             if response.status_code == 412:
                 raise ProzorroApiPreconditionFailedHTTPException()
             if response.status_code != 200:
@@ -114,7 +114,7 @@ class CheckoutResource(Resource):
             item_id = complaint_params.get("item_id")
             complaint_id = complaint_params.get("complaint_id")
 
-            response = request_complaint_data(
+            response = request_cdb_complaint_data(
                 tender_id=tender_id,
                 item_type=item_type,
                 item_id=item_id,
