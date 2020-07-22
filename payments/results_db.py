@@ -176,10 +176,18 @@ def get_payment_search_filters(
     if payment_source is not None:
         filters.append({"payment.source": payment_source})
     if payment_date_from is not None and payment_date_to is not None:
-        filters.append({"payment.date_oper": {
-            "$gte": payment_date_from.strftime("%Y-%m-%d"),
-            "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
-        }})
+        filters.append(
+            get_combined_filters_or([
+                {"payment.date_oper": {
+                    "$gte": payment_date_from.strftime("%Y-%m-%d"),
+                    "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
+                }},
+                {"payment.date_oper": {
+                    "$gte": payment_date_from.strftime("%Y.%m.%d"),
+                    "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y.%m.%d")
+                }}
+            ])
+        )
     return get_combined_filters_and(filters) if filters else {}
 
 
