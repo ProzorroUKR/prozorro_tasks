@@ -7,7 +7,12 @@ from xlsxwriter import Workbook
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response
 
 from app.auth import login_groups_required
-from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT, LIQPAY_API_PROXIES
+from environment_settings import (
+    LIQPAY_INTEGRATION_API_HOST,
+    LIQPAY_INTEGRATION_API_PATH,
+    LIQPAY_PROZORRO_ACCOUNT,
+    LIQPAY_API_PROXIES,
+)
 from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
@@ -105,11 +110,11 @@ def payment_request():
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
     if date_from and date_to and LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
-        url = "{}/api/v1/getRegistry".format(LIQPAY_INTEGRATION_API_HOST)
+        url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
         response = requests.post(url, proxies=LIQPAY_API_PROXIES, json={
             "account": LIQPAY_PROZORRO_ACCOUNT,
             "date_from": int(date_from.timestamp() * 1000),
-            "date_to": int(date_to.timestamp() * 1000)
+            "date_to": int((date_to + timedelta(days=1)).timestamp() * 1000)
         })
         data = response.json()
     else:
