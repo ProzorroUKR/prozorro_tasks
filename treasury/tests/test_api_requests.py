@@ -23,8 +23,9 @@ class HelpersTestCase(unittest.TestCase):
     def test_wdsl_client_error(self, client_mock):
         client_mock.side_effect = ConnectTimeout()
         task = Mock(retry=RetryExc)
-        with self.assertRaises(RetryExc):
-            get_wsdl_client(task)
+        with patch("treasury.api_requests.get_exponential_request_retry_countdown", Mock()):
+            with self.assertRaises(RetryExc):
+                get_wsdl_client(task)
 
 
 @patch(
@@ -100,8 +101,9 @@ class RequestTestCase(unittest.TestCase):
         task = Mock(retry=RetryExc)
         session_mock = Mock(post=Mock(side_effect=SSLError("Unsafe bla bla")))
         with patch("treasury.api_requests.Session", lambda: session_mock):
-            with self.assertRaises(RetryExc):
-                send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
+            with patch("treasury.api_requests.get_exponential_request_retry_countdown", Mock()):
+                with self.assertRaises(RetryExc):
+                    send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
 
     def test_send_request_error(self):
         task = Mock(retry=RetryExc)
@@ -208,8 +210,9 @@ class ResponseTestCase(unittest.TestCase):
         task = Mock(retry=RetryExc)
         session_mock = Mock(post=Mock(side_effect=SSLError("Unsafe bla bla")))
         with patch("treasury.api_requests.Session", lambda: session_mock):
-            with self.assertRaises(RetryExc):
-                get_request_response(task, 1)
+            with patch("treasury.api_requests.get_exponential_request_retry_countdown", Mock()):
+                with self.assertRaises(RetryExc):
+                        get_request_response(task, 1)
 
     def test_get_response_error(self):
         task = Mock(retry=RetryExc)

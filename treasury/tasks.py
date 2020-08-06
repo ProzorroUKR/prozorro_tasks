@@ -8,8 +8,8 @@ from treasury.templates import (
 )
 from treasury.api_requests import send_request, get_request_response, parse_organisations, prepare_request_data
 from environment_settings import (
-    TREASURY_RESPONSE_RETRY_COUNTDOWN, TREASURY_CATALOG_UPDATE_RETRIES,
-    TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN
+    TREASURY_CATALOG_UPDATE_RETRIES, TREASURY_SEND_CONTRACT_XML_RETRIES,
+    TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN, TREASURY_PROCESS_TRANSACTION_RETRIES
 )
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import (
@@ -21,6 +21,7 @@ from datetime import timedelta
 from uuid import uuid4
 from treasury.exceptions import TransactionsQuantityServerErrorHTTPException
 from treasury.domain.prtrans import save_transaction_xml, ds_upload, put_transaction, attach_doc_to_contract
+from treasury.domain.prcontract import get_first_stage_tender
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
     ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
@@ -80,7 +81,9 @@ def check_contract(self, contract_id):
         for change_id in sorted(new_change_ids):
             send_change_xml.delay(contract["id"], change_id)
     else:
-        tender = get_public_api_data(self, contract["tender_id"], "tender")
+        second_stage_tender = get_public_api_data(self, contract["tender_id"], "tender")
+        tender = get_first_stage_tender(self, second_stage_tender)
+
         if "plans" in tender:
             plan = get_public_api_data(self, tender["plans"][0]["id"], "plan")
         else:
@@ -94,7 +97,7 @@ def check_contract(self, contract_id):
         send_contract_xml.delay(contract["id"])
 
 
-@app.task(bind=True, max_retries=1000)
+@app.task(bind=True, max_retries=TREASURY_SEND_CONTRACT_XML_RETRIES)
 @concurrency_lock
 @unique_task_decorator
 def send_contract_xml(self, contract_id):
@@ -127,7 +130,7 @@ def send_contract_xml(self, contract_id):
     )
 
 
-@app.task(bind=True, max_retries=1000)
+@app.task(bind=True, max_retries=TREASURY_SEND_CONTRACT_XML_RETRIES)
 @concurrency_lock
 @unique_task_decorator
 def send_change_xml(self, contract_id, change_id):
@@ -186,7 +189,7 @@ def receive_org_catalog(self, message_id):
         logger_method = logger.warning if self.request.retries > 10 else logger.error
         logger_method(f"Empty response for org catalog request",
                       extra={"MESSAGE_ID": "TREASURY_ORG_CATALOG_EMPTY"})
-        raise self.retry(countdown=TREASURY_RESPONSE_RETRY_COUNTDOWN)
+        raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
 
     result = update_organisations(
         self,
@@ -196,7 +199,7 @@ def receive_org_catalog(self, message_id):
                 extra={"MESSAGE_ID": "TREASURY_ORG_CATALOG_UPDATE"})
 
 
-@app.task(bind=True, max_retries=10)
+@app.task(bind=True, max_retries=TREASURY_PROCESS_TRANSACTION_RETRIES)
 def process_transaction(self, transactions_data, source, message_id):
     #  celery tasks by default using json serializer, that serialize datetime to str inside transaction data
 
@@ -233,7 +236,7 @@ def process_transaction(self, transactions_data, source, message_id):
     send_transactions_results.delay(final_statuses, transactions_data, message_id)
 
 
-@app.task(bind=True, max_retries=10)
+@app.task(bind=True, max_retries=TREASURY_PROCESS_TRANSACTION_RETRIES)
 def send_transactions_results(self, transactions_statuses, transactions_data, message_id):
     successful_trans_quantity = transactions_statuses.count(True)
     transactions_quantity = len(transactions_data)
@@ -258,7 +261,7 @@ def send_transactions_results(self, transactions_statuses, transactions_data, me
     )
     sign = sign_data(self, xml_document)
     # sending changes
-    # message_id = uuid4().hex
+    message_id = uuid4().hex
 
     logger.info(f'ConfirmPRTrans requested data: {xml_document}')
     send_request(self, xml_document, sign, message_id, method_name="ConfirmPRTrans")
