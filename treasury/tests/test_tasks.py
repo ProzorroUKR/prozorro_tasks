@@ -81,9 +81,10 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_context")
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
+    @patch("treasury.tasks.get_first_stage_tender")
     @patch("treasury.tasks.get_public_api_data")
-    def test_check_contract(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
-                            save_context_mock, send_contract_xml_mock):
+    def test_check_contract(self, get_data_mock, get_first_stage_tender_mock, get_org_mock, get_context_mock,
+                            prepare_context_mock, save_context_mock, send_contract_xml_mock):
         contract_id = "4444"
         get_org_mock.return_value = {"org data"}
         contract_data = dict(
@@ -98,14 +99,22 @@ class CheckTestCase(unittest.TestCase):
                 )
             )
         )
-        tender_data = dict(
+        first_stage_tender_id = "23456789"
+        tender_data_second_stage = dict(
             id="1234",
+            procurementMethodType="competitiveDialogueEU.stage2",
+            dialogueID=first_stage_tender_id
+        )
+        tender_data_first_stage = dict(
+            id=first_stage_tender_id,
+            procurementMethodType="competitiveDialogueEU",
             plans=[dict(id="321")]
         )
+        get_first_stage_tender_mock.return_value = tender_data_first_stage
         plan_data = dict(id="321")
         get_data_mock.side_effect = [
             contract_data,
-            tender_data,
+            tender_data_first_stage,
             plan_data
         ]
         get_context_mock.return_value = None
@@ -125,11 +134,11 @@ class CheckTestCase(unittest.TestCase):
             [
                 call(check_contract, contract_id, "contract"),
                 call(check_contract, contract_data["tender_id"], "tender"),
-                call(check_contract, tender_data["plans"][0]["id"], "plan")
+                call(check_contract, tender_data_first_stage["plans"][0]["id"], "plan")
             ]
         )
         prepare_context_mock.assert_called_once_with(
-            check_contract, contract_data, tender_data, plan_data
+            check_contract, contract_data, tender_data_first_stage, plan_data
         )
         save_context_mock.assert_called_once_with(
             check_contract,
@@ -143,8 +152,10 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_context")
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
+    @patch("treasury.tasks.get_first_stage_tender")
     @patch("treasury.tasks.get_public_api_data")
-    def test_check_contract_without_plan(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
+    def test_check_contract_without_plan(self, get_data_mock, get_first_stage_tender_mock, get_org_mock,
+                                         get_context_mock, prepare_context_mock,
                                          save_context_mock, send_contract_xml_mock):
         contract_id = "4444"
         get_org_mock.return_value = {"org data"}
@@ -160,7 +171,18 @@ class CheckTestCase(unittest.TestCase):
                 )
             )
         )
-        tender_data = dict(id="1234")
+        first_stage_tender_id = "23456789"
+        tender_data_second_stage = dict(
+            id="1234",
+            procurementMethodType="competitiveDialogueEU.stage2",
+            dialogueID=first_stage_tender_id
+        )
+        tender_data = dict(
+            id=first_stage_tender_id,
+            procurementMethodType="competitiveDialogueEU"
+        )
+        get_first_stage_tender_mock.return_value = tender_data
+
         get_data_mock.side_effect = [
             contract_data,
             tender_data,
