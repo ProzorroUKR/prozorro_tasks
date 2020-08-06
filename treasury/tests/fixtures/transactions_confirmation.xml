@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <root method_name="ConfirmPRTrans">
 <register_id>123</register_id>
-<status_id>456</status_id>
+<status_id>1</status_id>
 <date>2015-02-03T00:00:00</date>
 <rec_count>5</rec_count>
 <reg_sum>45600000.25</reg_sum>

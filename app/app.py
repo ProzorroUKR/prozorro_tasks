@@ -12,7 +12,7 @@ from app.views import bp as app_views_bp
 from environment_settings import APP_X_FORWARDED_NUMBER
 from payments.views import bp as payments_views_bp
 from liqpay_int.api import bp as liqpay_resources_bp
-from treasury.api.main import bp as treasury_resources_bp
+from treasury.api.views import bp as treasury_resources_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 

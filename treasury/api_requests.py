@@ -18,7 +18,7 @@ def get_wsdl_client(task):
         client = Client(TREASURY_WSDL_URL, transport=transport)
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
-        raise task.retry(exc=exc)
+        raise task.retry(exc=exc, countdown=get_exponential_request_retry_countdown(task))
     return client
 
 
@@ -39,7 +39,7 @@ def send_request(task, xml, sign="", message_id=None, method_name="GetRef"):
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
-        raise task.retry(exc=exc)
+        raise task.retry(exc=exc, countdown=get_exponential_request_retry_countdown(task))
     else:
         if response.status_code != 200:
             logger.error(
@@ -115,7 +115,7 @@ def get_request_response(task, message_id):
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
-        raise task.retry(exc=exc)
+        raise task.retry(exc=exc, countdown=get_exponential_request_retry_countdown(task))
     else:
         if response.status_code != 200:
             logger.error(
