@@ -81,15 +81,15 @@ def check_contract(self, contract_id):
         for change_id in sorted(new_change_ids):
             send_change_xml.delay(contract["id"], change_id)
     else:
-        second_stage_tender = get_public_api_data(self, contract["tender_id"], "tender")
-        tender = get_first_stage_tender(self, second_stage_tender)
+        tender = get_public_api_data(self, contract["tender_id"], "tender")
+        first_stage_tender = get_first_stage_tender(self, tender)
 
-        if "plans" in tender:
-            plan = get_public_api_data(self, tender["plans"][0]["id"], "plan")
+        if "plans" in first_stage_tender:
+            plan = get_public_api_data(self, first_stage_tender["plans"][0]["id"], "plan")
         else:
             plan = None
             logger.warning(
-                f"Cannot find plan for {contract['id']} and tender {tender['id']}",
+                f"Cannot find plan for {contract['id']} and tender {first_stage_tender['id']}",
                 extra={"MESSAGE_ID": "TREASURY_PLAN_LINK_MISSED"}
             )
         context = prepare_context(self, contract, tender, plan)
