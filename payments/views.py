@@ -142,7 +142,7 @@ def payment_request():
 
 
 @bp.route("/request/fake", methods=["POST", "GET"])
-@login_groups_required(["admins", "accountants"])
+@login_groups_required(["admins"])
 def payment_request_fake():
     if request.method == "GET":
         with shelve.open('payments.db') as db:
@@ -156,7 +156,7 @@ def payment_request_fake():
 
 
 @bp.route("/add", methods=["POST"])
-@login_groups_required(["admins", "accountants"])
+@login_groups_required(["admins"])
 def payment_add():
     data = request.form
     result = save_payment_item(data, "manual")
@@ -168,7 +168,7 @@ def payment_add():
 
 
 @bp.route("/update", methods=["POST"])
-@login_groups_required(["admins", "accountants"])
+@login_groups_required(["admins"])
 def payment_update():
     data = request.form
     uid = data.get("uid")
