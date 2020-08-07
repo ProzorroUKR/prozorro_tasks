@@ -169,12 +169,17 @@
         cursor: pointer;
     }
 
-    .table-payments > tbody > tr > td.cell-action > a {
+    .table-payments > tbody > tr > td.cell-action > a,
+    .table-payments > tbody > tr > td.cell-action > form > button {
+        background: transparent;
         margin: -100em;
         padding: 100em;
         height: 100%;
-        width: 100%;
         color: #ffffff;
+    }
+
+    .textarea-payments {
+        font-size: .7rem;
     }
 
     .pagination .page-item .page-link,
@@ -269,7 +274,7 @@
 
 {% block main %}
 
-<div class="container-fluid pb-5">
+<div class="container-fluid pb-5 h-100">
     {% block content %}{% endblock %}
 </div>
 

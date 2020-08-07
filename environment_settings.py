@@ -60,7 +60,7 @@ APP_AUIP_ENABLED = os.environ.get("APP_AUIP_ENABLED", False)
 APP_X_FORWARDED_NUMBER = int(os.environ.get("APP_X_FORWARDED_NUMBER", 0))
 
 LIQPAY_API_HOST = os.environ.get("LIQPAY_API_HOST", "https://www.liqpay.ua")
-LIQPAY_INTEGRATION_API_HOST = os.environ.get("LIQPAY_INTEGRATION_API_HOST")
+LIQPAY_INTEGRATION_API_HOST = os.environ.get("LIQPAY_INTEGRATION_API_HOST", "https://prozoro.microaws.com")
 LIQPAY_INTEGRATION_API_PATH = os.environ.get("LIQPAY_INTEGRATION_API_PATH", "api/v1/getRegistry")
 LIQPAY_PROZORRO_ACCOUNT = os.environ.get("LIQPAY_PROZORRO_ACCOUNT")
 LIQPAY_API_PROXIES = dict()

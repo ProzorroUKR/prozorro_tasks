@@ -31,6 +31,13 @@
     </div>
 
     <div class="mb-3 mx-1">
+        <a href="{{ url_for('payments_views.payment_request') }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter">
+            Запит операцій
+        </a>
+    </div>
+
+    <div class="mb-3 mx-1">
         <a href="{{ url_for('payments_views.status') }}"
            id="status"
            class="btn btn-sm btn-success btn-payment btn-payment-filter">

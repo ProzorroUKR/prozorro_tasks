@@ -1,12 +1,28 @@
+import json
 import re
+import shelve
+from datetime import timedelta
+from json import JSONDecodeError
+
 import requests
 
 from hashlib import sha512
 from uuid import uuid4
 
 from celery.utils.log import get_task_logger
+from xlsxwriter import Workbook
 
-from environment_settings import API_HOST, API_VERSION, API_TOKEN, PUBLIC_API_HOST
+from environment_settings import (
+    API_HOST,
+    API_VERSION,
+    API_TOKEN,
+    PUBLIC_API_HOST,
+    LIQPAY_INTEGRATION_API_HOST,
+    LIQPAY_PROZORRO_ACCOUNT,
+    LIQPAY_INTEGRATION_API_PATH,
+    LIQPAY_API_PROXIES,
+)
+from payments.data import complaint_funds_description
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 logger = get_task_logger(__name__)
@@ -103,6 +119,10 @@ RESOLUTION_MAPPING = {
         date_field="dateDecision",
     ),
 }
+
+MAIN_PAYMENT_STATUS_FIELD = "status"
+MAIN_PAYMENT_MESSAGES_FIELD = "messages"
+STATUS_MAIN_PAYMENT_FAKE = "fake"
 
 
 def find_replace(string, dictionary):
@@ -303,3 +323,92 @@ def get_resolution(complaint_data):
             "reason": reject_reason,
             "funds": funds,
         }
+
+
+def get_payments_registry(date_from, date_to):
+    with shelve.open('payments.db') as db:
+        messages = db.get("registry")
+    if messages is not None:
+        return {
+            MAIN_PAYMENT_STATUS_FIELD: STATUS_MAIN_PAYMENT_FAKE,
+            MAIN_PAYMENT_MESSAGES_FIELD: messages
+        }
+    if LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
+        url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
+        try:
+            return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
+                "account": LIQPAY_PROZORRO_ACCOUNT,
+                "date_from": int(date_from.timestamp() * 1000),
+                "date_to": int((date_to + timedelta(days=1)).timestamp() * 1000)
+            }).json()
+        except Exception:
+            pass
+
+
+
+def store_payments_registry(text):
+    if not text:
+        with shelve.open('payments.db') as db:
+            db['registry'] = None
+    else:
+        try:
+            data = json.loads(text)
+        except JSONDecodeError:
+            pass
+        else:
+            with shelve.open('payments.db') as db:
+                db['registry'] = data
+
+
+def generate_report_file(filename, data, title):
+    for index, row in enumerate(data):
+        data[index] = [str(index) if index else " "] + row
+    headers = data.pop(0)
+    workbook = Workbook(filename)
+    worksheet = workbook.add_worksheet()
+    title_properties = {"text_wrap": True}
+    title_cell_format = workbook.add_format(title_properties)
+    title_cell_format.set_align("center")
+    worksheet.merge_range(0, 0, 0, len(headers) - 1, title, title_cell_format)
+    worksheet.add_table(1, 0, len(data) + 1, len(headers) - 1, {
+        "first_column": True,
+        "header_row": True,
+        "columns": [{"header": header} for header in headers],
+        "data": data
+    })
+    table_properties = {"text_wrap": True}
+    table_cell_format = workbook.add_format(table_properties)
+    table_cell_format.set_align("top")
+    for index, header in enumerate(headers):
+        min_default_len = 7 if index != 0 else 3
+        max_default_len = 15 if index != 1 else 25
+        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
+        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
+    workbook.close()
+
+
+def generate_report_filename(date_from, date_to, funds):
+    if date_from == date_to:
+        return "{}-{}-report".format(
+            date_from.date().isoformat(),
+            funds
+        )
+    return "{}-{}-{}-report".format(
+        date_from.date().isoformat(),
+        date_to.date().isoformat(),
+        funds
+    )
+
+
+def generate_report_title(date_from, date_to, funds):
+    funds_description = complaint_funds_description(funds)
+    if date_from == date_to:
+        return "{}: {}".format(
+            funds_description,
+            date_from.date().isoformat()
+        )
+    return "{}: {} - {}".format(
+        funds_description,
+        date_from.date().isoformat(),
+        date_to.date().isoformat(),
+    )

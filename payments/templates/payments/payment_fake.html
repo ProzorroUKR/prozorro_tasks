@@ -15,35 +15,20 @@
                 <a class="black-text" href="{{ href_payments }}">Оплати</a>
                 <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
             </li>
-            <li class="breadcrumb-item active">Запит операцій</li>
+            <li class="breadcrumb-item active">Операції</li>
         </ol>
     </nav>
 </div>
 {% endwith %}
 {% endwith %}
 
-{% if fake %}
-<div class="alert badge-danger">
-    <i class="fas fa-exclamation mr-2"></i> Fake data enabled
-</div>
-{% endif %}
-
-<div class="btn-toolbar mt-3" role="toolbar">
-
-    <div class="mb-3 mr-2">
-        {% with label='Дата операції' %}
-        {% with arg_from='date_from' %}
-        {% with arg_to='date_to' %}
-        {% include 'payments/partials/filter_rangepicker.html' %}
-        {% endwith %}
-        {% endwith %}
-        {% endwith %}
-    </div>
-
-</div>
-
-<div class="table-responsive mb-3">
-    {% include 'payments/partials/table_request.html' %}
+<div class="pb-5 h-100">
+    {% with href_fake=url_for("payments_views.payment_request_fake") %}
+    <form class="h-100" method="POST" action="{{ href_fake }}">
+        <textarea name="text" class="textarea-payments w-100 h-100">{{ text }}</textarea>
+        <button type="submit" class="btn btn-sm btn-payment btn-success m-0 w-100">Submit</button>
+    </form>
+    {% endwith %}
 </div>
 
 {% endblock %}
