@@ -148,7 +148,7 @@ def payment_request_fake():
         with shelve.open('payments.db') as db:
             return render_template(
                 "payments/payment_fake.html",
-                        text=json.dumps(db['registry'], indent=4, ensure_ascii=False)
+                text=json.dumps(db['registry'], indent=4, ensure_ascii=False)
             )
     else:
         store_payments_registry(request.form.get("text"))
