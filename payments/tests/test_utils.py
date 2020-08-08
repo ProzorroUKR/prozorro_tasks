@@ -1,4 +1,6 @@
 import unittest
+from datetime import datetime, timedelta
+from json import JSONDecodeError
 from unittest.mock import patch, MagicMock
 
 from environment_settings import API_HOST, API_VERSION, PUBLIC_API_HOST
@@ -17,6 +19,10 @@ from payments.utils import (
     request_cdb_complaint_data,
     get_cdb_complaint_url,
     request_cdb_complaint_patch,
+    get_payments_registry,
+    get_payments_registry_fake,
+    dumps_payments_registry_fake,
+    store_payments_registry_fake,
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
@@ -559,4 +565,216 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
 
         requests.patch.assert_called_once_with(
             url, json=json, headers=headers, timeout=timeout, cookies=cookies
+        )
+
+
+class GetPaymentsRegistryTestCase(unittest.TestCase):
+
+    @patch("payments.utils.LIQPAY_INTEGRATION_API_HOST", "http://test.example.com")
+    @patch("payments.utils.LIQPAY_INTEGRATION_API_PATH", "test/path")
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", "test")
+    @patch("payments.utils.LIQPAY_API_PROXIES", {"http": "http://proxy.example.com"})
+    @patch("payments.utils.requests")
+    def test_get_payments_registry(self, requests):
+        date_from = MagicMock()
+        date_from.timestamp.return_value = 1
+        date_to = MagicMock()
+        date_to.timestamp.return_value = 2
+
+        result = get_payments_registry(date_from, date_to)
+
+        requests.post.assert_called_once_with(
+            "http://test.example.com/test/path",
+            proxies={"http": "http://proxy.example.com"},
+            json={
+                "account": "test",
+                "date_from": 1 * 1000,
+                "date_to": 2 * 1000,
+            }
+        )
+        requests.post.return_value.json.assert_called_once_with()
+        self.assertEqual(result, requests.post.return_value.json.return_value)
+
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", "test")
+    @patch("payments.utils.requests")
+    def test_get_payments_registry_request_fail(self, requests):
+        date_from = MagicMock()
+        date_to = MagicMock()
+        requests.post.side_effect = Exception
+
+        result = get_payments_registry(date_from, date_to)
+
+        self.assertEqual(requests.post.call_count, 1)
+        self.assertIsNone(result)
+
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", None)
+    @patch("payments.utils.requests")
+    def test_get_payments_registry_with_no_account(self, requests):
+        date_from = MagicMock()
+        date_to = MagicMock()
+
+        result = get_payments_registry(date_from, date_to)
+
+        self.assertEqual(requests.post.call_count, 0)
+        self.assertIsNone(result)
+
+
+class GetPaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake(self, shelve):
+        date_from = datetime.now() - timedelta(days=1)
+        date_to = datetime.now() + timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": shelve.open.return_value.__enter__.return_value["registry"]
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_invalid_date_oper_format(self, shelve):
+        date_from = datetime.now() - timedelta(days=1)
+        date_to = datetime.now() + timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": "test"
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_not_in_range(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_registry_empty_list(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {"registry": []}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_not_initiated(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertIsNone(result)
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_registry_unset(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {"registry": None}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertIsNone(result)
+
+
+class DumpsPaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_dumps_payments_registry_fake(self, shelve, json):
+        dumps_payments_registry_fake()
+
+        shelve.open.assert_called_once_with('payments.db')
+        json.dumps.assert_called_once_with(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            indent=4,
+            ensure_ascii=False
+        )
+
+
+class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake(self, shelve, json):
+        text = "test"
+        shelve.open.return_value.__enter__.return_value = dict()
+
+        store_payments_registry_fake(text)
+
+        json.loads.assert_called_once_with(text)
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            json.loads.return_value
+        )
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake_json_decode_error(self, shelve, json):
+        text = "test"
+        shelve.open.return_value.__enter__.return_value = dict()
+        json.loads.side_effect = JSONDecodeError("test", "test", 1)
+
+        store_payments_registry_fake(text)
+
+        self.assertEqual(shelve.open.call_count, 0)
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value,
+            dict()
+        )
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake_(self, shelve, json):
+        text = None
+        shelve.open.return_value.__enter__.return_value = dict()
+
+        store_payments_registry_fake(text)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            None
         )

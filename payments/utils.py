@@ -323,13 +323,13 @@ def get_resolution(complaint_data):
 
 
 def get_payments_registry(date_from, date_to):
-    if LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
+    if LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
         try:
             return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
                 "account": LIQPAY_PROZORRO_ACCOUNT,
                 "date_from": int(date_from.timestamp() * 1000),
-                "date_to": int((date_to + timedelta(days=1)).timestamp() * 1000)
+                "date_to": int(date_to.timestamp() * 1000)
             }).json()
         except Exception:
             pass
@@ -338,15 +338,17 @@ def get_payments_registry_fake(date_from, date_to):
     with shelve.open('payments.db') as db:
         messages = db.get("registry")
     if messages is not None:
+
         def fake_date_oper_range(value):
             try:
                 date_oper = datetime.strptime(value.get("date_oper"), "%d.%m.%Y %H:%M:%S")
             except ValueError:
                 return False
-            return date_from <= date_oper < (date_to + timedelta(days=1))
+            return date_from <= date_oper < date_to
+
         return {
             "status": "success",
-            "messages": filter(fake_date_oper_range, messages)
+            "messages": list(filter(fake_date_oper_range, messages))
         }
 
 

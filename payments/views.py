@@ -119,11 +119,13 @@ def payment_request():
     rows = []
     fake_registry = None
     if date_from and date_to:
-        fake_registry = get_payments_registry_fake(date_from, date_to)
+        registry_date_from = date_from.date()
+        registry_date_to = date_to.date() + timedelta(days=1)
+        fake_registry = get_payments_registry_fake(registry_date_from, registry_date_to)
         if fake_registry:
             registry = fake_registry
         else:
-            registry = get_payments_registry(date_from, date_to)
+            registry = get_payments_registry(registry_date_from, registry_date_to)
         for message in registry.get("messages"):
             item = find_payment_item(message) or {}
             payment_status = message.pop("status", None)
