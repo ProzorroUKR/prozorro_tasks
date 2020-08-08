@@ -28,6 +28,26 @@
 </div>
 {% endif %}
 
+{% if rows %}
+<div class="btn-toolbar btn-toolbar-payment float-right">
+    <div class="mb-3 mx-1">
+        {% with href_update=url_for("payments_views.payment_update") %}
+        {% with date_from=request.args.get("date_from", "") %}
+        {% with date_to=request.args.get("date_to", "") %}
+        <form method="POST" action="{{ href_update }}">
+            <input name="date_from" value="{{ date_from }}" hidden>
+            <input name="date_to" value="{{ date_to }}" hidden>
+            <button type="submit" class="btn btn-sm btn-failed btn-payment btn-payment-filter">
+                <i class="fas fa-arrow-alt-circle-right"></i> Оновити обрані
+            </button>
+        </form>
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+</div>
+{% endif %}
+
 <div class="btn-toolbar mt-3" role="toolbar">
 
     <div class="mb-3 mr-2">

@@ -26,6 +26,7 @@ from payments.results_db import (
     find_payment_item,
     PAYMENT_STATUS_FIELD,
     update_payment_item,
+    STATUS_PAYMENT_SUCCESS,
 )
 from payments.context import (
     url_for_search,
@@ -121,10 +122,10 @@ def payment_request():
     rows = []
     fake = False
     if date_from and date_to:
-        data = get_payments_registry(date_from, date_to)
-        if data and data.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
-            fake = data.get(MAIN_PAYMENT_STATUS_FIELD) == STATUS_MAIN_PAYMENT_FAKE
-            for message in data.get(MAIN_PAYMENT_MESSAGES_FIELD):
+        registry = get_payments_registry(date_from, date_to)
+        if registry and registry.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
+            fake = registry.get(MAIN_PAYMENT_STATUS_FIELD) == STATUS_MAIN_PAYMENT_FAKE
+            for message in registry.get(MAIN_PAYMENT_MESSAGES_FIELD):
                 item = find_payment_item(message) or {}
                 status = message.pop(PAYMENT_STATUS_FIELD, None)
                 rows.append({
@@ -171,12 +172,23 @@ def payment_add():
 @login_groups_required(["admins"])
 def payment_update():
     data = request.form
-    uid = data.get("uid")
-    result = update_payment_item(uid, data)
-    if result is not None:
-        return redirect(url_for("payments_views.payment_detail", uid=uid))
-    else:
-        return redirect(request.referrer or url_for("payments_views.payment_request"))
+    if "uid" in data:
+        uid = data.get("uid")
+        result = update_payment_item(uid, data)
+        if result is not None:
+            return redirect(url_for("payments_views.payment_detail", uid=uid))
+    elif "date_from" in data and "date_to" in data:
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        registry = get_payments_registry(date_from, date_to)
+        if registry and registry.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
+            for message in registry.get(MAIN_PAYMENT_MESSAGES_FIELD):
+                item = find_payment_item(message) or {}
+                status = message.pop(PAYMENT_STATUS_FIELD, None)
+                if status and status == STATUS_PAYMENT_SUCCESS and item.get("payment") != message:
+                    uid = item.get("_id")
+                    update_payment_item(uid, message)
+    return redirect(request.referrer or url_for("payments_views.payment_request"))
 
 
 @bp.route("/<uid>", methods=["GET"])
