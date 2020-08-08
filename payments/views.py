@@ -160,12 +160,8 @@ def payment_request_fake():
 @login_groups_required(["admins"])
 def payment_add():
     data = request.form
-    result = save_payment_item(data, "manual")
-    if result is not None:
-        uid = result.inserted_id
-        return redirect(url_for("payments_views.payment_detail", uid=uid))
-    else:
-        return redirect(request.referrer or url_for("payments_views.payment_request"))
+    save_payment_item(data, "manual")
+    return redirect(request.referrer or url_for("payments_views.payment_request"))
 
 
 @bp.route("/update", methods=["POST"])
@@ -175,8 +171,6 @@ def payment_update():
     if "uid" in data:
         uid = data.get("uid")
         result = update_payment_item(uid, data)
-        if result is not None:
-            return redirect(url_for("payments_views.payment_detail", uid=uid))
     elif "date_from" in data and "date_to" in data:
         date_from = data.get("date_from")
         date_to = data.get("date_to")
@@ -184,8 +178,8 @@ def payment_update():
         if registry and registry.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
             for message in registry.get(MAIN_PAYMENT_MESSAGES_FIELD):
                 item = find_payment_item(message) or {}
-                status = message.pop(PAYMENT_STATUS_FIELD, None)
-                if status and status == STATUS_PAYMENT_SUCCESS and item.get("payment") != message:
+                payment_status = message.pop(PAYMENT_STATUS_FIELD, None)
+                if payment_status and payment_status == STATUS_PAYMENT_SUCCESS and item.get("payment") != message:
                     uid = item.get("_id")
                     update_payment_item(uid, message)
     return redirect(request.referrer or url_for("payments_views.payment_request"))
