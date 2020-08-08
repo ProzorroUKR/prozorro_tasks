@@ -6,15 +6,15 @@ from pymongo.errors import DuplicateKeyError
 import unittest
 
 from payments.results_db import (
-    get_payment_count, get_payment_list, get_payment_item, push_payment_message,
+    get_payment_count,
+    get_payment_list,
+    get_payment_item,
+    push_payment_message,
     save_payment_item,
     data_to_uid,
     set_payment_params,
     set_payment_resolution,
     get_payment_item_by_params,
-    UID_KEYS_1,
-    UID_KEYS_2,
-    UID_KEYS_3,
 )
 
 
@@ -217,43 +217,43 @@ class ResultsDBTestCase(unittest.TestCase):
             {'$set': {'params': params}}
         )
 
-        @patch("payments.results_db.get_mongodb_collection")
-        def test_set_payment_resolution(self, get_collection):
-            collection = MagicMock()
-            get_collection.return_value = collection
+    @patch("payments.results_db.get_mongodb_collection")
+    def test_set_payment_resolution(self, get_collection):
+        collection = MagicMock()
+        get_collection.return_value = collection
 
-            data = {
-                "description": "test_description",
-                "amount": "test_amount",
-                "currency": "test_currency",
-                "date_oper": "test_date_oper",
-                "type": "test_type",
-                "source": "test_source",
-                "account": "test_account",
-                "okpo": "test_okpo",
-                "mfo": "test_mfo",
-                "name": "test_name"
-            }
-            params = {'test_param': 'test_value'}
+        data = {
+            "description": "test_description",
+            "amount": "test_amount",
+            "currency": "test_currency",
+            "date_oper": "test_date_oper",
+            "type": "test_type",
+            "source": "test_source",
+            "account": "test_account",
+            "okpo": "test_okpo",
+            "mfo": "test_mfo",
+            "name": "test_name"
+        }
+        params = {'test_param': 'test_value'}
 
-            result = set_payment_resolution(data, params)
+        result = set_payment_resolution(data, params)
 
-            self.assertEqual(result, collection.update_one.return_value)
-            collection.update_one.assert_called_once_with(
-                {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
-                {'$set': {'resolution': params}}
-            )
+        self.assertEqual(result, collection.update_one.return_value)
+        collection.update_one.assert_called_once_with(
+            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
+            {'$set': {'resolution': params}}
+        )
 
-        @patch("payments.results_db.get_mongodb_collection")
-        def test_get_payment_item_by_params(self, get_collection):
-            collection = MagicMock()
-            get_collection.return_value = collection
+    @patch("payments.results_db.get_mongodb_collection")
+    def test_get_payment_item_by_params(self, get_collection):
+        collection = MagicMock()
+        get_collection.return_value = collection
 
-            params = {'test_param': 'test_value'}
+        params = {'test_param': 'test_value'}
 
-            result = get_payment_item_by_params(params)
+        result = get_payment_item_by_params(params)
 
-            self.assertEqual(result, collection.find_one.return_value)
-            collection.find_one.assert_called_once_with(
-                {"$and": [{"params": params}]}
-            )
+        self.assertEqual(result, collection.find_one.return_value)
+        collection.find_one.assert_called_once_with(
+            {"$and": [{"params": params}]}
+        )
