@@ -222,12 +222,12 @@ def get_payment_item_by_params(params, message_ids=None):
 
 
 def get_payment_search_filters(
-        search=None,
-        payment_type=None,
-        payment_source=None,
-        payment_date_from=None,
-        payment_date_to=None,
-        **kwargs
+    search=None,
+    payment_type=None,
+    payment_source=None,
+    payment_date_from=None,
+    payment_date_to=None,
+    **kwargs
 ):
     filters = []
     if search is not None:
@@ -249,11 +249,11 @@ def get_payment_search_filters(
 
 
 def get_payment_report_success_filters(
-        resolution_exists=None,
-        resolution_date_to=None,
-        resolution_date_from=None,
-        resolution_funds=None,
-        **kwargs
+    resolution_exists=None,
+    resolution_date_to=None,
+    resolution_date_from=None,
+    resolution_funds=None,
+    **kwargs
 ):
     filters = []
     if resolution_exists is not None:
@@ -271,11 +271,11 @@ def get_payment_report_success_filters(
 
 
 def get_payment_report_failed_filters(
-        message_ids_include=None,
-        message_ids_date_from=None,
-        message_ids_date_to=None,
-        message_ids_exclude=None,
-        **kwargs
+    message_ids_include=None,
+    message_ids_date_from=None,
+    message_ids_date_to=None,
+    message_ids_exclude=None,
+    **kwargs
 ):
     filters = []
     if message_ids_include is not None:
