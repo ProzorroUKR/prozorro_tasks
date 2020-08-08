@@ -128,10 +128,12 @@ def payment_request():
             item = find_payment_item(message) or {}
             payment_status = message.pop("status", None)
             rows.append({
+                "status": payment_status,
                 "message": message,
                 "item": item.get("payment"),
                 "uid": item.get("_id"),
-                "status": payment_status
+                "created": item.get("createdAt"),
+                "updated": item.get("updatedAt"),
             })
     return render_template(
         "payments/payment_request.html",
