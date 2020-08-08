@@ -147,6 +147,16 @@ def complainant_name(params):
         return complainant_name
 
 
+def complainant_telephone(params):
+    from payments.cached import get_complaint
+    complaint = get_complaint(params)
+    if complaint:
+        author = complaint.get("author", {})
+        contact = author.get("contactPoint", {})
+        telephone = contact.get("telephone")
+        return telephone
+
+
 def payment_primary_message(messages):
     for priority in MESSAGE_ID_PRIORITY:
         for message in messages or []:
