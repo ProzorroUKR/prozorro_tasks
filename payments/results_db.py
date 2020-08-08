@@ -43,15 +43,10 @@ UID_KEYS_3 = UID_KEYS_2 + [
     "odb_ref",
 ]
 
-PAYMENT_STATUS_FIELD = "status"
-PAYMENT_UID_FIELD = "uid"
-
 PAYMENT_EXCLUDE_FIELDS = [
-    PAYMENT_STATUS_FIELD,
-    PAYMENT_UID_FIELD
+    "status",
+    "uid",
 ]
-
-STATUS_PAYMENT_SUCCESS = "success"
 
 
 def init_indexes():
@@ -156,8 +151,8 @@ def get_payment_item(uid):
 
 @log_exc(logger, PyMongoError, "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION")
 def save_payment_item(data, user):
-    status = data.get(PAYMENT_STATUS_FIELD)
-    if status and status != STATUS_PAYMENT_SUCCESS:
+    status = data.get("status")
+    if status and status != "success":
         return
     collection = get_mongodb_collection()
     uid = data_to_uid(data, keys=UID_KEYS_3)

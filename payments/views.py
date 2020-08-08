@@ -24,9 +24,7 @@ from payments.results_db import (
     get_payment_count,
     save_payment_item,
     find_payment_item,
-    PAYMENT_STATUS_FIELD,
     update_payment_item,
-    STATUS_PAYMENT_SUCCESS,
 )
 from payments.context import (
     url_for_search,
@@ -52,13 +50,12 @@ from payments.data import (
 )
 from payments.utils import (
     get_payments_registry,
-    store_payments_registry,
+    store_payments_registry_fake,
     generate_report_file,
     generate_report_filename,
     generate_report_title,
-    STATUS_MAIN_PAYMENT_FAKE,
-    MAIN_PAYMENT_STATUS_FIELD,
-    MAIN_PAYMENT_MESSAGES_FIELD,
+    get_payments_registry_fake,
+    dumps_payments_registry_fake,
 )
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
@@ -120,24 +117,26 @@ def payment_request():
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
     rows = []
-    fake = False
+    fake_registry = None
     if date_from and date_to:
-        registry = get_payments_registry(date_from, date_to)
-        if registry and registry.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
-            fake = registry.get(MAIN_PAYMENT_STATUS_FIELD) == STATUS_MAIN_PAYMENT_FAKE
-            for message in registry.get(MAIN_PAYMENT_MESSAGES_FIELD):
-                item = find_payment_item(message) or {}
-                status = message.pop(PAYMENT_STATUS_FIELD, None)
-                rows.append({
-                    "message": message,
-                    "item": item.get("payment"),
-                    "uid": item.get("_id"),
-                    "status": status
-                })
+        fake_registry = get_payments_registry_fake(date_from, date_to)
+        if fake_registry:
+            registry = fake_registry
+        else:
+            registry = get_payments_registry(date_from, date_to)
+        for message in registry.get("messages"):
+            item = find_payment_item(message) or {}
+            payment_status = message.pop("status", None)
+            rows.append({
+                "message": message,
+                "item": item.get("payment"),
+                "uid": item.get("_id"),
+                "status": payment_status
+            })
     return render_template(
         "payments/payment_request.html",
         rows=rows,
-        fake=fake,
+        fake=fake_registry is not None,
         **kwargs
     )
 
@@ -146,21 +145,17 @@ def payment_request():
 @login_groups_required(["admins"])
 def payment_request_fake():
     if request.method == "GET":
-        with shelve.open('payments.db') as db:
-            return render_template(
-                "payments/payment_fake.html",
-                text=json.dumps(db['registry'], indent=4, ensure_ascii=False)
-            )
+        text = dumps_payments_registry_fake()
+        return render_template("payments/payment_fake.html", text=text)
     else:
-        store_payments_registry(request.form.get("text"))
+        store_payments_registry_fake(request.form.get("text"))
         return redirect(url_for("payments_views.payment_request_fake"))
 
 
 @bp.route("/add", methods=["POST"])
 @login_groups_required(["admins"])
 def payment_add():
-    data = request.form
-    save_payment_item(data, "manual")
+    save_payment_item(request.form, "manual")
     return redirect(request.referrer or url_for("payments_views.payment_request"))
 
 
@@ -170,16 +165,16 @@ def payment_update():
     data = request.form
     if "uid" in data:
         uid = data.get("uid")
-        result = update_payment_item(uid, data)
+        update_payment_item(uid, data)
     elif "date_from" in data and "date_to" in data:
         date_from = data.get("date_from")
         date_to = data.get("date_to")
         registry = get_payments_registry(date_from, date_to)
-        if registry and registry.get(MAIN_PAYMENT_MESSAGES_FIELD) is not None:
-            for message in registry.get(MAIN_PAYMENT_MESSAGES_FIELD):
+        if registry and registry.get("messages") is not None:
+            for message in registry.get("messages"):
                 item = find_payment_item(message) or {}
-                payment_status = message.pop(PAYMENT_STATUS_FIELD, None)
-                if payment_status and payment_status == STATUS_PAYMENT_SUCCESS and item.get("payment") != message:
+                payment_status = message.pop("status", None)
+                if payment_status and payment_status ==  "success" and item.get("payment") != message:
                     uid = item.get("_id")
                     update_payment_item(uid, message)
     return redirect(request.referrer or url_for("payments_views.payment_request"))

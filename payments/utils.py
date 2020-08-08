@@ -1,7 +1,7 @@
 import json
 import re
 import shelve
-from datetime import timedelta
+from datetime import timedelta, datetime
 from json import JSONDecodeError
 
 import requests
@@ -120,10 +120,6 @@ RESOLUTION_MAPPING = {
     ),
 }
 
-MAIN_PAYMENT_STATUS_FIELD = "status"
-MAIN_PAYMENT_MESSAGES_FIELD = "messages"
-STATUS_MAIN_PAYMENT_FAKE = "fake"
-
 
 def find_replace(string, dictionary):
     for item in dictionary.keys():
@@ -142,6 +138,7 @@ def get_item_data(data, items_name, item_id):
         for complaint_data in data.get(items_name, []):
             if complaint_data.get("id") == item_id:
                 return complaint_data
+
 
 def check_complaint_code(complaint_data, payment_params):
     token = complaint_data.get("access", {}).get("token")
@@ -326,13 +323,6 @@ def get_resolution(complaint_data):
 
 
 def get_payments_registry(date_from, date_to):
-    with shelve.open('payments.db') as db:
-        messages = db.get("registry")
-    if messages is not None:
-        return {
-            MAIN_PAYMENT_STATUS_FIELD: STATUS_MAIN_PAYMENT_FAKE,
-            MAIN_PAYMENT_MESSAGES_FIELD: messages
-        }
     if LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
         try:
@@ -344,9 +334,28 @@ def get_payments_registry(date_from, date_to):
         except Exception:
             pass
 
+def get_payments_registry_fake(date_from, date_to):
+    with shelve.open('payments.db') as db:
+        messages = db.get("registry")
+    if messages is not None:
+        def fake_date_oper_range(value):
+            try:
+                date_oper = datetime.strptime(value.get("date_oper"), "%d.%m.%Y %H:%M:%S")
+            except ValueError:
+                return False
+            return date_from <= date_oper < (date_to + timedelta(days=1))
+        return {
+            "status": "success",
+            "messages": filter(fake_date_oper_range, messages)
+        }
 
 
-def store_payments_registry(text):
+def dumps_payments_registry_fake():
+    with shelve.open('payments.db') as db:
+        return json.dumps(db['registry'], indent=4, ensure_ascii=False)
+
+
+def store_payments_registry_fake(text):
     if not text:
         with shelve.open('payments.db') as db:
             db['registry'] = None
