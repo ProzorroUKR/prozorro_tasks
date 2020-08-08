@@ -16,11 +16,11 @@ from payments.tasks import process_payment_data
 from payments.results_db import (
     get_payment_list,
     get_payment_item,
-    get_combined_filters_or,
+    combined_filters_or,
     get_payment_search_filters,
     get_payment_report_success_filters,
     get_payment_report_failed_filters,
-    get_combined_filters_and,
+    combined_filters_and,
     get_payment_count,
     save_payment_item,
     find_payment_item,
@@ -86,12 +86,12 @@ def payment_list():
         message_ids_date_from=date_from,
         message_ids_date_to=date_to,
     )
-    report_filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+    report_filters = combined_filters_or([data_success_filters, data_failed_filters])
 
     search_kwargs = get_payment_search_params()
     search_filters = get_payment_search_filters(**search_kwargs)
 
-    filters = get_combined_filters_and([search_filters, report_filters])
+    filters = combined_filters_and([search_filters, report_filters])
 
     rows = list(get_payment_list(filters, **search_kwargs, **report_kwargs))
     total = get_payment_count(filters, **search_kwargs, **report_kwargs)
@@ -241,7 +241,7 @@ def report():
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+        filters = combined_filters_or([data_success_filters, data_failed_filters])
         data = list(get_payment_list(filters))
         rows = get_report(data)
     else:
@@ -298,7 +298,7 @@ def report_download():
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = get_combined_filters_or([filters_success, filters_failed])
+        filters = combined_filters_or([filters_success, filters_failed])
     else:
         abort(404)
         return

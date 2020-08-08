@@ -218,7 +218,7 @@ def get_payment_item_by_params(params, message_ids=None):
     filters = [{"params": params}]
     if message_ids:
         filters.append({"messages.message_id": {"$in": message_ids}})
-    return collection.find_one(get_combined_filters_and(filters))
+    return collection.find_one(combined_filters_and(filters))
 
 
 def get_payment_search_filters(
@@ -237,23 +237,15 @@ def get_payment_search_filters(
     if payment_source is not None:
         filters.append({"payment.source": payment_source})
     if payment_date_from is not None and payment_date_to is not None:
-        filters.append(
-            get_combined_filters_or([
-                {
-                    "payment.date_oper": {
-                        "$gte": payment_date_from.strftime("%Y-%m-%d"),
-                        "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
-                    }
-                },
-                {
-                    "payment.date_oper": {
-                        "$gte": payment_date_from.strftime("%Y.%m.%d"),
-                        "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y.%m.%d")
-                    }
-                }
-            ])
-        )
-    return get_combined_filters_and(filters) if filters else {}
+        filters.append({
+            "$expr": {
+                "$and": [
+                    {"$gte": [date_from_str_filter("$payment.date_oper"), payment_date_from]},
+                    {"$lt": [date_from_str_filter("$payment.date_oper"), payment_date_to]}
+                ]
+            }
+        })
+    return combined_filters_and(filters) if filters else {}
 
 
 def get_payment_report_success_filters(
@@ -275,7 +267,7 @@ def get_payment_report_success_filters(
                 "$lt": (resolution_date_to + timedelta(days=1)).isoformat()
             }
         })
-    return get_combined_filters_and(filters) if filters else {}
+    return combined_filters_and(filters) if filters else {}
 
 
 def get_payment_report_failed_filters(
@@ -303,15 +295,25 @@ def get_payment_report_failed_filters(
     filters.append({"messages": {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
         filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
-    return get_combined_filters_and(filters) if filters else {}
+    return combined_filters_and(filters) if filters else {}
 
 
-def get_combined_filters_and(filters):
+def combined_filters_and(filters):
     return {"$and": filters}
 
 
-def get_combined_filters_or(filters):
+def combined_filters_or(filters):
     return {"$or": filters}
+
+
+def date_from_str_filter(field):
+    return {
+        "$dateFromString": {
+            "dateString": field,
+            "format": "%d.%m.%Y %H:%M:%S",
+            "onError": None
+        }
+    }
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_STATUS_LIST_MONGODB_EXCEPTION")
