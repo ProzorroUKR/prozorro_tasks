@@ -48,4 +48,4 @@ DESC_PROCESSING_FAILED = "Оброблено (помилковий або не �
 DESC_PROCESSING_NEUTRAL = "Виконується"
 DESC_PROCESSING_DEFAULT = "Отримано"
 
-DESC_REPORT_TOTAL = "Сума"
+DESC_REPORT_TOTAL = "Всього"
