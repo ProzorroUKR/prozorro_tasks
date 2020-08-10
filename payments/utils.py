@@ -120,6 +120,11 @@ RESOLUTION_MAPPING = {
     ),
 }
 
+PAYMENT_EXCLUDE_FIELDS = [
+    "status",
+    "uid",
+]
+
 
 def find_replace(string, dictionary):
     for item in dictionary.keys():
@@ -423,3 +428,11 @@ def generate_report_title(date_from, date_to, funds):
         date_from.date().isoformat(),
         date_to.date().isoformat(),
     )
+
+
+def filter_payment_data(data):
+    return {
+        key: value
+        for key, value in data.items()
+        if key not in PAYMENT_EXCLUDE_FIELDS
+    }

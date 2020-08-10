@@ -10,6 +10,7 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
 from app.logging import log_exc
+from payments.utils import filter_payment_data
 
 logger = get_task_logger(__name__)
 
@@ -41,11 +42,6 @@ UID_KEYS_2 = UID_KEYS_1 + [
 
 UID_KEYS_3 = UID_KEYS_2 + [
     "odb_ref",
-]
-
-PAYMENT_EXCLUDE_FIELDS = [
-    "status",
-    "uid",
 ]
 
 
@@ -149,21 +145,16 @@ def get_payment_item(uid):
     return collection.find_one(query)
 
 
-@log_exc(logger, PyMongoError, "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION")
+@log_exc(logger, PyMongoError, "PAYMENTS_SAVE_RESULTS_MONGODB_EXCEPTION")
 def save_payment_item(data, user):
     status = data.get("status")
     if status and status != "success":
         return
     collection = get_mongodb_collection()
     uid = data_to_uid(data, keys=UID_KEYS_3)
-    payment = {
-        key: data[key]
-        for key in data
-        if key not in PAYMENT_EXCLUDE_FIELDS
-    }
     document = {
         "_id": uid,
-        "payment": payment,
+        "payment": filter_payment_data(data),
         "user": user,
         "createdAt": datetime.utcnow(),
     }
@@ -173,27 +164,19 @@ def save_payment_item(data, user):
         pass
 
 
-@log_exc(logger, PyMongoError, "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION")
+@log_exc(logger, PyMongoError, "PAYMENTS_UPDATE_RESULTS_MONGODB_EXCEPTION")
 def update_payment_item(uid, data):
     collection = get_mongodb_collection()
-    payment = {
-        key: data[key]
-        for key in data
-        if key not in PAYMENT_EXCLUDE_FIELDS
-    }
     query = {
         "_id": uid,
     }
     update = {
         "$set": {
-            "payment": payment,
+            "payment": filter_payment_data(data),
             "updatedAt": datetime.utcnow(),
         }
     }
-    try:
-        return collection.update_one(query, update)
-    except DuplicateKeyError:
-        pass
+    return collection.update_one(query, update)
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION")
