@@ -187,6 +187,14 @@ def set_payment_params(data, params):
     return collection.update_one(query, update)
 
 
+@log_exc(logger, PyMongoError, "PAYMENTS_SET_AUTHOR_MONGODB_EXCEPTION")
+def set_payment_complaint_author(data, author):
+    collection = get_mongodb_collection()
+    query = payment_find_query(data)
+    update = {"$set": {"author": author}}
+    return collection.update_one(query, update)
+
+
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION")
 def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
@@ -233,8 +241,8 @@ def get_payment_search_filters(
 
 def get_payment_report_success_filters(
     resolution_exists=None,
-    resolution_date_to=None,
     resolution_date_from=None,
+    resolution_date_to=None,
     resolution_funds=None,
     **kwargs
 ):
@@ -247,7 +255,7 @@ def get_payment_report_success_filters(
         filters.append({
             "resolution.date": {
                 "$gte": resolution_date_from.isoformat(),
-                "$lt": (resolution_date_to + timedelta(days=1)).isoformat()
+                "$lt": resolution_date_to.isoformat()
             }
         })
     return combined_filters_and(filters) if filters else {}
@@ -272,7 +280,7 @@ def get_payment_report_failed_filters(
         messages_match_filter.update({
             "createdAt": {
                 "$gte": message_ids_date_from,
-                "$lt": message_ids_date_to + timedelta(days=1)
+                "$lt": message_ids_date_to
             }
         })
     filters.append({"messages": {"$elemMatch": messages_match_filter}})

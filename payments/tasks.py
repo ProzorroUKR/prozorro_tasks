@@ -10,7 +10,8 @@ from celery.utils.log import get_task_logger
 from payments.health import health, save_health_data
 from payments.logging import PaymentResultsLoggerAdapter
 from payments.message_ids import (
-    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS, PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
+    PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,
+    PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS,
     PAYMENTS_INVALID_STATUS,
     PAYMENTS_INVALID_COMPLAINT_VALUE,
     PAYMENTS_INVALID_PATTERN,
@@ -37,6 +38,7 @@ from payments.results_db import (
     set_payment_params,
     set_payment_resolution,
     get_payment_item_by_params,
+    set_payment_complaint_author,
 )
 from payments.utils import (
     check_complaint_status,
@@ -49,11 +51,10 @@ from payments.utils import (
     request_cdb_tender_data,
     request_cdb_complaint_data,
     request_cdb_complaint_patch,
-    STATUS_COMPLAINT_MISTAKEN,
-    STATUS_COMPLAINT_PENDING,
     ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
     get_resolution,
 )
+from payments.data import STATUS_COMPLAINT_PENDING, STATUS_COMPLAINT_MISTAKEN
 from tasks_utils.requests import get_exponential_request_retry_countdown
 
 logger = get_task_logger(__name__)
@@ -368,7 +369,14 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, patch_
             countdown = get_exponential_request_retry_countdown(self, response)
             raise self.retry(countdown=countdown)
     else:
-        if patch_data.get("status") == "pending":
+        complaint_data = response.json()["data"]
+        author = complaint_data.get("author")
+        if author:
+            try:
+                set_payment_complaint_author(payment_data, author)
+            except PyMongoError as exc:
+                pass
+        if patch_data.get("status") == STATUS_COMPLAINT_PENDING:
             message_id = PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
         else:
             message_id = PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS
@@ -430,7 +438,7 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
     else:
         complaint_get_data = response.json()["data"]
         if complaint_get_data.get("status") == patch_data.get("status"):
-            if patch_data.get("status") == "pending":
+            if patch_data.get("status") == STATUS_COMPLAINT_PENDING:
                 message_id = PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS
             else:
                 message_id = PAYMENTS_PATCH_COMPLAINT_NOT_PENDING_SUCCESS

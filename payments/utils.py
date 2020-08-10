@@ -1,7 +1,7 @@
 import json
 import re
 import shelve
-from datetime import timedelta, datetime
+from datetime import datetime
 from json import JSONDecodeError
 
 import requests
@@ -22,7 +22,16 @@ from environment_settings import (
     LIQPAY_INTEGRATION_API_PATH,
     LIQPAY_API_PROXIES,
 )
-from payments.data import complaint_funds_description
+from payments.data import (
+    complaint_funds_description,
+    STATUS_COMPLAINT_DRAFT,
+    STATUS_COMPLAINT_MISTAKEN,
+    STATUS_COMPLAINT_SATISFIED,
+    STATUS_COMPLAINT_RESOLVED,
+    STATUS_COMPLAINT_INVALID,
+    STATUS_COMPLAINT_STOPPED,
+    STATUS_COMPLAINT_DECLINED,
+)
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 logger = get_task_logger(__name__)
@@ -55,16 +64,6 @@ PAYMENT_REPLACE_MAPPING = {
     "[^\w]*[\,]+[^\w]*": ".",
     "[^\w\.\,]+": "-",
 }
-
-STATUS_COMPLAINT_DRAFT = "draft"
-STATUS_COMPLAINT_PENDING = "pending"
-STATUS_COMPLAINT_ACCEPTED = "accepted"
-STATUS_COMPLAINT_MISTAKEN = "mistaken"
-STATUS_COMPLAINT_SATISFIED = "satisfied"
-STATUS_COMPLAINT_RESOLVED = "resolved"
-STATUS_COMPLAINT_INVALID = "invalid"
-STATUS_COMPLAINT_STOPPED = "stopped"
-STATUS_COMPLAINT_DECLINED = "declined"
 
 ALLOWED_COMPLAINT_PAYMENT_STATUSES = [STATUS_COMPLAINT_DRAFT]
 ALLOWED_COMPLAINT_RESOLUTION_STATUSES = [
@@ -377,6 +376,7 @@ def store_payments_registry_fake(text):
 
 
 def generate_report_file(filename, data, title):
+    total = data.pop(len(data) - 1)
     for index, row in enumerate(data):
         data[index] = [str(index) if index else " "] + row
     headers = data.pop(0)
@@ -400,6 +400,7 @@ def generate_report_file(filename, data, title):
         max_default_len = 15 if index != 1 else 25
         max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
         worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
+    worksheet.write_row(len(data) + 2, 1, total)
     workbook.close()
 
 

@@ -1,6 +1,4 @@
 import io
-import json
-import shelve
 from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response, request
@@ -47,6 +45,10 @@ from payments.data import (
     payment_message_status,
     date_representation,
     payment_primary_message,
+    FUNDS_STATE,
+    FUNDS_COMPLAINANT,
+    FUNDS_UNKNOWN,
+    FUNDS_ALL,
 )
 from payments.utils import (
     get_payments_registry,
@@ -74,8 +76,10 @@ bp.add_app_template_global(url_for_search, "url_for_search")
 @login_groups_required(["admins", "accountants"])
 def payment_list():
     report_kwargs = get_report_params()
-    date_from = report_kwargs.get("date_resolution_from")
-    date_to = report_kwargs.get("date_resolution_to")
+    resolution_date_from = report_kwargs.get("date_resolution_from")
+    resolution_date_to = report_kwargs.get("date_resolution_to")
+    date_from = resolution_date_from
+    date_to = resolution_date_to + timedelta(days=1) if resolution_date_to else None
     data_success_filters = get_payment_report_success_filters(
         resolution_date_from=date_from,
         resolution_date_to=date_to,
@@ -231,9 +235,11 @@ def payment_retry(uid):
 @login_groups_required(["admins", "accountants"])
 def report():
     kwargs = get_report_params()
-    date_from = kwargs.get("date_resolution_from")
-    date_to = kwargs.get("date_resolution_to")
-    if date_from and date_to:
+    date_resolution_from = kwargs.get("date_resolution_from")
+    date_resolution_to = kwargs.get("date_resolution_to")
+    if date_resolution_from and date_resolution_to:
+        date_from = date_resolution_from
+        date_to = date_resolution_to + timedelta(days=1)
         data_success_filters = get_payment_report_success_filters(
             resolution_exists=True,
             resolution_date_from=date_from,
@@ -266,22 +272,25 @@ def report():
 @login_groups_required(["admins", "accountants"])
 def report_download():
     kwargs = get_report_params()
-    date_from = kwargs.get("date_resolution_from")
-    date_to = kwargs.get("date_resolution_to")
+    date_resolution_from = kwargs.get("date_resolution_from")
+    date_resolution_to = kwargs.get("date_resolution_to")
     funds = kwargs.get("funds") or "all"
 
-    if not date_from and not date_to:
+    if not date_resolution_from and not date_resolution_to:
         abort(404)
         return
 
-    if funds in ["state", "complainant"]:
+    date_from = date_resolution_from
+    date_to = date_resolution_to + timedelta(days=1)
+
+    if funds in [FUNDS_STATE, FUNDS_COMPLAINANT]:
         filters = get_payment_report_success_filters(
             resolution_exists=True,
             resolution_funds=funds,
             resolution_date_from=date_from,
             resolution_date_to=date_to,
         )
-    elif funds in ["unknown"]:
+    elif funds in [FUNDS_UNKNOWN]:
         filters = get_payment_report_failed_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
@@ -289,7 +298,7 @@ def report_download():
             message_ids_date_to=date_to,
         )
         rows = list(get_payment_list(filters))
-    elif funds in ["all"]:
+    elif funds in [FUNDS_ALL]:
         rows = list()
         filters_success = get_payment_report_success_filters(
             resolution_exists=True,
@@ -308,11 +317,11 @@ def report_download():
         return
 
     rows = list(get_payment_list(filters))
-    data = get_report(rows)
+    data = get_report(rows, total=True)
     bytes_io = io.BytesIO()
-    title = generate_report_title(date_from, date_to, funds)
+    title = generate_report_title(date_resolution_from, date_resolution_to, funds)
     generate_report_file(bytes_io, data, title)
-    filename = generate_report_filename(date_from, date_to, funds)
+    filename = generate_report_filename(date_resolution_from, date_resolution_to, funds)
     response = make_response(bytes_io.getvalue())
     response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

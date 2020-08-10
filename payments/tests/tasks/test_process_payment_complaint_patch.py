@@ -253,9 +253,10 @@ class TestHandlerCase(unittest.TestCase):
 
             requests_mock.patch.return_value = Mock(
                 status_code=200,
-                cookies=Mock(get_dict=Mock(return_value=cookies)),
-                json=Mock()
+                cookies=Mock(get_dict=Mock(return_value=cookies))
             )
+
+            requests_mock.patch.return_value.json.return_value = {"data": {"author": "test"}}
 
             process_payment_complaint_patch(
                 complaint_params=complaint_params,
@@ -283,9 +284,10 @@ class TestHandlerCase(unittest.TestCase):
 
             requests_mock.patch.return_value = Mock(
                 status_code=200,
-                cookies=Mock(get_dict=Mock(return_value=cookies)),
-                json=Mock()
+                cookies=Mock(get_dict=Mock(return_value=cookies))
             )
+
+            requests_mock.patch.return_value.json.return_value = {"data": {"author": "test"}}
 
             process_payment_complaint_patch(
                 complaint_params=complaint_params,

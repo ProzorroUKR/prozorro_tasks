@@ -174,21 +174,21 @@ EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
 EXTRA_COMPLAINANT_ID = {
     "type": "object",
     "title": "Код ЄДРПОУ скаржника",
-    "path": "params",
+    "path": ".",
     "method": complainant_id,
 }
 
 EXTRA_COMPLAINANT_NAME = {
     "type": "object",
     "title": "Найменування скаржника",
-    "path": "params",
+    "path": ".",
     "method": complainant_name,
 }
 
 EXTRA_COMPLAINANT_TELEPHONE = {
     "type": "object",
     "title": "Контакти",
-    "path": "params",
+    "path": ".",
     "method": complainant_telephone,
 }
 

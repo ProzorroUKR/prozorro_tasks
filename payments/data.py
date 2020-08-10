@@ -1,4 +1,5 @@
 import dateutil.parser
+from pymongo.errors import PyMongoError
 
 from environment_settings import TIMEZONE
 from payments.message_ids import (
@@ -43,13 +44,13 @@ from payments.messages import (
     DESC_REJECT_REASON_INCORRECT_PAYMENT,
     DESC_FUNDS_STATE,
     DESC_FUNDS_COMPLAINANT,
-    COMPLAINT_STATUS_MISTAKEN,
-    COMPLAINT_STATUS_RESOLVED,
-    COMPLAINT_STATUS_INVALID,
-    COMPLAINT_STATUS_SATISFIED,
-    COMPLAINT_STATUS_DECLINED,
-    COMPLAINT_STATUS_ACCEPTED,
-    COMPLAINT_STATUS_STOPPED,
+    DESC_COMPLAINT_STATUS_MISTAKEN,
+    DESC_COMPLAINT_STATUS_RESOLVED,
+    DESC_COMPLAINT_STATUS_INVALID,
+    DESC_COMPLAINT_STATUS_SATISFIED,
+    DESC_COMPLAINT_STATUS_DECLINED,
+    DESC_COMPLAINT_STATUS_ACCEPTED,
+    DESC_COMPLAINT_STATUS_STOPPED,
     DESC_PROCESSING_INFO,
     DESC_PROCESSING_SUCCESS,
     DESC_PROCESSING_WARNING,
@@ -124,37 +125,48 @@ def processing_date(data):
         return date_representation(resolution.get("date"))
 
 
-def complainant_id(params):
-    from payments.cached import get_complaint
-    complaint = get_complaint(params)
-    if complaint:
-        author = complaint.get("author", {})
-        identifier = author.get("identifier", {})
-        scheme = identifier.get("scheme")
-        if scheme == "UA-EDR":
-            complainant_id = identifier.get("id")
-            return complainant_id
+def lazy_set_author(func):
+    def wrapper(data):
+        if not data.get("author"):
+            from payments.cached import get_complaint
+            complaint_data = get_complaint(data.get("params"))
+            if complaint_data:
+                author = complaint_data.get("author")
+                if author and complaint_data.get("status") != STATUS_COMPLAINT_DRAFT:
+                    from payments.results_db import set_payment_complaint_author
+                    try:
+                        set_payment_complaint_author(data.get("payment"), author)
+                    except PyMongoError as exc:
+                        pass
+                data["author"] = author
+        return func(data)
+    return wrapper
 
 
-def complainant_name(params):
-    from payments.cached import get_complaint
-    complaint = get_complaint(params)
-    if complaint:
-        author = complaint.get("author", {})
-        identifier = author.get("identifier", {})
-        complainant = identifier.get("id")
-        complainant_name = identifier.get("legalName")
-        return complainant_name
+@lazy_set_author
+def complainant_id(data):
+    author = data.get("author", {})
+    identifier = author.get("identifier", {})
+    scheme = identifier.get("scheme")
+    if scheme == "UA-EDR":
+        complainant_id = identifier.get("id")
+        return complainant_id
 
 
-def complainant_telephone(params):
-    from payments.cached import get_complaint
-    complaint = get_complaint(params)
-    if complaint:
-        author = complaint.get("author", {})
-        contact = author.get("contactPoint", {})
-        telephone = contact.get("telephone")
-        return telephone
+@lazy_set_author
+def complainant_name(data):
+    author = data.get("author", {})
+    identifier = author.get("identifier", {})
+    name = identifier.get("legalName")
+    return name
+
+
+@lazy_set_author
+def complainant_telephone(data):
+    author = data.get("author", {})
+    contact = author.get("contactPoint", {})
+    telephone = contact.get("telephone")
+    return telephone
 
 
 def payment_primary_message(messages):
@@ -183,23 +195,38 @@ DESC_REJECT_REASON_DICT = {
 }
 
 
+FUNDS_ALL = "all"
+FUNDS_STATE = "state"
+FUNDS_COMPLAINANT = "complainant"
+FUNDS_UNKNOWN = "unknown"
+
+
 DESC_FUNDS_DICT = {
-    "all": DESC_FUNDS_ALL,
-    "state": DESC_FUNDS_STATE,
-    "complainant": DESC_FUNDS_COMPLAINANT,
-    "unknown": DESC_FUNDS_UNKNOWN
+    FUNDS_ALL: DESC_FUNDS_ALL,
+    FUNDS_STATE: DESC_FUNDS_STATE,
+    FUNDS_COMPLAINANT: DESC_FUNDS_COMPLAINANT,
+    FUNDS_UNKNOWN: DESC_FUNDS_UNKNOWN
 }
 
+STATUS_COMPLAINT_DRAFT = "draft"
+STATUS_COMPLAINT_PENDING = "pending"
+STATUS_COMPLAINT_ACCEPTED = "accepted"
+STATUS_COMPLAINT_MISTAKEN = "mistaken"
+STATUS_COMPLAINT_SATISFIED = "satisfied"
+STATUS_COMPLAINT_RESOLVED = "resolved"
+STATUS_COMPLAINT_INVALID = "invalid"
+STATUS_COMPLAINT_STOPPED = "stopped"
+STATUS_COMPLAINT_DECLINED = "declined"
 
-COMPLAINT_STATUS_DICT = dict(
-    mistaken=COMPLAINT_STATUS_MISTAKEN,
-    resolved=COMPLAINT_STATUS_RESOLVED,
-    invalid=COMPLAINT_STATUS_INVALID,
-    satisfied=COMPLAINT_STATUS_SATISFIED,
-    declined=COMPLAINT_STATUS_DECLINED,
-    accepted=COMPLAINT_STATUS_ACCEPTED,
-    stopped=COMPLAINT_STATUS_STOPPED,
-)
+COMPLAINT_STATUS_DICT = {
+    STATUS_COMPLAINT_MISTAKEN: DESC_COMPLAINT_STATUS_MISTAKEN,
+    STATUS_COMPLAINT_RESOLVED: DESC_COMPLAINT_STATUS_RESOLVED,
+    STATUS_COMPLAINT_INVALID: DESC_COMPLAINT_STATUS_INVALID,
+    STATUS_COMPLAINT_SATISFIED: DESC_COMPLAINT_STATUS_SATISFIED,
+    STATUS_COMPLAINT_DECLINED: DESC_COMPLAINT_STATUS_DECLINED,
+    STATUS_COMPLAINT_ACCEPTED: DESC_COMPLAINT_STATUS_ACCEPTED,
+    STATUS_COMPLAINT_STOPPED: DESC_COMPLAINT_STATUS_STOPPED,
+}
 
 
 PAYMENTS_INFO_MESSAGE_ID_LIST = [
