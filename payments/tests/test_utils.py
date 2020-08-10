@@ -1,4 +1,6 @@
 import unittest
+from datetime import datetime, timedelta
+from json import JSONDecodeError
 from unittest.mock import patch, MagicMock
 
 from environment_settings import API_HOST, API_VERSION, PUBLIC_API_HOST
@@ -9,14 +11,18 @@ from payments.utils import (
     check_complaint_value_amount,
     check_complaint_value_currency,
     ALLOWED_COMPLAINT_PAYMENT_STATUSES,
-    request_complaint_search,
-    get_request_headers,
-    get_complaint_search_url,
-    request_tender_data,
-    get_tender_url,
-    request_complaint_data,
-    get_complaint_url,
-    request_complaint_patch,
+    request_cdb_complaint_search,
+    get_cdb_request_headers,
+    get_cdb_complaint_search_url,
+    request_cdb_tender_data,
+    get_cdb_tender_url,
+    request_cdb_complaint_data,
+    get_cdb_complaint_url,
+    request_cdb_complaint_patch,
+    get_payments_registry,
+    get_payments_registry_fake,
+    dumps_payments_registry_fake,
+    store_payments_registry_fake,
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
@@ -299,7 +305,7 @@ class GetComplaintSearchUrlTestCase(unittest.TestCase):
     """
     def test_get_complaint_search_url(self):
         complaint_pretty_id = "TEST-PRETTY-ID"
-        result = get_complaint_search_url(complaint_pretty_id)
+        result = get_cdb_complaint_search_url(complaint_pretty_id)
         url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
         self.assertEqual(result, url_pattern.format(
             host=API_HOST,
@@ -315,7 +321,7 @@ class GetComplaintUrlTestCase(unittest.TestCase):
     def test_get_complaint_url(self):
         tender_id = "test_tender_id"
         complaint_id = "test_complaint_id"
-        result = get_complaint_url(tender_id, None, None, complaint_id)
+        result = get_cdb_complaint_url(tender_id, None, None, complaint_id)
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
         self.assertEqual(result, url_pattern.format(
             host=API_HOST,
@@ -329,7 +335,7 @@ class GetComplaintUrlTestCase(unittest.TestCase):
         item_type = "test_item_type"
         item_id = "test_item_id"
         complaint_id = "test_complaint_id"
-        result = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        result = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id)
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
         self.assertEqual(result, url_pattern.format(
             host=API_HOST,
@@ -348,7 +354,7 @@ class GetTenderUrlTestCase(unittest.TestCase):
     def test_get_complaint_url(self):
         tender_id = "test_tender_id"
         complaint_id = "test_complaint_id"
-        result = get_tender_url(tender_id)
+        result = get_cdb_tender_url(tender_id)
         url_pattern = "{host}/api/{version}/tenders/{tender_id}"
         self.assertEqual(result, url_pattern.format(
             host=PUBLIC_API_HOST,
@@ -367,11 +373,11 @@ class RequestComplaintSearchTestCase(unittest.TestCase):
     def test_request_complaint_search(self, requests):
         complaint_pretty_id = "TEST-PRETTY-ID"
 
-        url = get_complaint_search_url(complaint_pretty_id)
-        headers = get_request_headers(authorization=True)
+        url = get_cdb_complaint_search_url(complaint_pretty_id)
+        headers = get_cdb_request_headers(authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_search(complaint_pretty_id)
+        result = request_cdb_complaint_search(complaint_pretty_id)
 
         self.assertEqual(result, requests.get.return_value)
 
@@ -386,11 +392,11 @@ class RequestComplaintSearchTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_search_url(complaint_pretty_id)
-        headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+        url = get_cdb_complaint_search_url(complaint_pretty_id)
+        headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_search(
+        result = request_cdb_complaint_search(
             complaint_pretty_id,
             client_request_id=client_request_id,
             cookies=cookies,
@@ -413,11 +419,11 @@ class RequestTenderDataTestCase(unittest.TestCase):
     def test_request_tender_data(self, requests):
         tender_id = "test_tender_id"
 
-        url = get_tender_url(tender_id)
-        headers = get_request_headers(authorization=False)
+        url = get_cdb_tender_url(tender_id)
+        headers = get_cdb_request_headers(authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_tender_data(tender_id)
+        result = request_cdb_tender_data(tender_id)
 
         self.assertEqual(result, requests.get.return_value)
 
@@ -432,11 +438,11 @@ class RequestTenderDataTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_tender_url(tender_id)
-        headers = get_request_headers(client_request_id=client_request_id, authorization=False)
+        url = get_cdb_tender_url(tender_id)
+        headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_tender_data(
+        result = request_cdb_tender_data(
             tender_id,
             client_request_id=client_request_id,
             cookies=cookies,
@@ -462,11 +468,11 @@ class RequestComplaintDataTestCase(unittest.TestCase):
         item_id = "test_item_id"
         complaint_id = "test_complaint_id"
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-        headers = get_request_headers(authorization=False)
+        url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id)
+        headers = get_cdb_request_headers(authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_data(
+        result = request_cdb_complaint_data(
             tender_id, item_type, item_id, complaint_id
         )
 
@@ -486,11 +492,11 @@ class RequestComplaintDataTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-        headers = get_request_headers(client_request_id=client_request_id, authorization=False)
+        url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id)
+        headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=False)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_data(
+        result = request_cdb_complaint_data(
             tender_id, item_type, item_id, complaint_id,
             client_request_id=client_request_id,
             cookies=cookies,
@@ -518,12 +524,12 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
         complaint_id = "test_complaint_id"
         data = {"test_data_field": "test_data_value"}
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id)
         json = {"data": data}
-        headers = get_request_headers(authorization=True)
+        headers = get_cdb_request_headers(authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_patch(
+        result = request_cdb_complaint_patch(
             tender_id, item_type, item_id, complaint_id, data
         )
 
@@ -544,12 +550,12 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
         host = "https://test.host"
         cookies = {"test_cookie_name": "test_cookie_value"}
 
-        url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
+        url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id)
         json = {"data": data}
-        headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+        headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=True)
         timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
-        result = request_complaint_patch(
+        result = request_cdb_complaint_patch(
             tender_id, item_type, item_id, complaint_id, data,
             client_request_id=client_request_id,
             cookies=cookies,
@@ -559,4 +565,216 @@ class RequestComplaintPatchTestCase(unittest.TestCase):
 
         requests.patch.assert_called_once_with(
             url, json=json, headers=headers, timeout=timeout, cookies=cookies
+        )
+
+
+class GetPaymentsRegistryTestCase(unittest.TestCase):
+
+    @patch("payments.utils.LIQPAY_INTEGRATION_API_HOST", "http://test.example.com")
+    @patch("payments.utils.LIQPAY_INTEGRATION_API_PATH", "test/path")
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", "test")
+    @patch("payments.utils.LIQPAY_API_PROXIES", {"http": "http://proxy.example.com"})
+    @patch("payments.utils.requests")
+    def test_get_payments_registry(self, requests):
+        date_from = MagicMock()
+        date_from.timestamp.return_value = 1
+        date_to = MagicMock()
+        date_to.timestamp.return_value = 2
+
+        result = get_payments_registry(date_from, date_to)
+
+        requests.post.assert_called_once_with(
+            "http://test.example.com/test/path",
+            proxies={"http": "http://proxy.example.com"},
+            json={
+                "account": "test",
+                "date_from": 1 * 1000,
+                "date_to": 2 * 1000,
+            }
+        )
+        requests.post.return_value.json.assert_called_once_with()
+        self.assertEqual(result, requests.post.return_value.json.return_value)
+
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", "test")
+    @patch("payments.utils.requests")
+    def test_get_payments_registry_request_fail(self, requests):
+        date_from = MagicMock()
+        date_to = MagicMock()
+        requests.post.side_effect = Exception
+
+        result = get_payments_registry(date_from, date_to)
+
+        self.assertEqual(requests.post.call_count, 1)
+        self.assertIsNone(result)
+
+    @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", None)
+    @patch("payments.utils.requests")
+    def test_get_payments_registry_with_no_account(self, requests):
+        date_from = MagicMock()
+        date_to = MagicMock()
+
+        result = get_payments_registry(date_from, date_to)
+
+        self.assertEqual(requests.post.call_count, 0)
+        self.assertIsNone(result)
+
+
+class GetPaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake(self, shelve):
+        date_from = datetime.now() - timedelta(days=1)
+        date_to = datetime.now() + timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": shelve.open.return_value.__enter__.return_value["registry"]
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_invalid_date_oper_format(self, shelve):
+        date_from = datetime.now() - timedelta(days=1)
+        date_to = datetime.now() + timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": "test"
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_not_in_range(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {
+            "registry": [
+                {
+                    "date_oper": datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+                }
+            ]
+        }
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_registry_empty_list(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {"registry": []}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(result, {
+            "status": "success",
+            "messages": []
+        })
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_not_initiated(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertIsNone(result)
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_shelve_registry_unset(self, shelve):
+        date_from = datetime.now() - timedelta(days=2)
+        date_to = datetime.now() - timedelta(days=1)
+        shelve.open.return_value.__enter__.return_value = {"registry": None}
+
+        result = get_payments_registry_fake(date_from, date_to)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertIsNone(result)
+
+
+class DumpsPaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_dumps_payments_registry_fake(self, shelve, json):
+        dumps_payments_registry_fake()
+
+        shelve.open.assert_called_once_with('payments.db')
+        json.dumps.assert_called_once_with(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            indent=4,
+            ensure_ascii=False
+        )
+
+
+class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake(self, shelve, json):
+        text = "test"
+        shelve.open.return_value.__enter__.return_value = dict()
+
+        store_payments_registry_fake(text)
+
+        json.loads.assert_called_once_with(text)
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            json.loads.return_value
+        )
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake_json_decode_error(self, shelve, json):
+        text = "test"
+        shelve.open.return_value.__enter__.return_value = dict()
+        json.loads.side_effect = JSONDecodeError("test", "test", 1)
+
+        store_payments_registry_fake(text)
+
+        self.assertEqual(shelve.open.call_count, 0)
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value,
+            dict()
+        )
+
+    @patch("payments.utils.json")
+    @patch("payments.utils.shelve")
+    def test_store_payments_registry_fake_(self, shelve, json):
+        text = None
+        shelve.open.return_value.__enter__.return_value = dict()
+
+        store_payments_registry_fake(text)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            None
         )

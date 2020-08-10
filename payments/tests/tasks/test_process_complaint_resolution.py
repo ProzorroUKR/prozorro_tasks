@@ -24,7 +24,7 @@ class TestHandlerCase(unittest.TestCase):
         with patch("payments.results_db.get_mongodb_collection") as get_collection:
             collection = Mock()
             get_collection.return_value = collection
-            collection.update.side_effect = pymongo.errors.PyMongoError()
+            collection.update_one.side_effect = pymongo.errors.PyMongoError()
 
             with self.assertRaises(Retry):
                 process_complaint_resolution(
@@ -34,7 +34,7 @@ class TestHandlerCase(unittest.TestCase):
 
         process_complaint_resolution.retry.assert_called_once_with(
             countdown=DEFAULT_RETRY_AFTER,
-            exc=collection.update.side_effect
+            exc=collection.update_one.side_effect
         )
 
     def test_handle_resolution_mistaken(self):

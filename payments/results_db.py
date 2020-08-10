@@ -10,6 +10,7 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
 from app.logging import log_exc
+from payments.utils import filter_payment_data
 
 logger = get_task_logger(__name__)
 
@@ -23,18 +24,24 @@ get_mongodb_status_collection = partial(
     collection_name="payments_status"
 )
 
-
-UUID_KEYS = [
+UID_KEYS_1 = [
     "description",
     "amount",
     "currency",
     "date_oper",
     "type",
-    "source",
     "account",
     "okpo",
     "mfo",
     "name",
+]
+
+UID_KEYS_2 = UID_KEYS_1 + [
+    "source",
+]
+
+UID_KEYS_3 = UID_KEYS_2 + [
+    "odb_ref",
 ]
 
 
@@ -79,6 +86,16 @@ def data_to_uid(data, keys=None):
     ]))
 
 
+def payment_find_query(data):
+    return {
+        "$or": [
+            {"_id": data_to_uid(data, keys=UID_KEYS_3)},
+            {"_id": data_to_uid(data, keys=UID_KEYS_2)},
+            {"_id": data_to_uid(data, keys=UID_KEYS_1)},
+        ]
+    }
+
+
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
 def get_payment_count(filters, **kwargs):
     collection = get_mongodb_collection()
@@ -98,57 +115,92 @@ def get_payment_list(filters=None, page=None, limit=None, **kwargs):
     return cursor
 
 
-@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_ITEM_MONGODB_EXCEPTION")
-def get_payment_item(uid):
-    collection = get_mongodb_collection()
-    return collection.find_one({"_id": uid})
-
-
 @log_exc(logger, PyMongoError, "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION")
 def push_payment_message(data, message_id, message):
     collection = get_mongodb_collection()
-    return collection.update(
-        {"_id": data_to_uid(data, keys=UUID_KEYS)},
-        {"$push": {
+    query = payment_find_query(data)
+    update = {
+        "$push": {
             "messages": {
                 "message_id": message_id,
                 "message": message,
                 "createdAt": datetime.utcnow()
             }
-        }}
-    )
+        }
+    }
+    return collection.update_one(query, update)
 
 
-@log_exc(logger, PyMongoError, "PAYMENTS_POST_RESULTS_MONGODB_EXCEPTION")
-def save_payment_item(data, user):
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
+def find_payment_item(data, **kwargs):
     collection = get_mongodb_collection()
+    query = payment_find_query(data)
+    return collection.find_one(query)
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_ITEM_MONGODB_EXCEPTION")
+def get_payment_item(uid):
+    collection = get_mongodb_collection()
+    query = {"_id": uid}
+    return collection.find_one(query)
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_SAVE_RESULTS_MONGODB_EXCEPTION")
+def save_payment_item(data, user):
+    status = data.get("status")
+    if status and status != "success":
+        return
+    collection = get_mongodb_collection()
+    uid = data_to_uid(data, keys=UID_KEYS_3)
+    document = {
+        "_id": uid,
+        "payment": filter_payment_data(data),
+        "user": user,
+        "createdAt": datetime.utcnow(),
+    }
     try:
-        return collection.insert({
-            "_id": data_to_uid(data, keys=UUID_KEYS),
-            "payment": data,
-            "user": user,
-            "createdAt": datetime.utcnow(),
-        })
+        return collection.insert_one(document)
     except DuplicateKeyError:
         pass
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_UPDATE_RESULTS_MONGODB_EXCEPTION")
+def update_payment_item(uid, data):
+    collection = get_mongodb_collection()
+    query = {
+        "_id": uid,
+    }
+    update = {
+        "$set": {
+            "payment": filter_payment_data(data),
+            "updatedAt": datetime.utcnow(),
+        }
+    }
+    return collection.update_one(query, update)
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION")
 def set_payment_params(data, params):
     collection = get_mongodb_collection()
-    return collection.update(
-        {"_id": data_to_uid(data, keys=UUID_KEYS)},
-        {"$set": {"params": params}}
-    )
+    query = payment_find_query(data)
+    update = {"$set": {"params": params}}
+    return collection.update_one(query, update)
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_SET_AUTHOR_MONGODB_EXCEPTION")
+def set_payment_complaint_author(data, author):
+    collection = get_mongodb_collection()
+    query = payment_find_query(data)
+    update = {"$set": {"author": author}}
+    return collection.update_one(query, update)
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION")
 def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
-    return collection.update(
-        {"_id": data_to_uid(data, keys=UUID_KEYS)},
-        {"$set": {"resolution": resolution}}
-    )
+    query = payment_find_query(data)
+    update = {"$set": {"resolution": resolution}}
+    return collection.update_one(query, update)
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_BY_PARAMS_MONGODB_EXCEPTION")
@@ -157,7 +209,7 @@ def get_payment_item_by_params(params, message_ids=None):
     filters = [{"params": params}]
     if message_ids:
         filters.append({"messages.message_id": {"$in": message_ids}})
-    return collection.find_one(get_combined_filters_and(filters))
+    return collection.find_one(combined_filters_and(filters))
 
 
 def get_payment_search_filters(
@@ -176,17 +228,21 @@ def get_payment_search_filters(
     if payment_source is not None:
         filters.append({"payment.source": payment_source})
     if payment_date_from is not None and payment_date_to is not None:
-        filters.append({"payment.date_oper": {
-            "$gte": payment_date_from.strftime("%Y-%m-%d"),
-            "$lt": (payment_date_to + timedelta(days=1)).strftime("%Y-%m-%d")
-        }})
-    return get_combined_filters_and(filters) if filters else {}
+        filters.append({
+            "$expr": {
+                "$and": [
+                    {"$gte": [date_from_str_filter("$payment.date_oper"), payment_date_from]},
+                    {"$lt": [date_from_str_filter("$payment.date_oper"), payment_date_to]}
+                ]
+            }
+        })
+    return combined_filters_and(filters) if filters else {}
 
 
 def get_payment_report_success_filters(
     resolution_exists=None,
-    resolution_date_to=None,
     resolution_date_from=None,
+    resolution_date_to=None,
     resolution_funds=None,
     **kwargs
 ):
@@ -196,11 +252,13 @@ def get_payment_report_success_filters(
     if resolution_funds is not None:
         filters.append({"resolution.funds": resolution_funds})
     if resolution_date_from is not None and resolution_date_to is not None:
-        filters.append({"resolution.date": {
-            "$gte": resolution_date_from.isoformat(),
-            "$lt": (resolution_date_to + timedelta(days=1)).isoformat()
-        }})
-    return get_combined_filters_and(filters) if filters else {}
+        filters.append({
+            "resolution.date": {
+                "$gte": resolution_date_from.isoformat(),
+                "$lt": resolution_date_to.isoformat()
+            }
+        })
+    return combined_filters_and(filters) if filters else {}
 
 
 def get_payment_report_failed_filters(
@@ -219,22 +277,34 @@ def get_payment_report_failed_filters(
     if message_ids_date_from is not None and message_ids_date_to is not None:
         message_ids_date_from = UTC.normalize(TIMEZONE.localize(message_ids_date_from))
         message_ids_date_to = UTC.normalize(TIMEZONE.localize(message_ids_date_to))
-        messages_match_filter.update({"createdAt": {
-            "$gte": message_ids_date_from,
-            "$lt": message_ids_date_to + timedelta(days=1)
-        }})
-    filters.append({"messages" : {"$elemMatch": messages_match_filter}})
+        messages_match_filter.update({
+            "createdAt": {
+                "$gte": message_ids_date_from,
+                "$lt": message_ids_date_to
+            }
+        })
+    filters.append({"messages": {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
         filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
-    return get_combined_filters_and(filters) if filters else {}
+    return combined_filters_and(filters) if filters else {}
 
 
-def get_combined_filters_and(filters):
+def combined_filters_and(filters):
     return {"$and": filters}
 
 
-def get_combined_filters_or(filters):
+def combined_filters_or(filters):
     return {"$or": filters}
+
+
+def date_from_str_filter(field):
+    return {
+        "$dateFromString": {
+            "dateString": field,
+            "format": "%d.%m.%Y %H:%M:%S",
+            "onError": None
+        }
+    }
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_STATUS_LIST_MONGODB_EXCEPTION")

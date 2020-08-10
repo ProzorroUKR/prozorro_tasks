@@ -1,28 +1,28 @@
 import io
 from datetime import datetime, timedelta
 
-import requests
-from xlsxwriter import Workbook
-
-from flask import Blueprint, render_template, redirect, url_for, abort, make_response
+from flask import Blueprint, render_template, redirect, url_for, abort, make_response, request
 
 from app.auth import login_groups_required
-from environment_settings import LIQPAY_INTEGRATION_API_HOST, LIQPAY_PROZORRO_ACCOUNT, LIQPAY_API_PROXIES
 from payments.health import health
 from payments.message_ids import (
-    PAYMENTS_INVALID_PATTERN, PAYMENTS_SEARCH_INVALID_COMPLAINT,
+    PAYMENTS_INVALID_PATTERN,
+    PAYMENTS_SEARCH_INVALID_COMPLAINT,
     PAYMENTS_SEARCH_INVALID_CODE,
 )
 from payments.tasks import process_payment_data
 from payments.results_db import (
     get_payment_list,
     get_payment_item,
-    get_combined_filters_or,
+    combined_filters_or,
     get_payment_search_filters,
     get_payment_report_success_filters,
     get_payment_report_failed_filters,
-    get_combined_filters_and,
+    combined_filters_and,
     get_payment_count,
+    save_payment_item,
+    find_payment_item,
+    update_payment_item,
 )
 from payments.context import (
     url_for_search,
@@ -45,6 +45,19 @@ from payments.data import (
     payment_message_status,
     date_representation,
     payment_primary_message,
+    FUNDS_STATE,
+    FUNDS_COMPLAINANT,
+    FUNDS_UNKNOWN,
+    FUNDS_ALL,
+)
+from payments.utils import (
+    get_payments_registry,
+    store_payments_registry_fake,
+    generate_report_file,
+    generate_report_filename,
+    generate_report_title,
+    get_payments_registry_fake,
+    dumps_payments_registry_fake,
 )
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
@@ -56,13 +69,17 @@ bp.add_app_template_filter(complaint_status_description, "complaint_status_descr
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
 
+bp.add_app_template_global(url_for_search, "url_for_search")
+
 
 @bp.route("/", methods=["GET"])
 @login_groups_required(["admins", "accountants"])
 def payment_list():
     report_kwargs = get_report_params()
-    date_from = report_kwargs.get("date_resolution_from")
-    date_to = report_kwargs.get("date_resolution_to")
+    resolution_date_from = report_kwargs.get("date_resolution_from")
+    resolution_date_to = report_kwargs.get("date_resolution_to")
+    date_from = resolution_date_from
+    date_to = resolution_date_to + timedelta(days=1) if resolution_date_to else None
     data_success_filters = get_payment_report_success_filters(
         resolution_date_from=date_from,
         resolution_date_to=date_to,
@@ -73,12 +90,12 @@ def payment_list():
         message_ids_date_from=date_from,
         message_ids_date_to=date_to,
     )
-    report_filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+    report_filters = combined_filters_or([data_success_filters, data_failed_filters])
 
     search_kwargs = get_payment_search_params()
     search_filters = get_payment_search_filters(**search_kwargs)
 
-    filters = get_combined_filters_and([search_filters, report_filters])
+    filters = combined_filters_and([search_filters, report_filters])
 
     rows = list(get_payment_list(filters, **search_kwargs, **report_kwargs))
     total = get_payment_count(filters, **search_kwargs, **report_kwargs)
@@ -86,7 +103,6 @@ def payment_list():
     return render_template(
         "payments/payment_list.html",
         rows=data,
-        url_for_search=url_for_search,
         pagination=get_payment_pagination(
             total=total,
             **search_kwargs,
@@ -104,22 +120,72 @@ def payment_request():
     kwargs = get_request_params()
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
-    if date_from and date_to and LIQPAY_INTEGRATION_API_HOST and LIQPAY_PROZORRO_ACCOUNT:
-        url = "{}/api/v1/getRegistry".format(LIQPAY_INTEGRATION_API_HOST)
-        response = requests.post(url, proxies=LIQPAY_API_PROXIES, json={
-            "account": LIQPAY_PROZORRO_ACCOUNT,
-            "date_from": int(date_from.timestamp() * 1000),
-            "date_to": int(date_to.timestamp() * 1000)
-        })
-        data = response.json()
-    else:
-        data = None
+    rows = []
+    fake_registry = None
+    if date_from and date_to:
+        registry_date_from = date_from.date()
+        registry_date_to = date_to.date() + timedelta(days=1)
+        fake_registry = get_payments_registry_fake(registry_date_from, registry_date_to)
+        if fake_registry:
+            registry = fake_registry
+        else:
+            registry = get_payments_registry(registry_date_from, registry_date_to)
+        for message in registry.get("messages"):
+            item = find_payment_item(message) or {}
+            payment_status = message.pop("status", None)
+            rows.append({
+                "status": payment_status,
+                "message": message,
+                "item": item.get("payment"),
+                "uid": item.get("_id"),
+                "created": item.get("createdAt"),
+                "updated": item.get("updatedAt"),
+            })
     return render_template(
         "payments/payment_request.html",
-        url_for_search=url_for_search,
-        rows=data,
+        rows=rows,
+        fake=fake_registry is not None,
         **kwargs
     )
+
+
+@bp.route("/request/fake", methods=["POST", "GET"])
+@login_groups_required(["admins"])
+def payment_request_fake():
+    if request.method == "GET":
+        text = dumps_payments_registry_fake()
+        return render_template("payments/payment_fake.html", text=text)
+    else:
+        store_payments_registry_fake(request.form.get("text"))
+        return redirect(url_for("payments_views.payment_request_fake"))
+
+
+@bp.route("/add", methods=["POST"])
+@login_groups_required(["admins"])
+def payment_add():
+    save_payment_item(request.form, "manual")
+    return redirect(request.referrer or url_for("payments_views.payment_request"))
+
+
+@bp.route("/update", methods=["POST"])
+@login_groups_required(["admins"])
+def payment_update():
+    data = request.form
+    if "uid" in data:
+        uid = data.get("uid")
+        update_payment_item(uid, data)
+    elif "date_from" in data and "date_to" in data:
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        registry = get_payments_registry(date_from, date_to)
+        if registry and registry.get("messages") is not None:
+            for message in registry.get("messages"):
+                item = find_payment_item(message) or {}
+                payment_status = message.pop("status", None)
+                if payment_status and payment_status ==  "success" and item.get("payment") != message:
+                    uid = item.get("_id")
+                    update_payment_item(uid, message)
+    return redirect(request.referrer or url_for("payments_views.payment_request"))
 
 
 @bp.route("/<uid>", methods=["GET"])
@@ -169,9 +235,11 @@ def payment_retry(uid):
 @login_groups_required(["admins", "accountants"])
 def report():
     kwargs = get_report_params()
-    date_from = kwargs.get("date_resolution_from")
-    date_to = kwargs.get("date_resolution_to")
-    if date_from and date_to:
+    date_resolution_from = kwargs.get("date_resolution_from")
+    date_resolution_to = kwargs.get("date_resolution_to")
+    if date_resolution_from and date_resolution_to:
+        date_from = date_resolution_from
+        date_to = date_resolution_to + timedelta(days=1)
         data_success_filters = get_payment_report_success_filters(
             resolution_exists=True,
             resolution_date_from=date_from,
@@ -183,7 +251,7 @@ def report():
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = get_combined_filters_or([data_success_filters, data_failed_filters])
+        filters = combined_filters_or([data_success_filters, data_failed_filters])
         data = list(get_payment_list(filters))
         rows = get_report(data)
     else:
@@ -196,7 +264,6 @@ def report():
     return render_template(
         "payments/payment_report.html",
         rows=rows,
-        url_for_search=url_for_search,
         **kwargs
     )
 
@@ -205,22 +272,25 @@ def report():
 @login_groups_required(["admins", "accountants"])
 def report_download():
     kwargs = get_report_params()
-    date_from = kwargs.get("date_resolution_from")
-    date_to = kwargs.get("date_resolution_to")
+    date_resolution_from = kwargs.get("date_resolution_from")
+    date_resolution_to = kwargs.get("date_resolution_to")
     funds = kwargs.get("funds") or "all"
 
-    if not date_from and not date_to:
+    if not date_resolution_from and not date_resolution_to:
         abort(404)
         return
 
-    if funds in ["state", "complainant"]:
+    date_from = date_resolution_from
+    date_to = date_resolution_to + timedelta(days=1)
+
+    if funds in [FUNDS_STATE, FUNDS_COMPLAINANT]:
         filters = get_payment_report_success_filters(
             resolution_exists=True,
             resolution_funds=funds,
             resolution_date_from=date_from,
             resolution_date_to=date_to,
         )
-    elif funds in ["unknown"]:
+    elif funds in [FUNDS_UNKNOWN]:
         filters = get_payment_report_failed_filters(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
@@ -228,7 +298,7 @@ def report_download():
             message_ids_date_to=date_to,
         )
         rows = list(get_payment_list(filters))
-    elif funds in ["all"]:
+    elif funds in [FUNDS_ALL]:
         rows = list()
         filters_success = get_payment_report_success_filters(
             resolution_exists=True,
@@ -241,71 +311,17 @@ def report_download():
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = get_combined_filters_or([filters_success, filters_failed])
+        filters = combined_filters_or([filters_success, filters_failed])
     else:
         abort(404)
         return
 
     rows = list(get_payment_list(filters))
-
-    data = get_report(rows)
-
-    for index, row in enumerate(data):
-        data[index] = [str(index) if index else " "] + row
-
-    funds_description = complaint_funds_description(funds)
-
-    headers = data.pop(0)
-    if date_from == date_to:
-        filename = "{}-{}-report".format(
-            date_from.date().isoformat(),
-            funds
-        )
-        title = "{}: {}".format(
-            funds_description,
-            date_from.date().isoformat()
-        )
-    else:
-        filename = "{}-{}-{}-report".format(
-            date_from.date().isoformat(),
-            date_to.date().isoformat(),
-            funds
-        )
-        title = "{}: {} - {}".format(
-            funds_description,
-            date_from.date().isoformat(),
-            date_to.date().isoformat(),
-        )
+    data = get_report(rows, total=True)
     bytes_io = io.BytesIO()
-
-    workbook = Workbook(bytes_io)
-    worksheet = workbook.add_worksheet()
-
-    title_properties = {"text_wrap": True}
-    title_cell_format = workbook.add_format(title_properties)
-    title_cell_format.set_align("center")
-
-    worksheet.merge_range(0, 0, 0, len(headers) - 1, title, title_cell_format)
-
-    worksheet.add_table(1, 0, len(data) + 1, len(headers) - 1, {
-        "first_column": True,
-        "header_row": True,
-        "columns": [{"header": header} for header in headers],
-        "data": data
-    })
-
-    table_properties = {"text_wrap": True}
-    table_cell_format = workbook.add_format(table_properties)
-    table_cell_format.set_align("top")
-
-    for index, header in enumerate(headers):
-        min_default_len = 7 if index != 0 else 3
-        max_default_len = 15 if index != 1 else 25
-        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
-        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
-
-    workbook.close()
-
+    title = generate_report_title(date_resolution_from, date_resolution_to, funds)
+    generate_report_file(bytes_io, data, title)
+    filename = generate_report_filename(date_resolution_from, date_resolution_to, funds)
     response = make_response(bytes_io.getvalue())
     response.headers["Content-Disposition"] = "attachment; filename=%s.xlsx" % filename
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -321,6 +337,5 @@ def status():
     data = health()
     return render_template(
         "payments/payment_status.html",
-        url_for_search=url_for_search,
         rows=data
     )

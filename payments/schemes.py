@@ -10,6 +10,7 @@ from payments.data import (
     processing_date,
     complainant_id,
     complainant_name,
+    complainant_telephone,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -173,15 +174,22 @@ EXTRA_PROCESSING_DATE_SCHEME_ITEM = {
 EXTRA_COMPLAINANT_ID = {
     "type": "object",
     "title": "Код ЄДРПОУ скаржника",
-    "path": "params",
+    "path": ".",
     "method": complainant_id,
 }
 
 EXTRA_COMPLAINANT_NAME = {
     "type": "object",
     "title": "Найменування скаржника",
-    "path": "params",
+    "path": ".",
     "method": complainant_name,
+}
+
+EXTRA_COMPLAINANT_TELEPHONE = {
+    "type": "object",
+    "title": "Контакти",
+    "path": ".",
+    "method": complainant_telephone,
 }
 
 EXTRA_SCHEME = {
@@ -192,6 +200,7 @@ EXTRA_SCHEME = {
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
     "complainant_id": EXTRA_COMPLAINANT_ID,
     "complainant_name": EXTRA_COMPLAINANT_NAME,
+    "complainant_telephone": EXTRA_COMPLAINANT_TELEPHONE,
 }
 
 ROOT_ID_SCHEME_ITEM = {
@@ -258,6 +267,7 @@ REPORT_SCHEME = {
     "payment_name": PAYMENT_NAME_SCHEME_ITEM,
     "complainant_id": EXTRA_COMPLAINANT_ID,
     "complainant_name": EXTRA_COMPLAINANT_NAME,
+    "complainant_telephone": EXTRA_COMPLAINANT_TELEPHONE,
     "processing_date": EXTRA_PROCESSING_DATE_SCHEME_ITEM,
     "processing_status": EXTRA_PROCESSING_STATUS_SCHEME_ITEM,
     "processing_failed_status": EXTRA_PROCESSING_FAILED_STATUS_SCHEME_ITEM,

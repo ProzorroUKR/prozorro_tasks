@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 
 from pymongo import DESCENDING
 from pymongo.errors import DuplicateKeyError
@@ -6,7 +6,10 @@ from pymongo.errors import DuplicateKeyError
 import unittest
 
 from payments.results_db import (
-    get_payment_count, get_payment_list, get_payment_item, push_payment_message,
+    get_payment_count,
+    get_payment_list,
+    get_payment_item,
+    push_payment_message,
     save_payment_item,
     data_to_uid,
     set_payment_params,
@@ -128,9 +131,9 @@ class ResultsDBTestCase(unittest.TestCase):
 
         result = push_payment_message(data, message_id, message)
 
-        self.assertEqual(result, collection.update.return_value)
-        collection.update.assert_called_once_with(
-            {"_id": data_to_uid(data)},
+        self.assertEqual(result, collection.update_one.return_value)
+        collection.update_one.assert_called_once_with(
+            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
             {
                 '$push': {
                     'messages': {
@@ -166,8 +169,8 @@ class ResultsDBTestCase(unittest.TestCase):
 
         result = save_payment_item(data, user)
 
-        self.assertEqual(result, collection.insert.return_value)
-        collection.insert.assert_called_once_with({
+        self.assertEqual(result, collection.insert_one.return_value)
+        collection.insert_one.assert_called_once_with({
             "_id": data_to_uid(data),
             "payment": data,
             "user": user,
@@ -177,7 +180,7 @@ class ResultsDBTestCase(unittest.TestCase):
     @patch("payments.results_db.get_mongodb_collection")
     def test_save_payment_item_duplicate(self, get_collection):
         collection = MagicMock()
-        collection.insert.side_effect = DuplicateKeyError('error')
+        collection.insert_one.side_effect = DuplicateKeyError('error')
         get_collection.return_value = collection
 
         data = {'test_field': 'test_value'}
@@ -208,9 +211,9 @@ class ResultsDBTestCase(unittest.TestCase):
 
         result = set_payment_params(data, params)
 
-        self.assertEqual(result, collection.update.return_value)
-        collection.update.assert_called_once_with(
-            {"_id": data_to_uid(data)},
+        self.assertEqual(result, collection.update_one.return_value)
+        collection.update_one.assert_called_once_with(
+            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
             {'$set': {'params': params}}
         )
 
@@ -235,9 +238,9 @@ class ResultsDBTestCase(unittest.TestCase):
 
         result = set_payment_resolution(data, params)
 
-        self.assertEqual(result, collection.update.return_value)
-        collection.update.assert_called_once_with(
-            {"_id": data_to_uid(data)},
+        self.assertEqual(result, collection.update_one.return_value)
+        collection.update_one.assert_called_once_with(
+            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
             {'$set': {'resolution': params}}
         )
 

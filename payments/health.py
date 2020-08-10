@@ -18,7 +18,7 @@ from environment_settings import (
 )
 from liqpay_int.utils import generate_liqpay_status_params, liqpay_request
 from payments.results_db import get_statuses_list, save_status
-from payments.utils import request_head, request_complaint_search
+from payments.utils import request_cdb_head_spore, request_cdb_complaint_search
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 
@@ -61,15 +61,15 @@ def mongodb_info():
 
 
 def request_search():
-    return request_complaint_search("health")
+    return request_cdb_complaint_search("health")
 
 
 def request_public():
-    return request_head(host=PUBLIC_API_HOST, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+    return request_cdb_head_spore(host=PUBLIC_API_HOST, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
 
 
 def request_lb():
-    return request_head(host=API_HOST, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+    return request_cdb_head_spore(host=API_HOST, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
 
 
 def request_liqpay():

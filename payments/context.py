@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import request, url_for
 from flask_paginate import Pagination
 
+from payments.messages import DESC_REPORT_TOTAL
 from payments.schemes import (
     get_scheme_value,
     get_scheme_data,
@@ -104,20 +105,28 @@ def get_payments(rows):
 def get_payment(row):
     return get_scheme_data(row, ROOT_SCHEME)
 
-def get_report(rows):
+def get_report(rows, total=False):
     data = []
     headers = []
+
+    amount_total = 0
 
     for key, value in REPORT_SCHEME.items():
         headers.append(value["title"])
 
     for row in rows:
         item = []
+        if total:
+            payment = row.get("payment", {})
+            amount_total += float(payment.get("amount", 0.0))
         for key, scheme in REPORT_SCHEME.items():
             value = get_scheme_value(row, scheme) or ""
             item.append(value)
         data.append(item)
 
     data.insert(0, headers)
+
+    if total:
+        data.append([DESC_REPORT_TOTAL, '%g' % (amount_total)])
 
     return data

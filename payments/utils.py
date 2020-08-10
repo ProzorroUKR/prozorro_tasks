@@ -1,12 +1,37 @@
+import json
 import re
+import shelve
+from datetime import datetime
+from json import JSONDecodeError
+
 import requests
 
 from hashlib import sha512
 from uuid import uuid4
 
 from celery.utils.log import get_task_logger
+from xlsxwriter import Workbook
 
-from environment_settings import API_HOST, API_VERSION, API_TOKEN, PUBLIC_API_HOST
+from environment_settings import (
+    API_HOST,
+    API_VERSION,
+    API_TOKEN,
+    PUBLIC_API_HOST,
+    LIQPAY_INTEGRATION_API_HOST,
+    LIQPAY_PROZORRO_ACCOUNT,
+    LIQPAY_INTEGRATION_API_PATH,
+    LIQPAY_API_PROXIES,
+)
+from payments.data import (
+    complaint_funds_description,
+    STATUS_COMPLAINT_DRAFT,
+    STATUS_COMPLAINT_MISTAKEN,
+    STATUS_COMPLAINT_SATISFIED,
+    STATUS_COMPLAINT_RESOLVED,
+    STATUS_COMPLAINT_INVALID,
+    STATUS_COMPLAINT_STOPPED,
+    STATUS_COMPLAINT_DECLINED,
+)
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 logger = get_task_logger(__name__)
@@ -39,16 +64,6 @@ PAYMENT_REPLACE_MAPPING = {
     "[^\w]*[\,]+[^\w]*": ".",
     "[^\w\.\,]+": "-",
 }
-
-STATUS_COMPLAINT_DRAFT = "draft"
-STATUS_COMPLAINT_PENDING = "pending"
-STATUS_COMPLAINT_ACCEPTED = "accepted"
-STATUS_COMPLAINT_MISTAKEN = "mistaken"
-STATUS_COMPLAINT_SATISFIED = "satisfied"
-STATUS_COMPLAINT_RESOLVED = "resolved"
-STATUS_COMPLAINT_INVALID = "invalid"
-STATUS_COMPLAINT_STOPPED = "stopped"
-STATUS_COMPLAINT_DECLINED = "declined"
 
 ALLOWED_COMPLAINT_PAYMENT_STATUSES = [STATUS_COMPLAINT_DRAFT]
 ALLOWED_COMPLAINT_RESOLUTION_STATUSES = [
@@ -104,6 +119,11 @@ RESOLUTION_MAPPING = {
     ),
 }
 
+PAYMENT_EXCLUDE_FIELDS = [
+    "status",
+    "uid",
+]
+
 
 def find_replace(string, dictionary):
     for item in dictionary.keys():
@@ -122,6 +142,7 @@ def get_item_data(data, items_name, item_id):
         for complaint_data in data.get(items_name, []):
             if complaint_data.get("id") == item_id:
                 return complaint_data
+
 
 def check_complaint_code(complaint_data, payment_params):
     token = complaint_data.get("access", {}).get("token")
@@ -154,7 +175,7 @@ def check_complaint_value_currency(complaint_data, payment_data):
     return False
 
 
-def get_complaint_search_url(complaint_pretty_id):
+def get_cdb_complaint_search_url(complaint_pretty_id):
     url_pattern = "{host}/api/{version}/complaints/search?complaint_id={complaint_pretty_id}"
     return url_pattern.format(
         host=API_HOST,
@@ -163,13 +184,13 @@ def get_complaint_search_url(complaint_pretty_id):
     )
 
 
-def get_complaint_url(tender_id, item_type, item_id, complaint_id):
+def get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=API_HOST):
     if item_type:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/{item_type}/{item_id}/complaints/{complaint_id}"
     else:
         url_pattern = "{host}/api/{version}/tenders/{tender_id}/complaints/{complaint_id}"
     return url_pattern.format(
-        host=API_HOST,
+        host=host,
         version=API_VERSION,
         tender_id=tender_id,
         item_type=item_type,
@@ -178,16 +199,24 @@ def get_complaint_url(tender_id, item_type, item_id, complaint_id):
     )
 
 
-def get_tender_url(tender_id):
+def get_cdb_tender_url(tender_id, host=PUBLIC_API_HOST):
     url_pattern = "{host}/api/{version}/tenders/{tender_id}"
     return url_pattern.format(
-        host=PUBLIC_API_HOST,
+        host=host,
         version=API_VERSION,
         tender_id=tender_id
     )
 
 
-def get_request_headers(client_request_id=None, authorization=False):
+def get_cdb_spore_url(host=PUBLIC_API_HOST):
+    url_pattern = "{host}/api/{version}/spore"
+    return url_pattern.format(
+        host=host,
+        version=API_VERSION,
+    )
+
+
+def get_cdb_request_headers(client_request_id=None, authorization=False):
     client_request_id = client_request_id or "req-payments-" + str(uuid4())
     headers = {"X-Client-Request-ID": client_request_id}
     if authorization:
@@ -195,48 +224,84 @@ def get_request_headers(client_request_id=None, authorization=False):
     return headers
 
 
-def request_head(client_request_id=None, cookies=None,
-                 host=None, timeout=None):
-    url_pattern = "{host}/api/{version}/spore"
-    url = url_pattern.format(
-        host=host or PUBLIC_API_HOST,
-        version=API_VERSION,
-    )
-    headers = get_request_headers(client_request_id=client_request_id)
+def request_cdb_head(url, client_request_id=None, cookies=None, timeout=None):
+    headers = get_cdb_request_headers(client_request_id=client_request_id)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.head(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_complaint_search(complaint_pretty_id, client_request_id=None,
-                             cookies=None, timeout=None):
-    url = get_complaint_search_url(complaint_pretty_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+def request_cdb_get(url, client_request_id=None, cookies=None, timeout=None, authorization=False):
+    headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=authorization)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
 
 
-def request_tender_data(tender_id, client_request_id=None,
-                        cookies=None, timeout=None):
-    url = get_tender_url(tender_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
-
-
-def request_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None,
-                           cookies=None, timeout=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=False)
-    timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.get(url, headers=headers, timeout=timeout, cookies=cookies)
-
-
-def request_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None,
-                            cookies=None, timeout=None):
-    url = get_complaint_url(tender_id, item_type, item_id, complaint_id)
-    headers = get_request_headers(client_request_id=client_request_id, authorization=True)
+def request_cdb_patch(url, data, client_request_id=None, cookies=None, timeout=None, authorization=True):
+    headers = get_cdb_request_headers(client_request_id=client_request_id, authorization=authorization)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
     return requests.patch(url, json={"data": data}, headers=headers, timeout=timeout, cookies=cookies)
+
+
+def request_cdb_head_spore(client_request_id=None, cookies=None, timeout=None, host=PUBLIC_API_HOST):
+    url = get_cdb_spore_url(host=host)
+    return request_cdb_head(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_search(complaint_pretty_id, client_request_id=None,
+                                 cookies=None, timeout=None):
+    url = get_cdb_complaint_search_url(complaint_pretty_id)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout,
+        authorization=True
+    )
+
+
+def request_cdb_tender_data(tender_id, client_request_id=None,
+                            cookies=None, timeout=None, host=PUBLIC_API_HOST):
+    url = get_cdb_tender_url(tender_id, host=host)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_data(tender_id, item_type, item_id, complaint_id, client_request_id=None,
+                               cookies=None, timeout=None, host=API_HOST):
+    url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+    return request_cdb_get(
+        url=url,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_complaint_patch(tender_id, item_type, item_id, complaint_id, data, client_request_id=None,
+                                cookies=None, timeout=None, host=API_HOST):
+    url = get_cdb_complaint_url(tender_id, item_type, item_id, complaint_id, host=host)
+    return request_cdb_patch(
+        url=url,
+        data=data,
+        client_request_id=client_request_id,
+        cookies=cookies,
+        timeout=timeout
+    )
+
+
+def request_cdb_cookies():
+    client_request_id = uuid4().hex
+    head_response = request_cdb_head_spore(client_request_id=client_request_id, host=API_HOST)
+    return head_response.cookies.get_dict()
 
 
 def get_resolution(complaint_data):
@@ -261,7 +326,114 @@ def get_resolution(complaint_data):
         }
 
 
-def get_cookies():
-    client_request_id = uuid4().hex
-    head_response = request_head(client_request_id=client_request_id, host=API_HOST)
-    return head_response.cookies.get_dict()
+def get_payments_registry(date_from, date_to):
+    if LIQPAY_PROZORRO_ACCOUNT:
+        url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
+        try:
+            return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
+                "account": LIQPAY_PROZORRO_ACCOUNT,
+                "date_from": int(date_from.timestamp() * 1000),
+                "date_to": int(date_to.timestamp() * 1000)
+            }).json()
+        except Exception:
+            pass
+
+def get_payments_registry_fake(date_from, date_to):
+    with shelve.open('payments.db') as db:
+        messages = db.get("registry")
+    if messages is not None:
+
+        def fake_date_oper_range(value):
+            try:
+                date_oper = datetime.strptime(value.get("date_oper"), "%d.%m.%Y %H:%M:%S")
+            except ValueError:
+                return False
+            return date_from <= date_oper < date_to
+
+        return {
+            "status": "success",
+            "messages": list(filter(fake_date_oper_range, messages))
+        }
+
+
+def dumps_payments_registry_fake():
+    with shelve.open('payments.db') as db:
+        return json.dumps(db['registry'], indent=4, ensure_ascii=False)
+
+
+def store_payments_registry_fake(text):
+    if not text:
+        with shelve.open('payments.db') as db:
+            db['registry'] = None
+    else:
+        try:
+            data = json.loads(text)
+        except JSONDecodeError:
+            pass
+        else:
+            with shelve.open('payments.db') as db:
+                db['registry'] = data
+
+
+def generate_report_file(filename, data, title):
+    total = data.pop(len(data) - 1)
+    for index, row in enumerate(data):
+        data[index] = [str(index) if index else " "] + row
+    headers = data.pop(0)
+    workbook = Workbook(filename)
+    worksheet = workbook.add_worksheet()
+    title_properties = {"text_wrap": True}
+    title_cell_format = workbook.add_format(title_properties)
+    title_cell_format.set_align("center")
+    worksheet.merge_range(0, 0, 0, len(headers) - 1, title, title_cell_format)
+    worksheet.add_table(1, 0, len(data) + 1, len(headers) - 1, {
+        "first_column": True,
+        "header_row": True,
+        "columns": [{"header": header} for header in headers],
+        "data": data
+    })
+    table_properties = {"text_wrap": True}
+    table_cell_format = workbook.add_format(table_properties)
+    table_cell_format.set_align("top")
+    for index, header in enumerate(headers):
+        min_default_len = 7 if index != 0 else 3
+        max_default_len = 15 if index != 1 else 25
+        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
+        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
+    worksheet.write_row(len(data) + 2, 1, total)
+    workbook.close()
+
+
+def generate_report_filename(date_from, date_to, funds):
+    if date_from == date_to:
+        return "{}-{}-report".format(
+            date_from.date().isoformat(),
+            funds
+        )
+    return "{}-{}-{}-report".format(
+        date_from.date().isoformat(),
+        date_to.date().isoformat(),
+        funds
+    )
+
+
+def generate_report_title(date_from, date_to, funds):
+    funds_description = complaint_funds_description(funds)
+    if date_from == date_to:
+        return "{}: {}".format(
+            funds_description,
+            date_from.date().isoformat()
+        )
+    return "{}: {} - {}".format(
+        funds_description,
+        date_from.date().isoformat(),
+        date_to.date().isoformat(),
+    )
+
+
+def filter_payment_data(data):
+    return {
+        key: value
+        for key, value in data.items()
+        if key not in PAYMENT_EXCLUDE_FIELDS
+    }
