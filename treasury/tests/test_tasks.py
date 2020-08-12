@@ -147,6 +147,35 @@ class CheckTestCase(unittest.TestCase):
         )
         send_contract_xml_mock.delay.assert_called_once_with(contract_id)
 
+    @patch("treasury.tasks.get_organisation")
+    @patch("treasury.tasks.get_public_api_data")
+    def test_check_contract_ignore_date_signed(self, get_data_mock, get_org_mock):
+
+        contract_id = 123456
+        procuring_entity_id = 1234
+
+        contract_data = dict(
+            id=contract_id,
+            dateSigned="2020-05-20T13:49:00+02:00",
+            status="active",
+            procuringEntity=dict(
+                identifier=dict(
+                    id=procuring_entity_id,
+                    scheme="UA-EDR"
+                )
+            )
+        )
+        get_data_mock.return_value = contract_data
+        get_org_mock.return_value = None
+
+        # run
+        with patch("treasury.tasks.TREASURY_INT_START_DATE", "2020-08-25"):
+            check_contract(contract_id, ignore_date_signed=True)
+
+        # checks
+        get_data_mock.assert_called_once_with(check_contract, contract_id, "contract")
+        get_org_mock.assert_called_once_with(check_contract, procuring_entity_id)
+
     @patch("treasury.tasks.send_contract_xml")
     @patch("treasury.tasks.save_contract_context")
     @patch("treasury.tasks.prepare_context")

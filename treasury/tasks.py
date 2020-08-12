@@ -34,21 +34,25 @@ logger = get_task_logger(__name__)
 
 @app.task(bind=True, max_retries=None)
 @concurrency_lock
-def check_contract(self, contract_id):
+def check_contract(self, contract_id, ignore_date_signed=False):
     """
     this task will be triggered by contract change
     checks if the contract details and changes haven't been sent
     schedule the following task to send them
     The maximum mongodb BSON document size is 16 megabytes,
-    so the final xml with b64 of files can exceed the limit if we save them
+    so the final xml with b64 of files can exceed the limit if we save them.
+    Ignore_date_signed flag will be used for contracts that created earlier than TREASURY_INT_START_DATE
+    and will be called manually instead of crawler
     :param self:
     :param contract_id:
+    :param ignore_date_signed:
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
-    if contract["dateSigned"] < TREASURY_INT_START_DATE:
-        return logger.debug(f"Skipping contract {contract['id']} signed at {contract['dateSigned']}",
-                            extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
+    if not ignore_date_signed:
+        if contract["dateSigned"] < TREASURY_INT_START_DATE:
+            return logger.debug(f"Skipping contract {contract['id']} signed at {contract['dateSigned']}",
+                                extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
     identifier = contract["procuringEntity"]["identifier"]
     if contract["status"] != "active" or identifier["scheme"] != "UA-EDR":
