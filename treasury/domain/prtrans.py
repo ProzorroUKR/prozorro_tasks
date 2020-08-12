@@ -61,11 +61,17 @@ def put_transaction(transaction):
             currency="UAH"
         ),
         payer=dict(
-            id=transaction["doc_iban_a"],
+            bankAccount=dict(
+                id=transaction["doc_iban_a"],
+                scheme="IBAN",
+            ),
             name=transaction["doc_nam_a"],
         ),
         payee=dict(
-            id=transaction["doc_iban_b"],
+            bankAccount=dict(
+                id=transaction["doc_iban_b"],
+                scheme="IBAN",
+            ),
             name=transaction["doc_nam_b"],
         ),
         status=transaction["doc_status"]
