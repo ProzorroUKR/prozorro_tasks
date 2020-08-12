@@ -130,17 +130,18 @@ def payment_request():
             registry = fake_registry
         else:
             registry = get_payments_registry(registry_date_from, registry_date_to)
-        for message in registry.get("messages"):
-            item = find_payment_item(message) or {}
-            payment_status = message.pop("status", None)
-            rows.append({
-                "status": payment_status,
-                "message": message,
-                "item": item.get("payment"),
-                "uid": item.get("_id"),
-                "created": item.get("createdAt"),
-                "updated": item.get("updatedAt"),
-            })
+        if registry:
+            for message in registry.get("messages", []):
+                item = find_payment_item(message) or {}
+                payment_status = message.pop("status", None)
+                rows.append({
+                    "status": payment_status,
+                    "message": message,
+                    "item": item.get("payment"),
+                    "uid": item.get("_id"),
+                    "created": item.get("createdAt"),
+                    "updated": item.get("updatedAt"),
+                })
     return render_template(
         "payments/payment_request.html",
         rows=rows,
