@@ -727,10 +727,11 @@ class DumpsPaymentsRegistryFakeTestCase(unittest.TestCase):
 
         shelve.open.assert_called_once_with('payments.db')
         json.dumps.assert_called_once_with(
-            shelve.open.return_value.__enter__.return_value['registry'],
+            shelve.open.return_value.__enter__.return_value.get.return_value,
             indent=4,
             ensure_ascii=False
         )
+        shelve.open.return_value.__enter__.return_value.get.assert_called_once_with("registry", "")
 
 
 class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
