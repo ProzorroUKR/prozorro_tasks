@@ -339,7 +339,7 @@ def get_payments_registry(date_from, date_to):
             pass
 
 def get_payments_registry_fake(date_from, date_to):
-    with shelve.open('payments.db') as db:
+    with shelve.open("payments.db") as db:
         messages = db.get("registry")
     if messages is not None:
 
@@ -357,22 +357,22 @@ def get_payments_registry_fake(date_from, date_to):
 
 
 def dumps_payments_registry_fake():
-    with shelve.open('payments.db') as db:
-        return json.dumps(db['registry'], indent=4, ensure_ascii=False)
+    with shelve.open("payments.db") as db:
+        return json.dumps(db.get("registry", ""), indent=4, ensure_ascii=False)
 
 
 def store_payments_registry_fake(text):
     if not text:
-        with shelve.open('payments.db') as db:
-            db['registry'] = None
+        with shelve.open("payments.db") as db:
+            db["registry"] = None
     else:
         try:
             data = json.loads(text)
         except JSONDecodeError:
             pass
         else:
-            with shelve.open('payments.db') as db:
-                db['registry'] = data
+            with shelve.open("payments.db") as db:
+                db["registry"] = data
 
 
 def generate_report_file(filename, data, title):
