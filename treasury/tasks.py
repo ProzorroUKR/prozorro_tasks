@@ -3,8 +3,7 @@ from celery_worker.locks import concurrency_lock, unique_task_decorator
 from treasury.storage import get_contract_context, save_contract_context, update_organisations, get_organisation
 from treasury.documents import prepare_documents
 from treasury.templates import (
-    render_contract_xml, render_change_xml, render_catalog_xml,
-    prepare_context, prepare_contract_context, render_transactions_confirmation_xml
+    render_contract_xml, render_change_xml, render_catalog_xml, render_transactions_confirmation_xml
 )
 from treasury.api_requests import send_request, get_request_response, parse_organisations, prepare_request_data
 from environment_settings import (
@@ -13,15 +12,14 @@ from environment_settings import (
 )
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import (
-    get_public_api_data, get_request_retry_countdown,
-    ds_upload, get_json_or_retry, sign_data, get_exponential_request_retry_countdown
+    get_public_api_data, sign_data, get_exponential_request_retry_countdown
 )
 from tasks_utils.datetime import get_now
 from datetime import timedelta
 from uuid import uuid4
 from treasury.exceptions import TransactionsQuantityServerErrorHTTPException
-from treasury.domain.prtrans import save_transaction_xml, ds_upload, put_transaction, attach_doc_to_contract
-from treasury.domain.prcontract import get_first_stage_tender
+from treasury.domain.prtrans import save_transaction_xml, put_transaction, attach_doc_to_contract
+from treasury.domain.prcontract import get_first_stage_tender, prepare_context, prepare_contract_context
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
     ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
