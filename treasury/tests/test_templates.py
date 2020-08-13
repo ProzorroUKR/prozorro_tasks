@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from treasury.templates import (
-    render_catalog_xml, render_change_xml, render_contract_xml, prepare_context,
-    prepare_contract_context, format_date, render_transactions_confirmation_xml,
+    render_catalog_xml, render_change_xml, render_contract_xml,
+    format_date, render_transactions_confirmation_xml,
 )
-from unittest.mock import Mock, patch
 from copy import deepcopy
 from datetime import datetime
 import unittest
@@ -153,13 +152,15 @@ test_tender = dict(
             id="1",
             tenderers=[dict(identifier=dict(legalName="My name"))],
             selfQualified=True,
-            value=dict(amount=123)
+            value=dict(amount=123),
+            subcontractingDetails="DKP Book, Ukraine Lviv"
         ),
         dict(
             id="2",
             tenderers=[dict(identifier=dict(legalName="his name"))],
             selfQualified=False,
-            value=dict(amount=321)
+            value=dict(amount=321),
+            subcontractingDetails="Will not be used"
         )
     ],
 )
@@ -403,6 +404,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Street, 1, Kyiv</contractsSuppliersAddress>'
+            b'<bidSubcontractingDetails>DKP Book, Ukraine Lviv</bidSubcontractingDetails>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
             b'</report>'
@@ -414,11 +416,11 @@ class TemplatesTestCase(unittest.TestCase):
             contract=test_contract,
             plan=test_plan,
             tender=test_tender,
-            tender_bid=test_tender["bids"][0],
+            tender_bid={},
             tender_award=test_tender_award,
             tender_contract=test_tender_contract,
             cancellation={},
-            initial_bids=test_initial_bids,
+            initial_bids={},
         )
         context = deepcopy(context)
         del context["contract"]["period"]
@@ -477,104 +479,6 @@ class TemplatesTestCase(unittest.TestCase):
             result,
             expected_result
         )
-
-    def test_contract_context(self):
-        contract = dict(
-            documents=[
-                dict(
-                    id="11",
-                    documentOf="change",
-                    relatedItem="1",
-                ),
-                dict(
-                    id="22",
-                    documentOf="item",
-                    relatedItem="1",
-                ),
-            ],
-            changes=[
-                dict(id="1"),
-                dict(id="2"),
-            ]
-        )
-        prepare_contract_context(contract)
-        self.assertEqual({d["id"] for d in contract["documents"]}, set())  # {"22"})  We disable docs temporary
-        # self.assertEqual({d["id"] for d in contract["changes"][0]["documents"]}, {"11"})
-        self.assertNotIn("documents", contract["changes"][0])
-        self.assertNotIn("documents", contract["changes"][1])
-
-    def test_prepare_context(self):
-        task = Mock()
-        contract = dict(id="222", awardID="22")
-        plan = dict(id="1243455")
-        tender = dict(
-            id="45677",
-            contracts=[
-                dict(id="111"),
-                dict(id="222"),
-            ],
-            awards=[
-                dict(id="11"),
-                dict(id="22", bid_id="2222", lotID="22222"),
-            ],
-            bids=[
-                dict(id="1111", lotValues=[dict(relatedLot="11111", value=12)]),
-                dict(id="2222", lotValues=[dict(relatedLot="22222", value=15)]),
-                dict(id="3333", lotValues=[dict(relatedLot="22222", value=20)]),
-                dict(id="4444", status="deleted"),
-            ],
-            lots=[
-                dict(id="11111"),
-                dict(id="22222"),
-            ],
-            cancellations=[
-                dict(relatedLot="22222", status="active"),
-            ],
-            milestones=[
-                dict(relatedLot="11111"),
-                dict(relatedLot="22222"),
-            ],
-            items=[
-                dict(relatedLot="11111"),
-                dict(relatedLot="22222"),
-            ],
-            documents=[
-                dict(
-                    title="audit_45677_22222.yaml",
-                    url="<audit_url>",
-                )
-            ]
-        )
-        audit_content = b"""timeline:
-          auction_start:
-            initial_bids:
-            - amount: 77400.0
-              bidder: 1111
-              date: '2019-02-08T12:48:23.869715+02:00'
-            - amount: 85000.0
-              bidder: 2222
-              date: '2019-02-08T12:45:04.619610+02:00'"""
-
-        with patch("treasury.templates.prepare_contract_context") as prepare_contract_mock:
-            with patch("treasury.templates.download_file") as download_file_mock:
-                download_file_mock.return_value = None, audit_content
-                result = prepare_context(task, contract, deepcopy(tender), plan)
-
-        prepare_contract_mock.assert_called_once_with(contract)
-        self.assertIs(result["contract"], contract)
-        self.assertEqual(result["initial_bids"], {"1111": 77400.0, "2222": 85000.0})
-        self.assertEqual(result["tender"]["items"], tender["items"][1:])
-        self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
-        expected_bids = [
-            {'id': '2222', 'lotValues': [{'relatedLot': '22222', 'value': 15}], 'value': 15},
-            {'id': '3333', 'lotValues': [{'relatedLot': '22222', 'value': 20}], 'value': 20},
-        ]
-        self.assertEqual(result["tender"]["bids"], expected_bids)
-        self.assertEqual(result["tender_bid"], expected_bids[0])
-        self.assertEqual(result["tender_award"], tender["awards"][1])
-        self.assertEqual(result["tender_contract"], tender["contracts"][1])
-        self.assertEqual(result["cancellation"], tender["cancellations"][0])
-        self.assertEqual(result["lot"], tender["lots"][1])
 
     def test_build_transactions_result_xml(self):
         params = dict(
