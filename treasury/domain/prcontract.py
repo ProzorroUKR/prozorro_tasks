@@ -92,6 +92,8 @@ def prepare_context(task, contract, tender, plan):
                 }
                 break
 
+    tender_start_date = get_tender_start_date(tender, tender_award, tender_contract)
+
     context = dict(
         contract=contract,
         tender=tender,
@@ -102,5 +104,28 @@ def prepare_context(task, contract, tender, plan):
         cancellation=cancellation,
         plan=plan,
         initial_bids=initial_bids,
+        tender_start_date=tender_start_date,
     )
     return context
+
+
+def get_tender_start_date(tender, tender_award, tender_contract):
+    tender_procurement_method_type = tender["procurementMethodType"]
+
+    if tender_procurement_method_type in (
+            "belowThreshold", "aboveThresholdUA", "aboveThresholdEU", "aboveThresholdUA.defense",
+            "competitiveDialogueUA.stage2", "competitiveDialogueEU.stage2", "closeFrameworkAgreementSelectionUA",
+            "esco",
+    ):
+        return tender["enquiryPeriod"]["startDate"]
+    elif tender_procurement_method_type in ("negotiation", "negotiation.quick", ):
+        return tender_award["complaintPeriod"]["startDate"]
+
+    elif tender_procurement_method_type in ("reporting", ):
+        # TODO will be added esco procurementMethodType after changes to API
+        return tender_contract["dateSigned"]
+
+    elif tender_procurement_method_type in ("priceQuotation", ):
+        return tender["tenderPeriod"]["startDate"]
+    else:
+        return None
