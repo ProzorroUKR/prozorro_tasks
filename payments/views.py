@@ -176,9 +176,13 @@ def payment_update():
         uid = data.get("uid")
         update_payment_item(uid, data)
     elif "date_from" in data and "date_to" in data:
-        date_from = data.get("date_from")
-        date_to = data.get("date_to")
-        registry = get_payments_registry(date_from, date_to)
+        registry_date_from = datetime.strptime(data.get("date_from"), "%Y-%m-%d")
+        registry_date_to = datetime.strptime(data.get("date_to"), "%Y-%m-%d") + timedelta(days=1)
+        fake_registry = get_payments_registry_fake(registry_date_from, registry_date_to)
+        if fake_registry:
+            registry = fake_registry
+        else:
+            registry = get_payments_registry(registry_date_from, registry_date_to)
         if registry and registry.get("messages") is not None:
             for message in registry.get("messages"):
                 item = find_payment_item(message) or {}
