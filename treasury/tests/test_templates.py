@@ -180,6 +180,8 @@ test_tender_contract = dict(
     dateSigned="2020-03-11T00:00:00+05:00",
 )
 
+test_tender_start_date = "2020-07-27T13:09:54.997464+03:00"
+
 
 class TemplatesTestCase(unittest.TestCase):
 
@@ -257,6 +259,7 @@ class TemplatesTestCase(unittest.TestCase):
             tender_contract=test_tender_contract,
             cancellation={},
             initial_bids=test_initial_bids,
+            tender_start_date=test_tender_start_date,
         )
         result = render_contract_xml(context)
         self.assertEqual(
@@ -384,7 +387,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<milestonesDurationType>sunny</milestonesDurationType>'
             b'<milestonesPercentage>70</milestonesPercentage>'
             b'</milestone></milestones>'
-            b'<startDate>2012-04-01T00:00:00</startDate>'
+            b'<startDate>2020-07-27T13:09:54.997464+03:00</startDate>'
             b'<bids>'
             b'<bid>'
             b'<bidsId>1</bidsId>'
@@ -421,6 +424,7 @@ class TemplatesTestCase(unittest.TestCase):
             tender_contract=test_tender_contract,
             cancellation={},
             initial_bids={},
+            tender_start_date=test_tender_start_date,
         )
         context = deepcopy(context)
         del context["contract"]["period"]
@@ -457,7 +461,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<procuringEntityName>My name</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'
             b'<mainProcurementCategory>good goods</mainProcurementCategory>'
-            b'<startDate>2012-04-01T00:00:00</startDate>'
+            b'<startDate>2020-07-27T13:09:54.997464+03:00</startDate>'
             b'<awardComplaintPeriodStartDate>2012-04-01T00:00:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'

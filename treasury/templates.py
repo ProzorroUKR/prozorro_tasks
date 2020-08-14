@@ -121,6 +121,7 @@ def _build_tender_xml(maker, context):
     tender_contract = context["tender_contract"]
     tender_bid = context["tender_bid"]
     initial_bids = context["initial_bids"]
+    tender_start_date = context["tender_start_date"]
     lot = context.get("lot")
     result = maker.report(
         maker.tenderID(tender["tenderID"]),
@@ -162,7 +163,7 @@ def _build_tender_xml(maker, context):
                 maker.milestonesPercentage(get_value(milestone, "percentage")),
             ) for milestone in tender.get("milestones", ""))
         ),
-        maker.startDate(get_date_value(tender_award, "complaintPeriod", "startDate")),
+        maker.startDate(format_date(tender_start_date)),
         maker.bids(* (
             maker.bid(
                 maker.bidsId(bid["id"]),
