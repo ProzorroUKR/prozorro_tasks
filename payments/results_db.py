@@ -232,7 +232,7 @@ def get_payment_search_filters(
             "$expr": {
                 "$and": [
                     {"$gte": [date_from_str_filter("$payment.date_oper"), payment_date_from]},
-                    {"$lt": [date_from_str_filter("$payment.date_oper"), payment_date_to]}
+                    {"$lt": [date_from_str_filter("$payment.date_oper"), payment_date_to + timedelta(days=1)]}
                 ]
             }
         })
