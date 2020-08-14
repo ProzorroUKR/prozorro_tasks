@@ -93,11 +93,11 @@ def prepare_context(task, contract, tender, plan):
                 break
 
     tender_start_date = get_tender_start_date(tender, tender_award, tender_contract)
+    award_complaint_period_start_date = get_award_complaint_period_start_date(tender, tender_award)
 
     context = dict(
         contract=contract,
         tender=tender,
-        tender_award=tender_award,
         tender_contract=tender_contract,
         tender_bid=tender_bid,
         lot=lot,
@@ -105,6 +105,7 @@ def prepare_context(task, contract, tender, plan):
         plan=plan,
         initial_bids=initial_bids,
         tender_start_date=tender_start_date,
+        award_complaint_period_start_date=award_complaint_period_start_date,
     )
     return context
 
@@ -129,3 +130,13 @@ def get_tender_start_date(tender, tender_award, tender_contract):
         return tender["tenderPeriod"]["startDate"]
     else:
         return None
+
+
+def get_award_complaint_period_start_date(tender, tender_award):
+    tender_procurement_method_type = tender["procurementMethodType"]
+
+    if tender_procurement_method_type in ("closeFrameworkAgreementSelectionUA", "reporting"):
+        award_start_date = tender_award["date"]
+    else:
+        award_start_date = tender_award["complaintPeriod"]["startDate"]
+    return award_start_date

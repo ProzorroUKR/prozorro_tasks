@@ -6,6 +6,7 @@ from treasury.domain.prcontract import (
     prepare_contract_context,
     prepare_context,
     get_tender_start_date,
+    get_award_complaint_period_start_date,
 )
 
 
@@ -177,7 +178,7 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender"]["bids"], expected_bids)
         self.assertEqual(result["tender_bid"], expected_bids[0])
         self.assertEqual(result["tender_start_date"], complaint_period_start_date)
-        self.assertEqual(result["tender_award"], tender["awards"][1])
+        self.assertEqual(result["award_complaint_period_start_date"], complaint_period_start_date)
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
@@ -185,6 +186,7 @@ class TestCase(BaseTestCase):
     def test_prepare_context_without_tender_bids(self):
         task = Mock()
         enquiry_period_start_date = "2020-08-13T14:20:07.813257+03:00"
+        complaint_period_start_date = "2020-08-13T14:57:56.498745+03:00"
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
 
@@ -201,7 +203,14 @@ class TestCase(BaseTestCase):
             ],
             awards=[
                 dict(id="11"),
-                dict(id="22", lotID="22222"),
+                dict(
+                    id="22",
+                    lotID="22222",
+                    complaintPeriod=dict(
+                        startDate=complaint_period_start_date,
+                        endDate="2020-08-13T14:57:57.362745+03:00"
+                    )
+                ),
             ],
             lots=[
                 dict(id="11111"),
@@ -232,7 +241,7 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender_start_date"], enquiry_period_start_date)
         self.assertEqual(result["tender"]["items"], tender["items"][1:])
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
-        self.assertEqual(result["tender_award"], tender["awards"][1])
+        self.assertEqual(result["award_complaint_period_start_date"], complaint_period_start_date)
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
@@ -288,3 +297,29 @@ class TestCase(BaseTestCase):
         tender["procurementMethodType"] = "unknown"
         result = get_tender_start_date(tender, {}, {})
         self.assertEqual(result, None)
+
+    def test_get_awards_complaint_period_start_date(self):
+        # 1
+        tender = {
+            "procurementMethodType": "closeFrameworkAgreementSelectionUA",
+        }
+        _award_date = "2020-08-14T12:32:18.080119+03:00"
+        tender_award = {
+            "date": _award_date,
+        }
+
+        result = get_award_complaint_period_start_date(tender, tender_award)
+        self.assertEqual(result, _award_date)
+
+        # 2
+        tender["procurementMethodType"] = "aboveThresholdUA"
+
+        _award_start_date = "2020-08-14T13:29:17.679661+03:00"
+        tender_award = {
+            "complaintPeriod": {
+                "startDate": _award_start_date,
+                "endDate": "2020-08-14T13:29:57.681822+03:00"
+            },
+        }
+        result = get_award_complaint_period_start_date(tender, tender_award)
+        self.assertEqual(result, _award_start_date)
