@@ -117,11 +117,11 @@ def _build_plan_xml(maker, context):
 
 def _build_tender_xml(maker, context):
     tender = context["tender"]
-    tender_award = context["tender_award"]
     tender_contract = context["tender_contract"]
     tender_bid = context["tender_bid"]
     initial_bids = context["initial_bids"]
     tender_start_date = context["tender_start_date"]
+    award_complaint_period_start_date = context["award_complaint_period_start_date"]
     lot = context.get("lot")
     result = maker.report(
         maker.tenderID(tender["tenderID"]),
@@ -173,7 +173,7 @@ def _build_tender_xml(maker, context):
                 maker.awardQualifiedEligible(get_value(bid, "selfQualified")),
             ) for bid in tender["bids"]  # can be empty bids list here
         )),
-        maker.awardComplaintPeriodStartDate(get_date_value(tender_award, "complaintPeriod", "startDate")),
+        maker.awardComplaintPeriodStartDate(format_date(award_complaint_period_start_date)),
         maker.contractsDateSigned(get_date_value(tender_contract, "dateSigned")),
         maker.contractsSuppliersIdentifierName(
             get_value(tender_contract.get("suppliers")[0], "identifier", "legalName")
