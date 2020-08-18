@@ -339,14 +339,13 @@ def get_payments_registry(date_from, date_to):
             pass
 
 def get_payments_registry_fake(date_from, date_to):
-    with shelve.open("payments.db") as db:
-        messages = db.get("registry")
+    messages = get_payments_registry_fake_data()
     if messages is not None:
 
         def fake_date_oper_range(value):
             try:
-                date_oper = datetime.strptime(value.get("date_oper"), "%d.%m.%Y %H:%M:%S")
-            except ValueError:
+                date_oper = datetime.strptime(value["date_oper"], "%d.%m.%Y %H:%M:%S")
+            except (ValueError, KeyError, TypeError):
                 return False
             return date_from <= date_oper < date_to
 
@@ -357,23 +356,35 @@ def get_payments_registry_fake(date_from, date_to):
 
 
 def dumps_payments_registry_fake():
-    with shelve.open("payments.db") as db:
-        return json.dumps(db.get("registry", ""), indent=4, ensure_ascii=False)
+    messages = get_payments_registry_fake_data()
+    if messages is not None:
+        return json.dumps(messages, indent=4, ensure_ascii=False)
 
 
 def store_payments_registry_fake(text):
     if not text:
-        with shelve.open("payments.db") as db:
-            db["registry"] = None
+        put_payments_registry_fake_data(None)
     else:
         try:
             data = json.loads(text)
         except JSONDecodeError:
             pass
         else:
-            with shelve.open("payments.db") as db:
-                db["registry"] = data
+            put_payments_registry_fake_data(data)
 
+def put_payments_registry_fake_data(data):
+    try:
+        with shelve.open("payments.db") as db:
+            db["registry"] = data
+    except OSError:
+        pass
+
+def get_payments_registry_fake_data(default=None):
+    try:
+        with shelve.open("payments.db") as db:
+            return db.get("registry", default)
+    except OSError:
+        pass
 
 def generate_report_file(filename, data, title):
     total = data.pop(len(data) - 1)
