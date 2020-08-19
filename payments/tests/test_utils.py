@@ -23,6 +23,8 @@ from payments.utils import (
     get_payments_registry_fake,
     dumps_payments_registry_fake,
     store_payments_registry_fake,
+    put_payments_registry_fake_data,
+    get_payments_registry_fake_data,
 )
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
@@ -731,7 +733,7 @@ class DumpsPaymentsRegistryFakeTestCase(unittest.TestCase):
             indent=4,
             ensure_ascii=False
         )
-        shelve.open.return_value.__enter__.return_value.get.assert_called_once_with("registry", "")
+        shelve.open.return_value.__enter__.return_value.get.assert_called_once_with("registry", None)
 
 
 class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
@@ -768,7 +770,7 @@ class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
 
     @patch("payments.utils.json")
     @patch("payments.utils.shelve")
-    def test_store_payments_registry_fake_(self, shelve, json):
+    def test_store_payments_registry_fake_none(self, shelve, json):
         text = None
         shelve.open.return_value.__enter__.return_value = dict()
 
@@ -779,3 +781,66 @@ class StorePaymentsRegistryFakeTestCase(unittest.TestCase):
             shelve.open.return_value.__enter__.return_value['registry'],
             None
         )
+
+
+class PutPaymentsRegistryFakeDataTestCase(unittest.TestCase):
+
+    @patch("payments.utils.shelve")
+    def test_put_payments_registry_fake_data(self, shelve):
+        data = "test"
+        shelve.open.return_value.__enter__.return_value = dict()
+
+        put_payments_registry_fake_data(data)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            data
+        )
+
+    @patch("payments.utils.shelve")
+    def test_put_payments_registry_fake_data_os_error(self, shelve):
+        data = "test"
+        shelve.open.side_effect = OSError
+        shelve.open.return_value.__enter__.return_value = None
+
+        put_payments_registry_fake_data(data)
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value,
+            None
+        )
+
+
+
+class GetPaymentsRegistryFakeDataTestCase(unittest.TestCase):
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_data(self, shelve):
+        data = "test"
+        shelve.open.return_value.__enter__.return_value = {'registry': data}
+
+        result = get_payments_registry_fake_data()
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value['registry'],
+            data
+        )
+        self.assertEqual(result, data)
+
+    @patch("payments.utils.shelve")
+    def test_get_payments_registry_fake_data_os_error(self, shelve):
+        data = "test"
+        shelve.open.side_effect = OSError
+        shelve.open.return_value.__enter__.return_value = {'registry': data}
+
+        result = get_payments_registry_fake_data()
+
+        shelve.open.assert_called_once_with('payments.db')
+        self.assertEqual(
+            shelve.open.return_value.__enter__.return_value,
+            {'registry': data}
+        )
+        self.assertEqual(result, None)

@@ -154,7 +154,7 @@ def payment_request():
 @login_groups_required(["admins"])
 def payment_request_fake():
     if request.method == "GET":
-        text = dumps_payments_registry_fake()
+        text = dumps_payments_registry_fake() or ""
         return render_template("payments/payment_fake.html", text=text)
     else:
         store_payments_registry_fake(request.form.get("text"))
