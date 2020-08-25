@@ -1,6 +1,8 @@
 from celery_worker.celery import app
 from celery_worker.locks import concurrency_lock, unique_task_decorator
-from treasury.storage import get_contract_context, save_contract_context, update_organisations, get_organisation
+from treasury.storage import (
+    get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template,
+)
 from treasury.documents import prepare_documents
 from treasury.templates import (
     render_contract_xml, render_change_xml, render_catalog_xml, render_transactions_confirmation_xml
@@ -120,6 +122,9 @@ def send_contract_xml(self, contract_id):
     # building request
     document = render_contract_xml(context)
 
+    # save xml to db
+    save_xml_template(self, contract_id, document)
+
     # sign document
     sign = sign_data(self, document)  # TODO: get ready to increase READ_TIMEOUT inside
 
@@ -148,6 +153,9 @@ def send_change_xml(self, contract_id, change_id):
     prepare_documents(self, change)
     context["change"] = change
     document = render_change_xml(context)
+
+    # save xml to db
+    save_xml_template(self, contract_id, document, xml_was_changed=True)
 
     # sign document
     sign = sign_data(self, document)

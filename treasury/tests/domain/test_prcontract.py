@@ -7,6 +7,10 @@ from treasury.domain.prcontract import (
     prepare_context,
     get_tender_start_date,
     get_award_complaint_period_start_date,
+    get_contracts_suppliers_address,
+    get_award_qualified_eligible_for_each_bid,
+    get_award_qualified_eligible,
+    handle_award_qualified_eligible_statuses,
 )
 
 
@@ -102,6 +106,7 @@ class TestCase(BaseTestCase):
     def test_prepare_context(self):
         task = Mock()
         complaint_period_start_date = "2020-08-13T14:57:56.498745+03:00"
+        tender_start_date = "2020-09-04T14:57:56.498745+03:00"
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
         tender = dict(
@@ -109,7 +114,18 @@ class TestCase(BaseTestCase):
             id="45677",
             contracts=[
                 dict(id="111"),
-                dict(id="222"),
+                dict(
+                    id="222",
+                    suppliers=[
+                        dict(
+                            address=dict(
+                                countryName="Україна",
+                                streetAddress="м. Дніпро, вул. Андрія Фабра, 4, 4 поверх",
+                                region="Дніпропетровська область",
+                            )
+                        )
+                    ]
+                ),
             ],
             awards=[
                 dict(id="11"),
@@ -118,9 +134,10 @@ class TestCase(BaseTestCase):
                     bid_id="2222",
                     lotID="22222",
                     complaintPeriod=dict(
-                        startDate=complaint_period_start_date,
+                        startDate=tender_start_date,
                         endDate="2020-08-13T14:57:57.362745+03:00"
-                    )
+                    ),
+                    date=complaint_period_start_date
                 ),
             ],
             bids=[
@@ -172,13 +189,23 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender"]["items"], tender["items"][1:])
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
         expected_bids = [
-            {'id': '2222', 'lotValues': [{'relatedLot': '22222', 'value': 15}], 'value': 15},
-            {'id': '3333', 'lotValues': [{'relatedLot': '22222', 'value': 20}], 'value': 20},
+            {
+                'id': '2222', 'lotValues': [{'relatedLot': '22222', 'value': 15}],
+                'value': 15, 'award_qualified_eligible': None
+            },
+            {
+                'id': '3333', 'lotValues': [{'relatedLot': '22222', 'value': 20}],
+                'value': 20, 'award_qualified_eligible': None
+            },
         ]
         self.assertEqual(result["tender"]["bids"], expected_bids)
         self.assertEqual(result["tender_bid"], expected_bids[0])
-        self.assertEqual(result["tender_start_date"], complaint_period_start_date)
-        self.assertEqual(result["award_complaint_period_start_date"], complaint_period_start_date)
+        self.assertEqual(result["secondary_data"]["award_complaint_period_start_date"], complaint_period_start_date)
+        self.assertEqual(result["secondary_data"]["tender_start_date"], tender_start_date)
+        expected_contracts_suppliers_address = "Україна Дніпропетровська область м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
+        self.assertEqual(
+            result["secondary_data"]["contracts_suppliers_address"], expected_contracts_suppliers_address
+        )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
@@ -199,17 +226,27 @@ class TestCase(BaseTestCase):
             id="45677",
             contracts=[
                 dict(id="111"),
-                dict(id="222"),
+                dict(
+                    id="222",
+                    suppliers=[
+                        dict(
+                            address=dict(
+                                postalCode="49000",
+                                countryName="Україна",
+                                streetAddress="м. Дніпро, вул. Андрія Фабра, 4, 4 поверх",
+                                region="Дніпропетровська область",
+                                locality="Дніпро"
+                            )
+                        )
+                    ]
+                ),
             ],
             awards=[
                 dict(id="11"),
                 dict(
                     id="22",
                     lotID="22222",
-                    complaintPeriod=dict(
-                        startDate=complaint_period_start_date,
-                        endDate="2020-08-13T14:57:57.362745+03:00"
-                    )
+                    date=complaint_period_start_date
                 ),
             ],
             lots=[
@@ -238,10 +275,15 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender_bid"], {})
         self.assertEqual(result["tender"]["bids"], [])
         self.assertEqual(result["initial_bids"], {})
-        self.assertEqual(result["tender_start_date"], enquiry_period_start_date)
         self.assertEqual(result["tender"]["items"], tender["items"][1:])
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
-        self.assertEqual(result["award_complaint_period_start_date"], complaint_period_start_date)
+        self.assertEqual(result["secondary_data"]["award_complaint_period_start_date"], complaint_period_start_date)
+        self.assertEqual(result["secondary_data"]["tender_start_date"], enquiry_period_start_date)
+
+        expected_contracts_suppliers_address = "49000 Україна Дніпропетровська область Дніпро м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
+        self.assertEqual(
+            result["secondary_data"]["contracts_suppliers_address"],  expected_contracts_suppliers_address
+        )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
@@ -250,6 +292,7 @@ class TestCase(BaseTestCase):
         # 1
         start_date = "2020-08-13T14:20:07.813257+03:00"
         tender = {
+            "id": 12345,
             "procurementMethodType": "aboveThresholdUA",
             "enquiryPeriod": {
                 "startDate": start_date,
@@ -300,26 +343,183 @@ class TestCase(BaseTestCase):
 
     def test_get_awards_complaint_period_start_date(self):
         # 1
-        tender = {
-            "procurementMethodType": "closeFrameworkAgreementSelectionUA",
-        }
         _award_date = "2020-08-14T12:32:18.080119+03:00"
         tender_award = {
             "date": _award_date,
         }
 
-        result = get_award_complaint_period_start_date(tender, tender_award)
+        result = get_award_complaint_period_start_date(tender_award)
         self.assertEqual(result, _award_date)
 
-        # 2
-        tender["procurementMethodType"] = "aboveThresholdUA"
-
-        _award_start_date = "2020-08-14T13:29:17.679661+03:00"
-        tender_award = {
-            "complaintPeriod": {
-                "startDate": _award_start_date,
-                "endDate": "2020-08-14T13:29:57.681822+03:00"
-            },
+    def test_get_contracts_suppliers_address(self):
+        tender_contract = {
+            "status": "active",
+            "suppliers": [
+                {
+                    "address": {
+                        "postalCode": "21100",
+                        "countryName": "Україна",
+                        "streetAddress": "вул. Данила Галицького, буд. 27, каб. 21",
+                        "region": "Вінницька область",
+                        "locality": "Вінниця"
+                    }
+                }
+            ]
         }
-        result = get_award_complaint_period_start_date(tender, tender_award)
-        self.assertEqual(result, _award_start_date)
+
+        result = get_contracts_suppliers_address(tender_contract)
+        expected_result = "21100 Україна Вінницька область Вінниця вул. Данила Галицького, буд. 27, каб. 21"
+        self.assertEqual(result, expected_result)
+
+        tender_contract = {
+            "status": "active",
+            "suppliers": [
+                {
+                    "address": {
+                        "region": "Вінницька область",
+                        "locality": "Вінниця",
+                        "countryName": "Україна",
+                        "unknown_field": 123
+                    }
+                }
+            ]
+        }
+        result = get_contracts_suppliers_address(tender_contract)
+        expected_result = "Україна Вінницька область Вінниця"
+        self.assertEqual(result, expected_result)
+
+    def test_get_award_qualified_eligible_for_each_bid(self):
+
+        tender = {
+            "procurementMethodType": "esco",
+            "bids": [
+                {
+                    "id": 12345
+                },
+                {
+                    "id": 45678
+                }
+            ]
+        }
+
+        expected_result = {
+            "procurementMethodType": "esco",
+            "bids": [
+                {
+                    "id": 12345,
+                    "award_qualified_eligible": None
+                },
+                {
+                    "id": 45678,
+                    "award_qualified_eligible": None
+                }
+            ]
+        }
+
+        result = get_award_qualified_eligible_for_each_bid(tender)
+        self.assertEqual(result, expected_result)
+
+    def test_get_award_qualified_eligible(self):
+        bid_id = 456789
+        bid = {
+            "id": bid_id
+        }
+
+        # 1
+        tender = {
+            "procurementMethodType": "aboveThresholdUA",
+            "awards": [
+                {
+                    "status": "active",
+                    "bid_id": bid_id,
+                }
+            ]
+        }
+
+        result = get_award_qualified_eligible(tender, bid)
+        expected_result = True
+        self.assertEqual(result, expected_result)
+
+        tender["awards"][0]["status"] = "cancelled"
+        result = get_award_qualified_eligible(tender, bid)
+        expected_result = "Рішення скасоване"
+        self.assertEqual(result, expected_result)
+
+        tender["awards"][0]["bid_id"] = "there_are_no_award_with_same_id"
+        result = get_award_qualified_eligible(tender, bid)
+        expected_result = None
+        self.assertEqual(result, expected_result)
+
+        # 2
+        tender = {
+            "procurementMethodType": "aboveThresholdEU",
+            "qualifications": [
+                {
+                    "status": "unsuccessful",
+                    "bid_id": 1234,
+                },
+                {
+                    "status": "active",
+                    "bid_id": bid_id,
+                }
+            ]
+        }
+
+        result = get_award_qualified_eligible(tender, bid)
+        self.assertEqual(result, True)
+
+        tender["qualifications"][1]["bid_id"] = "999999999"
+        result = get_award_qualified_eligible(tender, bid)
+        self.assertEqual(result, None)
+
+        # 3
+        tender = {
+            "id": 123456789,
+            "procurementMethodType": "closeFrameworkAgreementSelectionUA"
+        }
+
+        result = get_award_qualified_eligible(tender, bid)
+        self.assertEqual(result, True)
+
+        # 4
+        tender = {
+            "id": 123456789,
+            "procurementMethodType": "priceQuotation"
+        }
+
+        result = get_award_qualified_eligible(tender, bid)
+        self.assertEqual(result, None)
+
+        # 5
+        tender = {
+            "id": 123456789,
+            "procurementMethodType": "unknown_procurement_method_type"
+        }
+        result = get_award_qualified_eligible(tender, bid)
+        self.assertEqual(result, None)
+
+    def test_handle_award_qualified_eligible_statuses(self):
+        # 1
+        award = {
+            "status": "active"
+        }
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, True)
+
+        # 2
+        award["status"] = "unsuccessful"
+        award["title"] = "title1"
+        award["description"] = "description1"
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, "title1 description1")
+
+        # 3
+        award["status"] = "pending"
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, None)
+
+        # 4
+        award["status"] = "cancelled"
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, "Рішення скасоване")
+

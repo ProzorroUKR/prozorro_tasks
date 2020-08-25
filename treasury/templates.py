@@ -120,8 +120,8 @@ def _build_tender_xml(maker, context):
     tender_contract = context["tender_contract"]
     tender_bid = context["tender_bid"]
     initial_bids = context["initial_bids"]
-    tender_start_date = context["tender_start_date"]
-    award_complaint_period_start_date = context["award_complaint_period_start_date"]
+    secondary_data = context["secondary_data"]
+
     lot = context.get("lot")
     result = maker.report(
         maker.tenderID(tender["tenderID"]),
@@ -163,26 +163,31 @@ def _build_tender_xml(maker, context):
                 maker.milestonesPercentage(get_value(milestone, "percentage")),
             ) for milestone in tender.get("milestones", ""))
         ),
-        maker.startDate(format_date(tender_start_date)),
+        maker.startDate(format_date(secondary_data["tender_start_date"])),
         maker.bids(* (
             maker.bid(
                 maker.bidsId(bid["id"]),
                 maker.bidsSuppliersIdentifierName(get_value(bid.get("tenderers")[0], "identifier", "legalName")),
                 maker.bidsValueAmount(get_value(initial_bids, bid["id"])),
                 maker.bidsValueAmountLast(get_value(bid, "value", "amount")),
-                maker.awardQualifiedEligible(get_value(bid, "selfQualified")),
+                maker.awardQualifiedEligible(get_value(bid, "award_qualified_eligible")),
             ) for bid in tender["bids"]  # can be empty bids list here
         )),
-        maker.awardComplaintPeriodStartDate(format_date(award_complaint_period_start_date)),
+        maker.awardComplaintPeriodStartDate(
+            format_date(secondary_data["award_complaint_period_start_date"])
+        ),
         maker.contractsDateSigned(get_date_value(tender_contract, "dateSigned")),
         maker.contractsSuppliersIdentifierName(
             get_value(tender_contract.get("suppliers")[0], "identifier", "legalName")
         ),
-        maker.contractsSuppliersAddress(get_value(tender_contract.get("suppliers")[0], "address")),
+        maker.contractsSuppliersAddress(
+            secondary_data["contracts_suppliers_address"]
+        ),
         maker.bidSubcontractingDetails(get_value(tender_bid, "subcontractingDetails")),
         maker.ContractsValueAmount(get_value(tender_contract, "value", "amount")),
         maker.startDateCfaua(None),  # will be added later
         maker.ContractsContractID(tender_contract["id"]),  # will be added later
+        maker.lotsTitle(get_value(lot, "title") if lot else None)
     )
     return result
 
