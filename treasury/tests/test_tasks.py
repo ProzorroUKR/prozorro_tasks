@@ -443,6 +443,7 @@ class CheckTestCase(unittest.TestCase):
         save_context_mock.assert_not_called()
         send_change_xml_mock.assert_not_called()
 
+    @patch("treasury.tasks.save_xml_template")
     @patch("treasury.tasks.sign_data")
     @patch("treasury.tasks.send_request")
     @patch("treasury.tasks.uuid4")
@@ -450,7 +451,7 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_documents")
     @patch("treasury.tasks.get_contract_context")
     def test_send_contract_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock,
-                               uuid4_mock, send_mock, sign_data_mock):
+                               uuid4_mock, send_mock, sign_data_mock, save_xml_template_mock):
         context = dict(
             contract=dict(
                 changes=[
@@ -481,6 +482,10 @@ class CheckTestCase(unittest.TestCase):
             ]
         )
         render_xml_mock.assert_called_once_with(context)
+        save_xml_template_mock.assert_called_once_with(
+            send_contract_xml, contract_id, render_xml_mock.return_value
+        )
+
         sign_data_mock.assert_called_once_with(send_contract_xml, render_xml_mock.return_value)
         send_mock.assert_called_once_with(
             send_contract_xml,
@@ -490,6 +495,7 @@ class CheckTestCase(unittest.TestCase):
             method_name="PrContract"
         )
 
+    @patch("treasury.tasks.save_xml_template")
     @patch("treasury.tasks.sign_data")
     @patch("treasury.tasks.send_request")
     @patch("treasury.tasks.uuid4")
@@ -497,7 +503,7 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_documents")
     @patch("treasury.tasks.get_contract_context")
     def test_send_change_xml(self, get_context_mock, prepare_documents_mock, render_xml_mock,
-                             uuid4_mock, send_mock, sign_data_mock):
+                             uuid4_mock, send_mock, sign_data_mock, save_xml_template_mock):
         context = dict(
             contract=dict(
                 changes=[
@@ -524,6 +530,11 @@ class CheckTestCase(unittest.TestCase):
             context["contract"]["changes"][1]
         )
         render_xml_mock.assert_called_once_with(context)
+
+        save_xml_template_mock.assert_called_once_with(
+            send_change_xml, contract_id, render_xml_mock.return_value, xml_was_changed=True
+        )
+
         send_mock.assert_called_once_with(
             send_change_xml,
             render_xml_mock.return_value,

@@ -153,14 +153,16 @@ test_tender = dict(
             tenderers=[dict(identifier=dict(legalName="My name"))],
             selfQualified=True,
             value=dict(amount=123),
-            subcontractingDetails="DKP Book, Ukraine Lviv"
+            subcontractingDetails="DKP Book, Ukraine Lviv",
+            award_qualified_eligible=True
         ),
         dict(
             id="2",
             tenderers=[dict(identifier=dict(legalName="his name"))],
             selfQualified=False,
             value=dict(amount=321),
-            subcontractingDetails="Will not be used"
+            subcontractingDetails="Will not be used",
+            award_qualified_eligible=None
         )
     ],
 )
@@ -179,8 +181,17 @@ test_tender_contract = dict(
     dateSigned="2020-03-11T00:00:00+05:00",
 )
 
-test_tender_start_date = "2020-07-27T13:09:54.997464+03:00"
-test_award_complaint_period_start_date = "2020-08-14T12:32:18.080119+03:00"
+test_lot = dict(
+    status="complete",
+    title="Lot 1, Some lot information",
+    date="2018-04-18T13:09:54.997464+03:00"
+)
+
+test_secondary_data = dict(
+    tender_start_date="2020-07-27T13:09:54.997464+03:00",
+    award_complaint_period_start_date="2020-08-14T12:32:18.080119+03:00",
+    contracts_suppliers_address="Ukraine Dnipro, 4"
+)
 
 
 class TemplatesTestCase(unittest.TestCase):
@@ -258,8 +269,8 @@ class TemplatesTestCase(unittest.TestCase):
             tender_contract=test_tender_contract,
             cancellation={},
             initial_bids=test_initial_bids,
-            tender_start_date=test_tender_start_date,
-            award_complaint_period_start_date=test_award_complaint_period_start_date,
+            lot=test_lot,
+            secondary_data=test_secondary_data,
         )
         result = render_contract_xml(context)
         self.assertEqual(
@@ -332,7 +343,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'</plan>'
             b'<report>'
             b'<tenderID>UA-2020-55555</tenderID>'
-            b'<date>2006-05-07T00:00:00</date>'
+            b'<date>2018-04-18T13:09:54.997464+03:00</date>'
             b'<procuringEntityName>My name</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'
             b'<mainProcurementCategory>good goods</mainProcurementCategory>'
@@ -401,15 +412,15 @@ class TemplatesTestCase(unittest.TestCase):
             b'<bidsSuppliersIdentifierName>his name</bidsSuppliersIdentifierName>'
             b'<bidsValueAmount>555</bidsValueAmount>'
             b'<bidsValueAmountLast>321</bidsValueAmountLast>'
-            b'<awardQualifiedEligible>False</awardQualifiedEligible>'
             b'</bid></bids>'
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
-            b'<contractsSuppliersAddress>Street, 1, Kyiv</contractsSuppliersAddress>'
+            b'<contractsSuppliersAddress>Ukraine Dnipro, 4</contractsSuppliersAddress>'
             b'<bidSubcontractingDetails>DKP Book, Ukraine Lviv</bidSubcontractingDetails>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
+            b'<lotsTitle>Lot 1, Some lot information</lotsTitle>'
             b'</report>'
             b'</root>'
         )
@@ -423,8 +434,7 @@ class TemplatesTestCase(unittest.TestCase):
             tender_contract=test_tender_contract,
             cancellation={},
             initial_bids={},
-            tender_start_date=test_tender_start_date,
-            award_complaint_period_start_date=test_award_complaint_period_start_date,
+            secondary_data=test_secondary_data,
         )
         context = deepcopy(context)
         del context["contract"]["period"]
@@ -465,7 +475,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
-            b'<contractsSuppliersAddress>Street, 1, Kyiv</contractsSuppliersAddress>'
+            b'<contractsSuppliersAddress>Ukraine Dnipro, 4</contractsSuppliersAddress>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
             b'</report>'

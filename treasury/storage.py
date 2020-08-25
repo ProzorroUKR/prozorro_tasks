@@ -1,5 +1,7 @@
 from celery_worker.locks import get_mongodb_collection
-from environment_settings import TREASURY_CONTEXT_COLLECTION, TREASURY_DB_NAME, TREASURY_ORG_COLLECTION
+from environment_settings import (
+    TREASURY_CONTEXT_COLLECTION, TREASURY_DB_NAME, TREASURY_ORG_COLLECTION, TREASURY_XML_TEMPLATES_COLLECTION,
+)
 from pymongo.errors import PyMongoError
 from pymongo import UpdateOne, DeleteMany
 from celery.signals import celeryd_init
@@ -54,6 +56,20 @@ def save_contract_context(task, contract_id, data):
         get_collection().update_one(
             {"_id": contract_id},
             {"$set": {"context": data}},
+            upsert=True
+        )
+    except PyMongoError as e:
+        logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_ERROR"})
+        raise task.retry()
+
+
+def save_xml_template(task, contract_id, data, xml_was_changed=False):
+    if isinstance(data, bytes):
+        data = str(data)
+    try:
+        get_collection(collection_name=TREASURY_XML_TEMPLATES_COLLECTION).update_one(
+            {"contract_id": contract_id, "xml_changed": xml_was_changed},
+            {"$set": {"xml_data": data}},
             upsert=True
         )
     except PyMongoError as e:
