@@ -456,11 +456,11 @@ class TestCase(BaseTestCase):
             "qualifications": [
                 {
                     "status": "unsuccessful",
-                    "bid_id": 1234,
+                    "bidID": 1234,
                 },
                 {
                     "status": "active",
-                    "bid_id": bid_id,
+                    "bidID": bid_id,
                 }
             ]
         }
@@ -468,7 +468,7 @@ class TestCase(BaseTestCase):
         result = get_award_qualified_eligible(tender, bid)
         self.assertEqual(result, True)
 
-        tender["qualifications"][1]["bid_id"] = "999999999"
+        tender["qualifications"][1]["bidID"] = "999999999"
         result = get_award_qualified_eligible(tender, bid)
         self.assertEqual(result, None)
 

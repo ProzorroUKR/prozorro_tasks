@@ -65,7 +65,7 @@ def save_contract_context(task, contract_id, data):
 
 def save_xml_template(task, contract_id, data, xml_was_changed=False):
     if isinstance(data, bytes):
-        data = str(data)
+        data = data.decode('windows-1251')
     try:
         get_collection(collection_name=TREASURY_XML_TEMPLATES_COLLECTION).update_one(
             {"contract_id": contract_id, "xml_changed": xml_was_changed},
