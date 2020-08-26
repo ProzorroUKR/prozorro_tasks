@@ -189,7 +189,7 @@ def get_award_qualified_eligible(tender, bid):
     elif tender_procurement_method_type in ("aboveThresholdEU", "competitiveDialogueEU.stage2"):
         _qualification = [
             q for q in tender["qualifications"]
-            if q["bid_id"] == bid["id"]
+            if q["bidID"] == bid["id"]
         ]
 
         if not _qualification:
