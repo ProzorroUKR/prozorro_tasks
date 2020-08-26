@@ -28,6 +28,7 @@ import json
 import yaml
 import io
 
+from tasks_utils.tasks import ATTACH_DOC_MAX_RETRIES
 
 logger = get_task_logger(__name__)
 
@@ -307,7 +308,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
 
 # ---------- ATTACH DOCUMENT TO ITS TENDER
-@app.task(bind=True)
+@app.task(bind=True, max_retries=ATTACH_DOC_MAX_RETRIES)
 def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
     unique_data = {k: v for k, v in data.items() if k != "meta"}
     upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
@@ -373,7 +374,8 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_DATA_ERROR"})
 
             elif response.status_code != 201:
-                logger.error("Incorrect upload status while attaching doc {} to tender {}".format(
+                logger_method = logger.warning if self.request.retries < ATTACH_DOC_MAX_RETRIES else logger.error
+                logger_method("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
                 raise self.retry(countdown=get_request_retry_countdown(response))
