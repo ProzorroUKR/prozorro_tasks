@@ -7,7 +7,7 @@ from treasury.domain.prcontract import (
     prepare_context,
     get_tender_start_date,
     get_award_complaint_period_start_date,
-    get_contracts_suppliers_address,
+    get_custom_address_string,
     get_award_qualified_eligible_for_each_bid,
     get_award_qualified_eligible,
     handle_award_qualified_eligible_statuses,
@@ -159,7 +159,14 @@ class TestCase(BaseTestCase):
             ],
             items=[
                 dict(relatedLot="11111"),
-                dict(relatedLot="22222"),
+                dict(
+                    relatedLot="22222",
+                    deliveryAddress=dict(
+                        countryName="Україна",
+                        streetAddress="вул. Банкова 1",
+                        region="м. Київ"
+                    )
+                ),
             ],
             documents=[
                 dict(
@@ -186,7 +193,16 @@ class TestCase(BaseTestCase):
         prepare_contract_mock.assert_called_once_with(contract)
         self.assertIs(result["contract"], contract)
         self.assertEqual(result["initial_bids"], {"1111": 77400.0, "2222": 85000.0})
-        self.assertEqual(result["tender"]["items"], tender["items"][1:])
+        expected_items = [{
+            'relatedLot': '22222',
+            'deliveryAddress': {
+                'countryName': 'Україна',
+                'region': 'м. Київ',
+                'streetAddress': 'вул. Банкова 1'
+            },
+            'item_delivery_address': "Україна, м. Київ, вул. Банкова 1"
+        }]
+        self.assertEqual(result["tender"]["items"], expected_items)
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
         expected_bids = [
             {
@@ -202,7 +218,7 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender_bid"], expected_bids[0])
         self.assertEqual(result["secondary_data"]["award_complaint_period_start_date"], complaint_period_start_date)
         self.assertEqual(result["secondary_data"]["tender_start_date"], tender_start_date)
-        expected_contracts_suppliers_address = "Україна Дніпропетровська область м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
+        expected_contracts_suppliers_address = "Україна, Дніпропетровська область, м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
         self.assertEqual(
             result["secondary_data"]["contracts_suppliers_address"], expected_contracts_suppliers_address
         )
@@ -275,12 +291,14 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender_bid"], {})
         self.assertEqual(result["tender"]["bids"], [])
         self.assertEqual(result["initial_bids"], {})
-        self.assertEqual(result["tender"]["items"], tender["items"][1:])
+
+        expected_items = [{'relatedLot': '22222', 'item_delivery_address': None}]
+        self.assertEqual(result["tender"]["items"], expected_items)
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
         self.assertEqual(result["secondary_data"]["award_complaint_period_start_date"], complaint_period_start_date)
         self.assertEqual(result["secondary_data"]["tender_start_date"], enquiry_period_start_date)
 
-        expected_contracts_suppliers_address = "49000 Україна Дніпропетровська область Дніпро м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
+        expected_contracts_suppliers_address = "49000, Україна, Дніпропетровська область, Дніпро, м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
         self.assertEqual(
             result["secondary_data"]["contracts_suppliers_address"],  expected_contracts_suppliers_address
         )
@@ -352,6 +370,7 @@ class TestCase(BaseTestCase):
         self.assertEqual(result, _award_date)
 
     def test_get_contracts_suppliers_address(self):
+        # 1
         tender_contract = {
             "status": "active",
             "suppliers": [
@@ -367,10 +386,11 @@ class TestCase(BaseTestCase):
             ]
         }
 
-        result = get_contracts_suppliers_address(tender_contract)
-        expected_result = "21100 Україна Вінницька область Вінниця вул. Данила Галицького, буд. 27, каб. 21"
+        result = get_custom_address_string(tender_contract.get("suppliers")[0]["address"])
+        expected_result = "21100, Україна, Вінницька область, Вінниця, вул. Данила Галицького, буд. 27, каб. 21"
         self.assertEqual(result, expected_result)
 
+        # 2
         tender_contract = {
             "status": "active",
             "suppliers": [
@@ -384,9 +404,39 @@ class TestCase(BaseTestCase):
                 }
             ]
         }
-        result = get_contracts_suppliers_address(tender_contract)
-        expected_result = "Україна Вінницька область Вінниця"
+        result = get_custom_address_string(tender_contract.get("suppliers")[0]["address"])
+        expected_result = "Україна, Вінницька область, Вінниця"
         self.assertEqual(result, expected_result)
+
+        # 3
+        tender_contract = {
+            "description": "Послуги шкільних їдалень",
+            "items": [
+                {
+                    "deliveryAddress": {
+                        "postalCode": "79000",
+                        "countryName": "Україна",
+                        "streetAddress": "вул. Банкова 1",
+                        "locality": "м. Київ"
+                    },
+                }
+            ]
+        }
+        result = get_custom_address_string(tender_contract.get("items")[0].get("deliveryAddress"))
+        expected_result = "79000, Україна, м. Київ, вул. Банкова 1"
+        self.assertEqual(result, expected_result)
+
+        # 4
+        tender_contract = {
+            "description": "Послуги шкільних їдалень",
+            "items": [
+                {
+                    "some_key": {'aaa': 123},
+                }
+            ]
+        }
+        result = get_custom_address_string(tender_contract.get("items")[0].get("deliveryAddress"))
+        self.assertEqual(result, None)
 
     def test_get_award_qualified_eligible_for_each_bid(self):
 

@@ -148,7 +148,7 @@ def _build_tender_xml(maker, context):
                 ),
                 maker.itemsQuantity(get_value(item, "quantity")),
                 maker.itemsUnitName(get_value(item, "unit", "name")),
-                maker.itemsDeliveryAddress(get_value(item, "deliveryAddress")),
+                maker.itemsDeliveryAddress(get_value(item, "item_delivery_address")),
                 maker.itemsDeliveryDateEndDate(get_date_value(item, "deliveryDate", "endDate")),
             ) for item in tender['items'])
         ),

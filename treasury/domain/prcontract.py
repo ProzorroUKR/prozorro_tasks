@@ -97,10 +97,13 @@ def prepare_context(task, contract, tender, plan):
                 break
     tender = get_award_qualified_eligible_for_each_bid(tender)
 
+    for item in tender["items"]:
+        item["item_delivery_address"] = get_custom_address_string(item.get("deliveryAddress"))
+
     secondary_data = dict(
         tender_start_date=get_tender_start_date(tender, tender_award, tender_contract),
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
-        contracts_suppliers_address=get_contracts_suppliers_address(tender_contract),
+        contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
     )
 
     context = dict(
@@ -150,8 +153,9 @@ def get_award_complaint_period_start_date(tender_award):
     return tender_award.get("date")
 
 
-def get_contracts_suppliers_address(tender_contract):
-    address = tender_contract.get("suppliers")[0]["address"]
+def get_custom_address_string(address):
+    if not address:
+        return None
 
     custom_address_order = ("postalCode", "countryName", "region", "locality", "streetAddress")
     res = []
@@ -160,7 +164,7 @@ def get_contracts_suppliers_address(tender_contract):
         field_value = address.get(field)
         if field_value:
             res.append(field_value)
-    return " ".join(str(el) for el in res)
+    return ", ".join(str(el) for el in res)
 
 
 def get_award_qualified_eligible_for_each_bid(tender):

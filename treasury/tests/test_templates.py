@@ -119,6 +119,7 @@ test_tender = dict(
             unit=dict(name="FF"),
             deliveryAddress=dict(city="Kharkiv", street="Turbo-atom"),
             deliveryDate=dict(endDate=datetime(1999, 12, 12)),
+            item_delivery_address="Kiev, Shevchenko Street, 5"
         ),
         dict(
             id="222",
@@ -190,7 +191,7 @@ test_lot = dict(
 test_secondary_data = dict(
     tender_start_date="2020-07-27T13:09:54.997464+03:00",
     award_complaint_period_start_date="2020-08-14T12:32:18.080119+03:00",
-    contracts_suppliers_address="Ukraine Dnipro, 4"
+    contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4"
 )
 
 
@@ -367,7 +368,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'</itemsAdditionalClassification></itemsAdditionalClassifications>'
             b'<itemsQuantity>2</itemsQuantity>'
             b'<itemsUnitName>FF</itemsUnitName>'
-            b'<itemsDeliveryAddress>Kharkiv, Turbo-atom</itemsDeliveryAddress>'
+            b'<itemsDeliveryAddress>Kiev, Shevchenko Street, 5</itemsDeliveryAddress>'
             b'<itemsDeliveryDateEndDate>1999-12-12T00:00:00</itemsDeliveryDateEndDate>'
             b'</item>'
             b'<item>'
@@ -416,7 +417,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
-            b'<contractsSuppliersAddress>Ukraine Dnipro, 4</contractsSuppliersAddress>'
+            b'<contractsSuppliersAddress>Ukraine, Dnipro, Shevchenko Street, 4</contractsSuppliersAddress>'
             b'<bidSubcontractingDetails>DKP Book, Ukraine Lviv</bidSubcontractingDetails>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
@@ -475,7 +476,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
-            b'<contractsSuppliersAddress>Ukraine Dnipro, 4</contractsSuppliersAddress>'
+            b'<contractsSuppliersAddress>Ukraine, Dnipro, Shevchenko Street, 4</contractsSuppliersAddress>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
             b'</report>'
