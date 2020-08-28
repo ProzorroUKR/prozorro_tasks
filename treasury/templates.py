@@ -82,7 +82,7 @@ def _build_plan_xml(maker, context):
     if plan:
         result = maker.plan(
             maker.planId(plan["id"]),
-            maker.procuringEntityName(get_value(plan, "procuringEntity", "name")),
+            maker.procuringEntityName(get_value(plan, "procuring_entity_name")),
             maker.procuringEntityIdentifierId(get_value(plan, "procuringEntity", "identifier", "id")),
             maker.classificationId(get_value(plan, "classification", "id")),
             maker.classificationDescription(get_value(plan, "classification", "description")),
@@ -129,7 +129,7 @@ def _build_tender_xml(maker, context):
             lot if lot else tender,
             "date"
         )),
-        maker.procuringEntityName(get_value(tender, "procuringEntity", "name")),
+        maker.procuringEntityName(secondary_data["tender_procuring_entity_name"]),
         maker.procuringEntityIdentifierId(get_value(tender, "procuringEntity", "identifier", "id")),
         maker.mainProcurementCategory(get_value(tender, "mainProcurementCategory")),
         maker.items(
@@ -167,7 +167,7 @@ def _build_tender_xml(maker, context):
         maker.bids(* (
             maker.bid(
                 maker.bidsId(bid["id"]),
-                maker.bidsSuppliersIdentifierName(get_value(bid.get("tenderers")[0], "identifier", "legalName")),
+                maker.bidsSuppliersIdentifierName(get_value(bid, "bid_suppliers_identifier_name")),
                 maker.bidsValueAmount(get_value(initial_bids, bid["id"])),
                 maker.bidsValueAmountLast(get_value(bid, "value", "amount")),
                 maker.awardQualifiedEligible(get_value(bid, "award_qualified_eligible")),
@@ -178,7 +178,7 @@ def _build_tender_xml(maker, context):
         ),
         maker.contractsDateSigned(get_date_value(tender_contract, "dateSigned")),
         maker.contractsSuppliersIdentifierName(
-            get_value(tender_contract.get("suppliers")[0], "identifier", "legalName")
+            secondary_data["contracts_suppliers_identifier_name"]
         ),
         maker.contractsSuppliersAddress(
             secondary_data["contracts_suppliers_address"]

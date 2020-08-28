@@ -11,6 +11,7 @@ from treasury.domain.prcontract import (
     get_award_qualified_eligible_for_each_bid,
     get_award_qualified_eligible,
     handle_award_qualified_eligible_statuses,
+    get_name_from_organization,
 )
 
 
@@ -107,6 +108,8 @@ class TestCase(BaseTestCase):
         task = Mock()
         complaint_period_start_date = "2020-08-13T14:57:56.498745+03:00"
         tender_start_date = "2020-09-04T14:57:56.498745+03:00"
+        suppliers_identifier_legal_name = "first_name"
+        tender_procuring_entity_name = 'name55555'
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
         tender = dict(
@@ -122,6 +125,11 @@ class TestCase(BaseTestCase):
                                 countryName="Україна",
                                 streetAddress="м. Дніпро, вул. Андрія Фабра, 4, 4 поверх",
                                 region="Дніпропетровська область",
+                            ),
+                            identifier=dict(
+                                scheme="UA-EDR",
+                                id="00137256",
+                                legalName=suppliers_identifier_legal_name
                             )
                         )
                     ]
@@ -141,10 +149,42 @@ class TestCase(BaseTestCase):
                 ),
             ],
             bids=[
-                dict(id="1111", lotValues=[dict(relatedLot="11111", value=12)]),
-                dict(id="2222", lotValues=[dict(relatedLot="22222", value=15)]),
-                dict(id="3333", lotValues=[dict(relatedLot="22222", value=20)]),
-                dict(id="4444", status="deleted"),
+                dict(
+                    id="1111",
+                    lotValues=[dict(relatedLot="11111", value=12)],
+                    tenderers=[],
+                ),
+                dict(
+                    id="2222",
+                    lotValues=[dict(relatedLot="22222", value=15),],
+                    tenderers=[
+                        dict(
+                            name='name2',
+                            identifier=dict(
+                                scheme="UA-EDR",
+                                id="00137256",
+                                legalName="some_legal_name2"
+                            )
+                        ),
+                    ],
+                ),
+                dict(
+                    id="3333", lotValues=[dict(relatedLot="22222", value=20)],
+                    tenderers=[
+                        dict(
+                            name='name3',
+                            identifier=dict(
+                                scheme="UA-EDR",
+                                id="333333",
+                            )
+                        ),
+                    ],
+                ),
+                dict(
+                    id="4444",
+                    status="deleted",
+                    tenderers=[],
+                ),
             ],
             lots=[
                 dict(id="11111"),
@@ -168,6 +208,13 @@ class TestCase(BaseTestCase):
                     )
                 ),
             ],
+            procuringEntity=dict(
+                identifier=dict(
+                    scheme="UA-EDR",
+                    id="00137256",
+                ),
+                name=tender_procuring_entity_name
+            ),
             documents=[
                 dict(
                     title="audit_45677_22222.yaml",
@@ -206,12 +253,30 @@ class TestCase(BaseTestCase):
         self.assertEqual(result["tender"]["milestones"], tender["milestones"][1:])
         expected_bids = [
             {
-                'id': '2222', 'lotValues': [{'relatedLot': '22222', 'value': 15}],
-                'value': 15, 'award_qualified_eligible': None
+                'id': '2222',
+                'lotValues': [{'relatedLot': '22222', 'value': 15}],
+                'value': 15,
+                'tenderers': [
+                    {
+                        'name': 'name2',
+                        'identifier': {'scheme': 'UA-EDR', 'id': '00137256', 'legalName': 'some_legal_name2'}
+                    }
+                ],
+                'award_qualified_eligible': None,
+                'bid_suppliers_identifier_name': 'some_legal_name2'
             },
             {
-                'id': '3333', 'lotValues': [{'relatedLot': '22222', 'value': 20}],
-                'value': 20, 'award_qualified_eligible': None
+                'id': '3333',
+                'lotValues': [{'relatedLot': '22222', 'value': 20}],
+                'value': 20,
+                'tenderers': [
+                    {
+                        'name': 'name3',
+                        'identifier': {'scheme': 'UA-EDR', 'id': '333333'}
+                    }
+                ],
+                'award_qualified_eligible': None,
+                'bid_suppliers_identifier_name': 'name3'
             },
         ]
         self.assertEqual(result["tender"]["bids"], expected_bids)
@@ -222,6 +287,12 @@ class TestCase(BaseTestCase):
         self.assertEqual(
             result["secondary_data"]["contracts_suppliers_address"], expected_contracts_suppliers_address
         )
+        self.assertEqual(
+            result["secondary_data"]["contracts_suppliers_identifier_name"], suppliers_identifier_legal_name
+        ),
+        self.assertEqual(
+            result["secondary_data"]["tender_procuring_entity_name"], tender_procuring_entity_name
+        )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
@@ -230,6 +301,7 @@ class TestCase(BaseTestCase):
         task = Mock()
         enquiry_period_start_date = "2020-08-13T14:20:07.813257+03:00"
         complaint_period_start_date = "2020-08-13T14:57:56.498745+03:00"
+        suppliers_identifier_name = 'some_name222'
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
 
@@ -252,7 +324,12 @@ class TestCase(BaseTestCase):
                                 streetAddress="м. Дніпро, вул. Андрія Фабра, 4, 4 поверх",
                                 region="Дніпропетровська область",
                                 locality="Дніпро"
-                            )
+                            ),
+                            identifier=dict(
+                                scheme="UA-EDR",
+                                id="00137256",
+                            ),
+                            name=suppliers_identifier_name
                         )
                     ]
                 ),
@@ -301,6 +378,12 @@ class TestCase(BaseTestCase):
         expected_contracts_suppliers_address = "49000, Україна, Дніпропетровська область, Дніпро, м. Дніпро, вул. Андрія Фабра, 4, 4 поверх"
         self.assertEqual(
             result["secondary_data"]["contracts_suppliers_address"],  expected_contracts_suppliers_address
+        )
+        self.assertEqual(
+            result["secondary_data"]["contracts_suppliers_identifier_name"], suppliers_identifier_name
+        ),
+        self.assertEqual(
+            result["secondary_data"]["tender_procuring_entity_name"], None
         )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
@@ -572,4 +655,33 @@ class TestCase(BaseTestCase):
         award["status"] = "cancelled"
         result = handle_award_qualified_eligible_statuses(award)
         self.assertEqual(result, "Рішення скасоване")
+
+    def test_get_name_from_organization(self):
+        # 1
+        organization = {
+            "identifier": {
+                "scheme": "UA-EDR",
+                "id": "00137256",
+                "legalName": "5678_legalName"
+            },
+            "name": "Тестове підприємство",
+        }
+        result = get_name_from_organization(organization)
+        self.assertEqual(result, "5678_legalName")
+
+        # 2
+        organization = {
+            "identifier": {
+                "scheme": "UA-EDR",
+                "id": "00137256",
+            },
+            "name": "Тестове підприємство",
+        }
+        result = get_name_from_organization(organization)
+        self.assertEqual(result, "Тестове підприємство")
+
+        # 3
+        organization = {}
+        result = get_name_from_organization(organization)
+        self.assertEqual(result, None)
 
