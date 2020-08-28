@@ -100,10 +100,18 @@ def prepare_context(task, contract, tender, plan):
     for item in tender["items"]:
         item["item_delivery_address"] = get_custom_address_string(item.get("deliveryAddress"))
 
+    if plan:
+        plan["procuring_entity_name"] = get_name_from_organization(plan.get("procuringEntity"))
+
+    for bid in tender["bids"]:
+        bid["bid_suppliers_identifier_name"] = get_name_from_organization(bid["tenderers"][0])
+
     secondary_data = dict(
         tender_start_date=get_tender_start_date(tender, tender_award, tender_contract),
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
         contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
+        contracts_suppliers_identifier_name=get_name_from_organization(tender_contract["suppliers"][0]),
+        tender_procuring_entity_name=get_name_from_organization(tender.get("procuringEntity"))
     )
 
     context = dict(
@@ -234,3 +242,11 @@ def handle_award_qualified_eligible_statuses(_tender_object):
     else:
         return None
 
+
+def get_name_from_organization(_object):
+    if not _object:
+        return None
+
+    if "legalName" in _object["identifier"]:
+        return _object["identifier"]["legalName"]
+    return _object["name"]

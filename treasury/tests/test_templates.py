@@ -68,6 +68,7 @@ test_plan = dict(
             id="99999-99",
         )
     ),
+    procuring_entity_name='My name',
     classification=test_classification,
     additionalClassifications=test_add_classifications,
     budget=dict(
@@ -155,7 +156,8 @@ test_tender = dict(
             selfQualified=True,
             value=dict(amount=123),
             subcontractingDetails="DKP Book, Ukraine Lviv",
-            award_qualified_eligible=True
+            award_qualified_eligible=True,
+            bid_suppliers_identifier_name='Bid_Suppliers_Identifier_Name12345'
         ),
         dict(
             id="2",
@@ -163,7 +165,8 @@ test_tender = dict(
             selfQualified=False,
             value=dict(amount=321),
             subcontractingDetails="Will not be used",
-            award_qualified_eligible=None
+            award_qualified_eligible=None,
+            bid_suppliers_identifier_name='Bid_Suppliers_Identifier_Name67890'
         )
     ],
 )
@@ -191,7 +194,9 @@ test_lot = dict(
 test_secondary_data = dict(
     tender_start_date="2020-07-27T13:09:54.997464+03:00",
     award_complaint_period_start_date="2020-08-14T12:32:18.080119+03:00",
-    contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4"
+    contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4",
+    contracts_suppliers_identifier_name="contractSupplierName12345",
+    tender_procuring_entity_name="TenderProcurementEntityName555555"
 )
 
 
@@ -345,7 +350,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<report>'
             b'<tenderID>UA-2020-55555</tenderID>'
             b'<date>2018-04-18T13:09:54.997464+03:00</date>'
-            b'<procuringEntityName>My name</procuringEntityName>'
+            b'<procuringEntityName>TenderProcurementEntityName555555</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'
             b'<mainProcurementCategory>good goods</mainProcurementCategory>'
             b'<items>'
@@ -403,20 +408,20 @@ class TemplatesTestCase(unittest.TestCase):
             b'<bids>'
             b'<bid>'
             b'<bidsId>1</bidsId>'
-            b'<bidsSuppliersIdentifierName>My name</bidsSuppliersIdentifierName>'
+            b'<bidsSuppliersIdentifierName>Bid_Suppliers_Identifier_Name12345</bidsSuppliersIdentifierName>'
             b'<bidsValueAmount>333</bidsValueAmount>'
             b'<bidsValueAmountLast>123</bidsValueAmountLast>'
             b'<awardQualifiedEligible>True</awardQualifiedEligible>'
             b'</bid>'
             b'<bid>'
             b'<bidsId>2</bidsId>'
-            b'<bidsSuppliersIdentifierName>his name</bidsSuppliersIdentifierName>'
+            b'<bidsSuppliersIdentifierName>Bid_Suppliers_Identifier_Name67890</bidsSuppliersIdentifierName>'
             b'<bidsValueAmount>555</bidsValueAmount>'
             b'<bidsValueAmountLast>321</bidsValueAmountLast>'
             b'</bid></bids>'
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
-            b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
+            b'<contractsSuppliersIdentifierName>contractSupplierName12345</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Ukraine, Dnipro, Shevchenko Street, 4</contractsSuppliersAddress>'
             b'<bidSubcontractingDetails>DKP Book, Ukraine Lviv</bidSubcontractingDetails>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
@@ -469,13 +474,13 @@ class TemplatesTestCase(unittest.TestCase):
             b'<report>'
             b'<tenderID>UA-2020-55555</tenderID>'
             b'<date>2006-05-07T00:00:00</date>'
-            b'<procuringEntityName>My name</procuringEntityName>'
+            b'<procuringEntityName>TenderProcurementEntityName555555</procuringEntityName>'
             b'<procuringEntityIdentifierId>99999-99</procuringEntityIdentifierId>'
             b'<mainProcurementCategory>good goods</mainProcurementCategory>'
             b'<startDate>2020-07-27T13:09:54.997464+03:00</startDate>'
             b'<awardComplaintPeriodStartDate>2020-08-14T12:32:18.080119+03:00</awardComplaintPeriodStartDate>'
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
-            b'<contractsSuppliersIdentifierName>his name</contractsSuppliersIdentifierName>'
+            b'<contractsSuppliersIdentifierName>contractSupplierName12345</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Ukraine, Dnipro, Shevchenko Street, 4</contractsSuppliersAddress>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
