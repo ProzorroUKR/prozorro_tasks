@@ -12,6 +12,7 @@ from treasury.domain.prcontract import (
     get_award_qualified_eligible,
     handle_award_qualified_eligible_statuses,
     get_name_from_organization,
+    get_bid_subcontracting_details,
 )
 
 
@@ -110,6 +111,7 @@ class TestCase(BaseTestCase):
         tender_start_date = "2020-09-04T14:57:56.498745+03:00"
         suppliers_identifier_legal_name = "first_name"
         tender_procuring_entity_name = 'name55555'
+        subcontracting_details = "Київ, вул. Островського, 3"
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
         tender = dict(
@@ -156,7 +158,11 @@ class TestCase(BaseTestCase):
                 ),
                 dict(
                     id="2222",
-                    lotValues=[dict(relatedLot="22222", value=15),],
+                    lotValues=[dict(
+                        relatedLot="22222",
+                        value=15,
+                        subcontractingDetails=subcontracting_details
+                    ),],
                     tenderers=[
                         dict(
                             name='name2',
@@ -254,7 +260,11 @@ class TestCase(BaseTestCase):
         expected_bids = [
             {
                 'id': '2222',
-                'lotValues': [{'relatedLot': '22222', 'value': 15}],
+                'lotValues': [{
+                    'relatedLot': '22222',
+                    'value': 15,
+                    'subcontractingDetails': subcontracting_details
+                }],
                 'value': 15,
                 'tenderers': [
                     {
@@ -292,6 +302,9 @@ class TestCase(BaseTestCase):
         ),
         self.assertEqual(
             result["secondary_data"]["tender_procuring_entity_name"], tender_procuring_entity_name
+        )
+        self.assertEqual(
+            result["secondary_data"]["bid_subcontracting_details"], subcontracting_details
         )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
@@ -384,6 +397,9 @@ class TestCase(BaseTestCase):
         ),
         self.assertEqual(
             result["secondary_data"]["tender_procuring_entity_name"], None
+        )
+        self.assertEqual(
+            result["secondary_data"]["bid_subcontracting_details"], None
         )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
@@ -685,3 +701,78 @@ class TestCase(BaseTestCase):
         result = get_name_from_organization(organization)
         self.assertEqual(result, None)
 
+    def test_get_bid_subcontracting_details(self):
+        # 1
+        tender_award = {
+            "status": "active",
+            "lotID": "33333333333333333",
+            "bid_id": "222222222222222",
+            "id": "11111111111111"
+        }
+
+        tender_bid = {
+            "status": "active",
+            "lotValues": [],
+            "id": "222222222222222",
+        }
+
+        related_lot = "33333333333333333"
+
+        tender = {
+            "procurementMethodType": "aboveThresholdEU",
+            "contracts": [
+                {
+                    "awardID": "11111111111111",
+                    "id": "0d66ea8da72649d4baf5d7a7d00109e6",
+                },
+                {
+                    "awardID": "d0824888bb964f56bf761fdc667e8739",
+                    "id": "b303009e230b40c2a4b1c215a704492d",
+                }
+            ],
+            "lots": []
+        }
+
+        result = get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender)
+        self.assertEqual(result, None)
+
+        # 2
+        tender_bid["lotValues"] = [
+            {
+                "relatedLot": "dd22c9c085f64e019f943999b5b41fe5",
+                "subcontractingDetails": "Тестове підприємство, Україна"
+            },
+            {
+                "relatedLot": "33333333333333333",
+                "subcontractingDetails": "Підприємство 2, Київ, Україна"
+            }
+        ]
+
+        result = get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender)
+        self.assertEqual(result, "Підприємство 2, Київ, Україна")
+
+        # 3
+
+        tender = {
+            "procurementMethodType": "negotiation.quick",
+        }
+        tender_award = {
+            "id": "12345",
+            "subcontractingDetails": "тест, вул. Островського, 3"
+        }
+
+        result = get_bid_subcontracting_details(tender_award, {}, None, tender)
+        self.assertEqual(result, "тест, вул. Островського, 3")
+
+        # 4
+        tender = {
+            "procurementMethodType": "tender_without_lots"
+        }
+
+        tender_bid = {
+            "id": "12345",
+            "subcontractingDetails": "тест, вул. Шевченка, 3"
+        }
+
+        result = get_bid_subcontracting_details({}, tender_bid, None, tender)
+        self.assertEqual(result, "тест, вул. Шевченка, 3")

@@ -183,7 +183,7 @@ def _build_tender_xml(maker, context):
         maker.contractsSuppliersAddress(
             secondary_data["contracts_suppliers_address"]
         ),
-        maker.bidSubcontractingDetails(get_value(tender_bid, "subcontractingDetails")),
+        maker.bidSubcontractingDetails(secondary_data["bid_subcontracting_details"]),
         maker.ContractsValueAmount(get_value(tender_contract, "value", "amount")),
         maker.startDateCfaua(None),  # will be added later
         maker.ContractsContractID(tender_contract["id"]),  # will be added later
