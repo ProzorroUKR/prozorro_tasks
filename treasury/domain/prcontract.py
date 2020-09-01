@@ -111,7 +111,8 @@ def prepare_context(task, contract, tender, plan):
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
         contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
         contracts_suppliers_identifier_name=get_name_from_organization(tender_contract["suppliers"][0]),
-        tender_procuring_entity_name=get_name_from_organization(tender.get("procuringEntity"))
+        tender_procuring_entity_name=get_name_from_organization(tender.get("procuringEntity")),
+        bid_subcontracting_details=get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender)
     )
 
     context = dict(
@@ -250,3 +251,14 @@ def get_name_from_organization(_object):
     if "legalName" in _object["identifier"]:
         return _object["identifier"]["legalName"]
     return _object["name"]
+
+
+def get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender):
+    if 'lots' in tender:
+        lot_value = [lot_val for lot_val in tender_bid.get("lotValues", "")
+                     if lot_val["relatedLot"] == related_lot]
+        return lot_value[0].get("subcontractingDetails") if lot_value else None
+    elif tender["procurementMethodType"] in ("negotiation", "negotiation.quick", "reporting",):
+        return tender_award.get("subcontractingDetails")
+    else:
+        return tender_bid.get("subcontractingDetails")

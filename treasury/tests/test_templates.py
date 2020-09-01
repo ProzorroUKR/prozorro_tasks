@@ -196,7 +196,8 @@ test_secondary_data = dict(
     award_complaint_period_start_date="2020-08-14T12:32:18.080119+03:00",
     contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4",
     contracts_suppliers_identifier_name="contractSupplierName12345",
-    tender_procuring_entity_name="TenderProcurementEntityName555555"
+    tender_procuring_entity_name="TenderProcurementEntityName555555",
+    bid_subcontracting_details="DKP Book, Ukraine Lviv"
 )
 
 
@@ -482,6 +483,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<contractsDateSigned>2020-03-11T00:00:00+05:00</contractsDateSigned>'
             b'<contractsSuppliersIdentifierName>contractSupplierName12345</contractsSuppliersIdentifierName>'
             b'<contractsSuppliersAddress>Ukraine, Dnipro, Shevchenko Street, 4</contractsSuppliersAddress>'
+            b'<bidSubcontractingDetails>DKP Book, Ukraine Lviv</bidSubcontractingDetails>'
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
             b'</report>'
