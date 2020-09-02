@@ -39,8 +39,13 @@ task_modules = [
     'edr_bot',
     'fiscal_bot',
     'tasks_utils',
-    'payments',
+    'payments.tasks.push',
+    'payments.tasks.feed',
     'treasury',
+]
+
+tasks_modules_deprecated = [
+    'payments',
 ]
 
 # Route tasks to different queues
@@ -56,6 +61,9 @@ task_routes = ([
 task_queues = tuple(
     Queue(module_name)
     for module_name in task_modules
+) + (
+    Queue(module_name)
+    for module_name in tasks_modules_deprecated
 ) + (
     Queue('celery',  routing_key=''),  # default
 )
