@@ -374,8 +374,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_DATA_ERROR"})
 
             elif response.status_code != 201:
-                logger_method = logger.warning if self.request.retries < ATTACH_DOC_MAX_RETRIES else logger.error
-                logger_method("Incorrect upload status while attaching doc {} to tender {}".format(
+                logger.warning("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
                 ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
                 raise self.retry(countdown=get_request_retry_countdown(response))

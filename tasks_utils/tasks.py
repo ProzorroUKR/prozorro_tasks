@@ -122,8 +122,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                         extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code}
                     )
                 elif response.status_code != 201:
-                    logger_method = logger.warning if self.request.retries < ATTACH_DOC_MAX_RETRIES else logger.error
-                    logger_method("Incorrect upload status while attaching doc {} to tender {}: {}".format(
+                    logger.warning("Incorrect upload status while attaching doc {} to tender {}: {}".format(
                         data["title"], tender_id, response.text
                     ), extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code})
                     raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
