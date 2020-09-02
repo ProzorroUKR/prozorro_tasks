@@ -10,7 +10,7 @@ from payments.message_ids import (
     PAYMENTS_SEARCH_INVALID_COMPLAINT,
     PAYMENTS_SEARCH_INVALID_CODE,
 )
-from payments.tasks import process_payment_data
+from liqpay_int.tasks import process_payment_data
 from payments.results_db import (
     get_payment_list,
     get_payment_item,
