@@ -13,10 +13,36 @@ from treasury.domain.prcontract import (
     handle_award_qualified_eligible_statuses,
     get_name_from_organization,
     get_bid_subcontracting_details,
+    get_procuring_entity_kind,
+    get_contract_date,
 )
 
 
 class TestCase(BaseTestCase):
+
+    def test_get_contract_date(self):
+        # 1
+        contract = {
+            "dateSigned": "2020-06-15T10:34:42.821494+03:00"
+        }
+        result = get_contract_date(contract, tender={})
+        self.assertEqual(result, "2020-06-15T10:34:42.821494+03:00")
+
+        # 2
+        contract = {
+            "id": "900000000"
+        }
+        tender = {
+            "contracts": [
+                {
+                    "id": "900000000",
+                    "date": "2020-01-01T10:37:44.884962+03:00"
+                }
+            ]
+        }
+        result = get_contract_date(contract, tender)
+        self.assertEqual(result, "2020-01-01T10:37:44.884962+03:00")
+
     @patch("treasury.domain.prcontract.get_public_api_data")
     def test_get_first_stage_tender(self, get_tender_mock):
 
@@ -191,6 +217,11 @@ class TestCase(BaseTestCase):
                     status="deleted",
                     tenderers=[],
                 ),
+                dict(
+                    id="77777",
+                    status="invalid",
+                    tenderers=[],
+                ),
             ],
             lots=[
                 dict(id="11111"),
@@ -219,7 +250,8 @@ class TestCase(BaseTestCase):
                     scheme="UA-EDR",
                     id="00137256",
                 ),
-                name=tender_procuring_entity_name
+                name=tender_procuring_entity_name,
+                kind="general",
             ),
             documents=[
                 dict(
@@ -306,13 +338,16 @@ class TestCase(BaseTestCase):
         self.assertEqual(
             result["secondary_data"]["bid_subcontracting_details"], subcontracting_details
         )
+        self.assertEqual(
+            result["secondary_data"]["procuring_entity_kind"], "general"
+        )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
         self.assertEqual(result["lot"], tender["lots"][1])
 
     def test_prepare_context_without_tender_bids(self):
         task = Mock()
-        enquiry_period_start_date = "2020-08-13T14:20:07.813257+03:00"
+        enquiry_period_start_date = "2019-03-26T14:20:07.813257+03:00"
         complaint_period_start_date = "2020-08-13T14:57:56.498745+03:00"
         suppliers_identifier_name = 'some_name222'
         contract = dict(id="222", awardID="22")
@@ -320,6 +355,14 @@ class TestCase(BaseTestCase):
 
         tender = dict(
             procurementMethodType="aboveThresholdUA",
+            procuringEntity=dict(
+                kind="general",
+                identifier=dict(
+                    scheme="UA-EDR",
+                    id="02141331",
+                    legalName="Відділ освіти Іллінецької районної державної адміністрації"
+                )
+            ),
             enquiryPeriod=dict(
                 startDate=enquiry_period_start_date,
                 endDate="2020-08-13T14:20:07.899657+03:00"
@@ -396,10 +439,13 @@ class TestCase(BaseTestCase):
             result["secondary_data"]["contracts_suppliers_identifier_name"], suppliers_identifier_name
         ),
         self.assertEqual(
-            result["secondary_data"]["tender_procuring_entity_name"], None
+            result["secondary_data"]["tender_procuring_entity_name"], "Відділ освіти Іллінецької районної державної адміністрації"
         )
         self.assertEqual(
             result["secondary_data"]["bid_subcontracting_details"], None
+        )
+        self.assertEqual(
+            result["secondary_data"]["procuring_entity_kind"], None
         )
         self.assertEqual(result["tender_contract"], tender["contracts"][1])
         self.assertEqual(result["cancellation"], tender["cancellations"][0])
@@ -672,6 +718,18 @@ class TestCase(BaseTestCase):
         result = handle_award_qualified_eligible_statuses(award)
         self.assertEqual(result, "Рішення скасоване")
 
+        # 5
+        award["status"] = "unsuccessful"
+        del award["title"]
+        award["description"] = "description1"
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, " description1")
+
+        # 6
+        del award["description"]
+        result = handle_award_qualified_eligible_statuses(award)
+        self.assertEqual(result, " ")
+
     def test_get_name_from_organization(self):
         # 1
         organization = {
@@ -776,3 +834,33 @@ class TestCase(BaseTestCase):
 
         result = get_bid_subcontracting_details({}, tender_bid, None, tender)
         self.assertEqual(result, "тест, вул. Шевченка, 3")
+
+    def test_get_procuring_entity_kind(self):
+        # 1
+        tender_start_date = "2020-04-18T10:34:42.821494+03:00"
+        result = get_procuring_entity_kind(tender_start_date, tender={})
+        self.assertEqual(result, None)
+
+        # 2
+        result = get_procuring_entity_kind(tender_start_date=None, tender={})
+        self.assertEqual(result, None)
+
+        # 3
+        tender = {
+            "procuringEntity": {
+                "kind": "general"
+            },
+            "id": "1234567"
+        }
+        result = get_procuring_entity_kind(tender_start_date, tender)
+        self.assertEqual(result, None)
+
+        # 4
+        tender_start_date = "2020-06-15T10:34:42.821494+03:00"
+        result = get_procuring_entity_kind(tender_start_date, tender)
+        self.assertEqual(result, "general")
+
+        # 5
+        del tender["procuringEntity"]["kind"]
+        result = get_procuring_entity_kind(tender_start_date, tender)
+        self.assertEqual(result, None)

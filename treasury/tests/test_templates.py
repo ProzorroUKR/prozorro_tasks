@@ -197,7 +197,8 @@ test_secondary_data = dict(
     contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4",
     contracts_suppliers_identifier_name="contractSupplierName12345",
     tender_procuring_entity_name="TenderProcurementEntityName555555",
-    bid_subcontracting_details="DKP Book, Ukraine Lviv"
+    bid_subcontracting_details="DKP Book, Ukraine Lviv",
+    procuring_entity_kind="general"
 )
 
 
@@ -428,6 +429,7 @@ class TemplatesTestCase(unittest.TestCase):
             b'<ContractsValueAmount>12</ContractsValueAmount>'
             b'<ContractsContractID>123</ContractsContractID>'
             b'<lotsTitle>Lot 1, Some lot information</lotsTitle>'
+            b'<procuringEntityKind>general</procuringEntityKind>'
             b'</report>'
             b'</root>'
         )
@@ -452,6 +454,7 @@ class TemplatesTestCase(unittest.TestCase):
         context["tender"]["items"] = []
         context["tender"]["milestones"] = []
         context["tender"]["bids"] = []
+        context["secondary_data"]["procuring_entity_kind"] = None
         result = render_contract_xml(context)
 
         expected_result = (
