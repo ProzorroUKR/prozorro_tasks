@@ -1,9 +1,21 @@
 import yaml
 from tasks_utils.requests import get_public_api_data, download_file
 from celery.utils.log import get_task_logger
+from treasury.settings import RELEASE_2020_04_19
 
 
 logger = get_task_logger(__name__)
+
+
+def get_contract_date(contract, tender):
+    if "dateSigned" in contract:
+        return contract["dateSigned"]
+    else:
+        tender_contract = [
+            c for c in tender["contracts"]
+            if c["id"] == contract["id"]
+        ][0]
+        return tender_contract["date"]
 
 
 def get_first_stage_tender(task, tender):
@@ -62,13 +74,13 @@ def prepare_context(task, contract, tender, plan):
         if c["status"] == "active" and c.get("relatedLot") == related_lot
     ]
     cancellation = cancellation[0] if cancellation else {}
-    tender["bids"] = [b for b in tender.get("bids", "") if b.get("status") != "deleted"]
+    tender["bids"] = [b for b in tender.get("bids", "") if b.get("status") not in ("deleted", "invalid",)]
 
     # filter lot items
     if related_lot:
         filtered_bids = []
         for b in tender["bids"]:
-            for lot_value in b["lotValues"]:
+            for lot_value in b.get("lotValues", ""):
                 if lot_value["relatedLot"] == related_lot:
                     b["value"] = lot_value["value"]
                     filtered_bids.append(b)
@@ -106,13 +118,16 @@ def prepare_context(task, contract, tender, plan):
     for bid in tender["bids"]:
         bid["bid_suppliers_identifier_name"] = get_name_from_organization(bid["tenderers"][0])
 
+    tender_start_date = get_tender_start_date(tender, tender_award, tender_contract)
+
     secondary_data = dict(
-        tender_start_date=get_tender_start_date(tender, tender_award, tender_contract),
+        tender_start_date=tender_start_date,
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
         contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
         contracts_suppliers_identifier_name=get_name_from_organization(tender_contract["suppliers"][0]),
         tender_procuring_entity_name=get_name_from_organization(tender.get("procuringEntity")),
-        bid_subcontracting_details=get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender)
+        bid_subcontracting_details=get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender),
+        procuring_entity_kind=get_procuring_entity_kind(tender_start_date, tender)
     )
 
     context = dict(
@@ -235,7 +250,7 @@ def handle_award_qualified_eligible_statuses(_tender_object):
     if _tender_object["status"] == "active":
         return True
     elif _tender_object["status"] == "unsuccessful":
-        return f"{_tender_object['title']} {_tender_object['description']}"
+        return f"{_tender_object.get('title', '')} {_tender_object.get('description', '')}"
     elif _tender_object["status"] == "pending":
         return None
     elif _tender_object["status"] == "cancelled":
@@ -262,3 +277,9 @@ def get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender
         return tender_award.get("subcontractingDetails")
     else:
         return tender_bid.get("subcontractingDetails")
+
+
+def get_procuring_entity_kind(tender_start_date, tender):
+    if not tender_start_date or tender_start_date < RELEASE_2020_04_19:
+        return None
+    return tender["procuringEntity"].get("kind")

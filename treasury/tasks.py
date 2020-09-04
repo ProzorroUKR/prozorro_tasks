@@ -21,7 +21,9 @@ from datetime import timedelta
 from uuid import uuid4
 from treasury.exceptions import TransactionsQuantityServerErrorHTTPException
 from treasury.domain.prtrans import save_transaction_xml, put_transaction, attach_doc_to_contract
-from treasury.domain.prcontract import get_first_stage_tender, prepare_context, prepare_contract_context
+from treasury.domain.prcontract import (
+    get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date,
+)
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
     ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
@@ -49,8 +51,10 @@ def check_contract(self, contract_id, ignore_date_signed=False):
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
+    tender = get_public_api_data(self, contract["tender_id"], "tender")
+
     if not ignore_date_signed:
-        if contract["dateSigned"] < TREASURY_INT_START_DATE:
+        if get_contract_date(contract, tender) < TREASURY_INT_START_DATE:
             return logger.debug(f"Skipping contract {contract['id']} signed at {contract['dateSigned']}",
                                 extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
@@ -85,14 +89,12 @@ def check_contract(self, contract_id, ignore_date_signed=False):
         for change_id in sorted(new_change_ids):
             send_change_xml.delay(contract["id"], change_id)
     else:
-        tender = get_public_api_data(self, contract["tender_id"], "tender")
         first_stage_tender = get_first_stage_tender(self, tender)
 
         if "plans" in first_stage_tender:
             plan = get_public_api_data(self, first_stage_tender["plans"][0]["id"], "plan")
         else:
-            plan = None
-            logger.warning(
+            return logger.warning(
                 f"Cannot find plan for {contract['id']} and tender {first_stage_tender['id']}",
                 extra={"MESSAGE_ID": "TREASURY_PLAN_LINK_MISSED"}
             )
