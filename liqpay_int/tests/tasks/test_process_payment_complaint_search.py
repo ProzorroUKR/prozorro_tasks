@@ -8,7 +8,7 @@ from hashlib import sha512
 from celery.exceptions import Retry
 
 from tasks_utils.settings import DEFAULT_RETRY_AFTER
-from payments.tasks import process_payment_complaint_search
+from liqpay_int.tasks import process_payment_complaint_search
 from payments.message_ids import (
     PAYMENTS_SEARCH_SUCCESS, PAYMENTS_SEARCH_VALID_CODE, PAYMENTS_SEARCH_EXCEPTION,
     PAYMENTS_SEARCH_CODE_ERROR,

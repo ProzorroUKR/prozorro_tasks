@@ -16,8 +16,7 @@ from liqpay_int.responses import (
     model_response_failure,
 )
 from payments.results_db import save_payment_item
-from payments.tasks import process_payment_data
-
+from liqpay_int.tasks import process_payment_data
 
 logger = getLogger()
 

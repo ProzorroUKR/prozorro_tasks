@@ -39,6 +39,7 @@ task_modules = [
     'edr_bot',
     'fiscal_bot',
     'tasks_utils',
+    'liqpay_int',
     'payments',
     'treasury',
 ]

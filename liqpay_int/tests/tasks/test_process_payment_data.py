@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, ANY
 
 from payments.message_ids import PAYMENTS_INVALID_PATTERN
-from payments.tasks import process_payment_data
+from liqpay_int.tasks import process_payment_data
 
 
 class TestHandlerCase(unittest.TestCase):

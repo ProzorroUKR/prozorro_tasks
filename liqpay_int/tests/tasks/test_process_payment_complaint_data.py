@@ -17,7 +17,7 @@ from payments.message_ids import (
     PAYMENTS_GET_COMPLAINT_SUCCESS,
     PAYMENTS_GET_COMPLAINT_EXCEPTION,
 )
-from payments.tasks import process_payment_complaint_data
+from liqpay_int.tasks import process_payment_complaint_data
 
 
 class TestHandlerCase(unittest.TestCase):
