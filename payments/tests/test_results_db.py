@@ -133,7 +133,7 @@ class ResultsDBTestCase(unittest.TestCase):
 
         self.assertEqual(result, collection.update_one.return_value)
         collection.update_one.assert_called_once_with(
-            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
+            ANY,
             {
                 '$push': {
                     'messages': {
@@ -213,8 +213,7 @@ class ResultsDBTestCase(unittest.TestCase):
 
         self.assertEqual(result, collection.update_one.return_value)
         collection.update_one.assert_called_once_with(
-            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
-            {'$set': {'params': params}}
+            ANY, {'$set': {'params': params}}
         )
 
     @patch("payments.results_db.get_mongodb_collection")
@@ -240,8 +239,7 @@ class ResultsDBTestCase(unittest.TestCase):
 
         self.assertEqual(result, collection.update_one.return_value)
         collection.update_one.assert_called_once_with(
-            {'$or': [{'_id': ANY}, {'_id': ANY}, {'_id': ANY}]},
-            {'$set': {'resolution': params}}
+            ANY, {'$set': {'resolution': params}}
         )
 
     @patch("payments.results_db.get_mongodb_collection")

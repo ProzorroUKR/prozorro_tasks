@@ -89,9 +89,24 @@ def data_to_uid(data, keys=None):
 def payment_find_query(data):
     return {
         "$or": [
-            {"_id": data_to_uid(data, keys=UID_KEYS_3)},
-            {"_id": data_to_uid(data, keys=UID_KEYS_2)},
-            {"_id": data_to_uid(data, keys=UID_KEYS_1)},
+            {
+                "$and": [
+                    {"payment.ref_obj": {"$exists": True}},
+                    {"payment.ref_obj": data.get("ref_obj")},
+                ]
+            },
+            {
+                "$and": [
+                    {"payment.ref_obj": {"$exists": False}},
+                    {
+                        "$or": [
+                            {"_id": data_to_uid(data, keys=UID_KEYS_3)},
+                            {"_id": data_to_uid(data, keys=UID_KEYS_2)},
+                            {"_id": data_to_uid(data, keys=UID_KEYS_1)},
+                        ]
+                    },
+                ]
+            },
         ]
     }
 
