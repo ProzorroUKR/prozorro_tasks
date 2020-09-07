@@ -187,7 +187,7 @@ def payment_update():
             for message in registry.get("messages"):
                 item = find_payment_item(message) or {}
                 payment_status = message.pop("status", None)
-                if payment_status and payment_status ==  "success" and item.get("payment") != message:
+                if payment_status and payment_status == "success" and item.get("payment") != message:
                     uid = item.get("_id")
                     update_payment_item(uid, message)
     return redirect(request.referrer or url_for("payments_views.payment_request"))
