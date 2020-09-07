@@ -24,5 +24,6 @@ blinker==1.4
 jmespath==0.9.5
 xlsxwriter==1.2.8
 zeep>=3.4,<4
+vine==1.3.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
