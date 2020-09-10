@@ -1,4 +1,4 @@
-from celery_worker.celery import app
+from celery_worker.celery import app, formatter
 from celery_worker.locks import unique_task_decorator, concurrency_lock
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import get_request_retry_countdown, get_exponential_request_retry_countdown
@@ -256,6 +256,7 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
 
 # --------- UPLOAD TO DS
 @app.task(bind=True)
+@formatter.omit(["data"])
 def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
     # check if the file has been already uploaded
@@ -309,6 +310,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
 
 # ---------- ATTACH DOCUMENT TO ITS TENDER
 @app.task(bind=True, max_retries=ATTACH_DOC_MAX_RETRIES)
+@formatter.omit(["data"])
 def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
     unique_data = {k: v for k, v in data.items() if k != "meta"}
     upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
