@@ -62,6 +62,8 @@ PAYMENT_REPLACE_MAPPING = {
     "О": "0",
     "з": "3",
     "З": "3",
+    "б": "6",
+    "Б": "6",
     # replace punctuation marks
     "[^\w]*[\,]+[^\w]*": ".",
     "[^\w\.\,]+": "-",
