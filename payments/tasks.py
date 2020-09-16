@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from pymongo.errors import PyMongoError
 
-from celery_worker.celery import app
+from celery_worker.celery import app, formatter
 from celery.utils.log import get_task_logger
 
 from payments.health import health, save_health_data
@@ -103,6 +103,7 @@ def process_tender(self, tender_id, *args, **kwargs):
 
 
 @app.task(bind=True, max_retries=1000)
+@formatter.omit(["complaint_data"])
 def process_complaint_params(self, complaint_params, complaint_data):
     try:
         payment = get_payment_item_by_params(complaint_params, [
@@ -129,6 +130,7 @@ def process_complaint_params(self, complaint_params, complaint_data):
 
 
 @app.task(bind=True, max_retries=1000)
+@formatter.omit(["complaint_data"])
 def process_complaint_resolution(self, payment_data, complaint_data, *args, **kwargs):
     resolution = get_resolution(complaint_data)
     if resolution:

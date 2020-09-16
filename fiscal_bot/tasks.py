@@ -1,4 +1,4 @@
-from celery_worker.celery import app
+from celery_worker.celery import app, formatter
 from celery_worker.locks import unique_task_decorator, concurrency_lock
 from celery.utils.log import get_task_logger
 from environment_settings import (
@@ -119,6 +119,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
 
 
 @app.task(bind=True, max_retries=10)
+@formatter.omit(["request_data"])
 def send_request_receipt(self, request_data, filename, supplier, requests_reties):
     task_args = supplier, requests_reties
     data = get_task_result(self, task_args)
@@ -190,6 +191,7 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
 
 
 @app.task(bind=True, max_retries=10)
+@formatter.omit(["data"])
 def decode_and_save_data(self, name, data, tender_id, award_id):
     try:
         response = requests.post(
@@ -260,6 +262,7 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
 
 
 @app.task(bind=True, max_retries=None)
+@formatter.omit(["request_data"])
 def check_for_response_file(self, request_data, supplier, request_time, requests_reties):
 
     days_passed = working_days_count_since(request_time, working_weekends_enabled=True)

@@ -1,4 +1,4 @@
-from celery_worker.celery import app
+from celery_worker.celery import app, formatter
 from celery_worker.locks import concurrency_lock, unique_task_decorator
 from treasury.storage import (
     get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template,
@@ -212,6 +212,7 @@ def receive_org_catalog(self, message_id):
 
 
 @app.task(bind=True, max_retries=TREASURY_PROCESS_TRANSACTION_RETRIES)
+@formatter.omit(["source"])
 def process_transaction(self, transactions_data, source, message_id):
     #  celery tasks by default using json serializer, that serialize datetime to str inside transaction data
 

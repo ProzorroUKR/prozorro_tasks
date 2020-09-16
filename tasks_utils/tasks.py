@@ -1,4 +1,4 @@
-from celery_worker.celery import app
+from celery_worker.celery import app, formatter
 from celery.utils.log import get_task_logger
 from environment_settings import (
     API_HOST, API_TOKEN, API_VERSION,
@@ -20,6 +20,7 @@ ATTACH_DOC_MAX_RETRIES = 100
 
 
 @app.task(bind=True)
+@formatter.omit(["content"])
 def upload_to_doc_service(self, name, content, doc_type,
                           tender_id, item_name, item_id):
 
