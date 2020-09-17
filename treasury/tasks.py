@@ -51,15 +51,15 @@ def check_contract(self, contract_id, ignore_date_signed=False):
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
-    tender = get_public_api_data(self, contract["tender_id"], "tender")
 
     if not ignore_date_signed:
-        if get_contract_date(contract, tender) < TREASURY_INT_START_DATE:
-            return logger.debug(f"Skipping contract {contract['id']} signed at {contract['dateSigned']}",
+        _date_signed = get_contract_date(self, contract)
+        if _date_signed < TREASURY_INT_START_DATE:
+            return logger.debug(f"Skipping contract {contract['id']} signed at {_date_signed}",
                                 extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
     identifier = contract["procuringEntity"]["identifier"]
-    if contract["status"] != "active" or identifier["scheme"] != "UA-EDR":
+    if identifier["scheme"] != "UA-EDR":
         return logger.debug(f"Skipping {contract['status']} contract {contract['id']} with identifier {identifier}",
                             extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
@@ -89,6 +89,7 @@ def check_contract(self, contract_id, ignore_date_signed=False):
         for change_id in sorted(new_change_ids):
             send_change_xml.delay(contract["id"], change_id)
     else:
+        tender = get_public_api_data(self, contract["tender_id"], "tender")
         first_stage_tender = get_first_stage_tender(self, tender)
 
         if "plans" in first_stage_tender:

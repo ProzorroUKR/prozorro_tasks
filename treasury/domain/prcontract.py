@@ -7,10 +7,11 @@ from treasury.settings import RELEASE_2020_04_19
 logger = get_task_logger(__name__)
 
 
-def get_contract_date(contract, tender):
+def get_contract_date(task, contract):
     if "dateSigned" in contract:
         return contract["dateSigned"]
     else:
+        tender = get_public_api_data(task, contract["tender_id"], "tender")
         tender_contract = [
             c for c in tender["contracts"]
             if c["id"] == contract["id"]
