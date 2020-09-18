@@ -9,6 +9,8 @@ from environment_settings import (
 )
 from celery.utils.log import get_task_logger
 from urllib.parse import unquote
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 import requests
 import json
 import re
@@ -156,3 +158,15 @@ def get_json_or_retry(task, response):
         raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
     else:
         return resp_json
+
+
+def mount_retries_for_request(session, total_retries=10, backoff_factor=10,
+                              status_forcelist=(408, 409, 412, 429, 500, 502, 503, 504)):
+    retry_strategy = Retry(
+        total=total_retries, backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+        raise_on_redirect=False, raise_on_status=False
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)

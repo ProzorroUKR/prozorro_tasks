@@ -600,7 +600,7 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.send_transactions_results")
     @patch("treasury.tasks.save_transaction_xml")
     @patch("treasury.tasks.put_transaction")
-    @patch("treasury.tasks.attach_doc_to_contract")
+    @patch("treasury.tasks.attach_doc_to_transaction")
     def test_process_transaction(self, attach_doc_mock, put_mock, save_xml_mock, send_results_mock):
         transactions_data = [
             {
