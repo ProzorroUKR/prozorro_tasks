@@ -39,6 +39,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+cover/
+output.html
 
 # Translations
 *.mo
@@ -56,9 +58,13 @@ target/
 # Buildout
 bin/
 
-cover/
-output.html
-
+# Data
 mongo_data/
 rabbit_data/
+payments.db
+
+# IDE
 .idea/
+
+# Celery
+celerybeat-schedule
