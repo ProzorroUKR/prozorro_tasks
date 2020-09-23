@@ -187,13 +187,14 @@ def unique_lock(task, omit=None):
     return wrapper
 
 
-def concurrency_lock(*args, **kwargs):
+@doublewrap
+def concurrency_lock(task, timeout=10):
     """
     Use this task decorator to avoid concurrent execution of duplicate tasks
     it won't discard any tasks, only reschedule their execution
 
-    :param kwargs:
-        timeout - how long to prevent duplicates to run. 60sec will be added because of mongodb ttl interval
+    :param task: celery task (automatically passed by doublewrap decorator)
+    :param timeout: how long to prevent duplicates to run. 60sec will be added because of mongodb ttl interval
 
     Example:
         @app.task(bind=True)
@@ -208,39 +209,30 @@ def concurrency_lock(*args, **kwargs):
         def echo_task(self):
             pass
     """
+    concurrency_timeout = timeout
 
-    def lock_decorator(task):
-        @wraps(task)
-        def wrapper(*args, **kwargs):
-            assert len(args) > 0, "Expected to used with bind tasks"
-            self, *task_args = args  # *task_args creates a list instance, so I'll convert it to tuple
-            assert isinstance(self, Task), "Expected to used with bind tasks"
-            task_uid = args_to_uid((task.__module__, task.__name__, tuple(task_args), kwargs))
+    @wraps(task)
+    def wrapper(*args, **kwargs):
+        assert len(args) > 0, "Expected to used with bind tasks"
+        self, *task_args = args  # *task_args creates a list instance, so I'll convert it to tuple
+        assert isinstance(self, Task), "Expected to used with bind tasks"
+        task_uid = args_to_uid((task.__module__, task.__name__, tuple(task_args), kwargs))
 
-            collection = get_mongodb_collection(LOCK_COLLECTION_NAME)
+        collection = get_mongodb_collection(LOCK_COLLECTION_NAME)
+        try:
+            collection.insert_one(
+                {'_id': task_uid, 'expireAt': datetime.utcnow() + timedelta(seconds=concurrency_timeout)}
+            )
+        except PyMongoError as exc:  # expect DuplicateKeyError, but should handle also connection problems
+            retry_kw = dict(max_retries=20)
+            if isinstance(exc, DuplicateKeyError):
+                # From Mongodb docs: The background task that removes expired documents runs every 60 seconds
+                retry_kw["countdown"] = concurrency_timeout + 60
             try:
-                collection.insert_one(
-                    {'_id': task_uid, 'expireAt': datetime.utcnow() + timedelta(seconds=concurrency_timeout)}
-                )
-            except PyMongoError as exc:  # expect DuplicateKeyError, but should handle also connection problems
-                retry_kw = dict(max_retries=20)
-                if isinstance(exc, DuplicateKeyError):
-                    # From Mongodb docs: The background task that removes expired documents runs every 60 seconds
-                    retry_kw["countdown"] = concurrency_timeout + 60
-                try:
-                    self.retry(**retry_kw)
-                except MaxRetriesExceededError:
-                    logger.exception(exc)  # if retry limit is exceed, we allow the task to be executed
+                self.retry(**retry_kw)
+            except MaxRetriesExceededError:
+                logger.exception(exc)  # if retry limit is exceed, we allow the task to be executed
 
-            task(*args, **kwargs)
+        task(*args, **kwargs)
 
-        return wrapper
-
-    if len(args) == 1 and callable(args[0]):
-        concurrency_timeout = 10
-        return lock_decorator(args[0])
-    elif "timeout" in kwargs:
-        concurrency_timeout = float(kwargs.get("timeout"))
-        return lock_decorator
-    else:
-        raise NotImplementedError("Unexpected use")
+    return wrapper
