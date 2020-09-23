@@ -1,5 +1,5 @@
 from celery_worker.celery import app, formatter
-from celery_worker.locks import unique_task, concurrency_lock
+from celery_worker.locks import unique_task_decorator, concurrency_lock
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import get_request_retry_countdown, get_exponential_request_retry_countdown
 from tasks_utils.settings import (
@@ -172,7 +172,7 @@ def is_valid_identifier(identifier):
 # ------- GET EDR DATA
 @app.task(bind=True, max_retries=20)
 @concurrency_lock
-@unique_task
+@unique_task_decorator
 def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
     """
     request_id: is deprecated, should be removed in the next releases
