@@ -127,6 +127,6 @@ def get_report(rows, total=False):
     data.insert(0, headers)
 
     if total:
-        data.append([DESC_REPORT_TOTAL, '%g' % (amount_total)])
+        data.append([DESC_REPORT_TOTAL, str(amount_total)])
 
     return data
