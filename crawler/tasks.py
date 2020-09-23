@@ -1,6 +1,6 @@
 from celery.utils.log import get_task_logger
 from celery_worker.celery import app
-from celery_worker.locks import unique_task_decorator
+from celery_worker.locks import unique_lock
 from crawler.settings import (
     CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS,
     FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
@@ -42,7 +42,7 @@ RETRY_REQUESTS_EXCEPTIONS = (
 
 
 @app.task(bind=True)
-@unique_task_decorator
+@unique_lock
 def echo_task(self, v=0):  # pragma: no cover
     """
     DEBUG Task
@@ -60,7 +60,7 @@ def echo_task(self, v=0):  # pragma: no cover
 
 
 @app.task(bind=True, acks_late=True, max_retries=None)
-@unique_task_decorator
+@unique_lock(omit=["cookies"])
 def process_feed(self, resource="tenders", offset="", descending="", mode="_all_", cookies=None, try_count=0):
     logger.info("Start task {}".format(self.request.id),
                 extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})

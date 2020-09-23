@@ -7,7 +7,7 @@ from celery_worker.locks import (
     MONGODB_UID_LENGTH,
     args_to_uid,
     get_mongodb_collection,
-    unique_task_decorator,
+    unique_lock,
 )
 from environment_settings import (
     MONGODB_URL, MONGODB_DATABASE,
@@ -92,7 +92,7 @@ class LocksTestCase(unittest.TestCase):
         test_method_procedure = Mock()
 
         # create decorated function
-        @unique_task_decorator
+        @unique_lock
         def test_method(*args, **kwargs):
             test_method_procedure(*args, **kwargs)
 
@@ -121,7 +121,7 @@ class LocksTestCase(unittest.TestCase):
         test_method_procedure = Mock()
 
         # create decorated function
-        @unique_task_decorator
+        @unique_lock
         def test_method(*args, **kwargs):
             test_method_procedure(*args, **kwargs)
 
@@ -148,7 +148,7 @@ class LocksTestCase(unittest.TestCase):
         test_method_procedure = Mock()
 
         # create decorated function
-        @unique_task_decorator
+        @unique_lock
         def test_method(*args, **kwargs):
             test_method_procedure(*args, **kwargs)
 
@@ -178,7 +178,7 @@ class LocksTestCase(unittest.TestCase):
 
         # create decorated function
         @app.task(bind=True)
-        @unique_task_decorator
+        @unique_lock
         def test_method(self, *args, **kwargs):
             test_method_procedure(*args, **kwargs)
 
@@ -212,7 +212,7 @@ class LocksTestCase(unittest.TestCase):
 
         # create decorated function
         @app.task(bind=True)
-        @unique_task_decorator
+        @unique_lock
         def test_method(self, *args, **kwargs):
             test_method_procedure(self, *args, **kwargs)
 
