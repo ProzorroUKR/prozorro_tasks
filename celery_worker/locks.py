@@ -87,63 +87,68 @@ def args_to_uid(args):
     return uid
 
 
-# skip_duplicates
-def unique_task_decorator(task):
+
+def unique_task(omit=None):
     """
     Use this one to avoid duplicate tasks execution.
     It discards duplicates after the original task is successfully finished.
     There still may be duplicates in case a duplicate task starts before the first task(original) finishes.
     """
 
-    @wraps(task)
-    def unique_task(*args, **kwargs):
+    def unique_task_decorator(task):
+        @wraps(task)
+        def wrapper(*args, **kwargs):
 
-        if args and isinstance(args[0], Task):  # @app.task(bind=True)
-            self = args[0]
-            key_args = args[1:]
-        else:
-            self, key_args = None, args
-
-        task_uid = args_to_uid(
-            (task.__module__, task.__name__, key_args, kwargs)
-        )
-        collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
-        try:
-            doc = collection.find_one(
-                {'_id': task_uid}
-            )
-        except PyMongoError as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "UNIQUE_TASK_GET_RESULTS_MONGODB_EXCEPTION"})
-
-            if self is None:
-                logger.warning("Cannot retry task, skipping it's duplicate check",
-                               extra={"MESSAGE_ID": "UNIQUE_TASK_MONGODB_EXCEPTION_CANNOT_RETRY"})
-                doc = None
+            if args and isinstance(args[0], Task):  # @app.task(bind=True)
+                self = args[0]
+                task_args = args[1:]
             else:
-                raise self.retry()
+                self, task_args = None, args
 
-        if doc is not None:
-            logger.warning(
-                "Stopping a duplicate of task {} with {} {}".format(task.__name__, key_args, kwargs),
-                extra={"MESSAGE_ID": "UNIQUE_TASK_DUPLICATE_STOPPING"}
+            task_kwargs = {key: value for key, value in kwargs.items() if key not in omit}
+
+            task_uid = args_to_uid(
+                (task.__module__, task.__name__, task_args, task_kwargs)
             )
-            return {"error": "Duplicate task execution is cancelled"}
+            collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
+            try:
+                doc = collection.find_one(
+                    {'_id': task_uid}
+                )
+            except PyMongoError as exc:
+                logger.exception(exc, extra={"MESSAGE_ID": "UNIQUE_TASK_GET_RESULTS_MONGODB_EXCEPTION"})
 
-        # executing the task
-        task_response = task(*args, **kwargs)
+                if self is None:
+                    logger.warning("Cannot retry task, skipping it's duplicate check",
+                                   extra={"MESSAGE_ID": "UNIQUE_TASK_MONGODB_EXCEPTION_CANNOT_RETRY"})
+                    doc = None
+                else:
+                    raise self.retry()
 
-        # task is successfully finished, add task marker to mongodb
-        try:
-            collection.insert({
-                '_id': task_uid,
-                'createdAt': datetime.utcnow(),
-            })
-        except PyMongoError as exc:
-            logger.exception(exc, extra={"MESSAGE_ID": "UNIQUE_TASK_POST_RESULTS_MONGODB_EXCEPTION"})
-        finally:
-            return task_response
+            if doc is not None:
+                logger.warning(
+                    "Stopping a duplicate of task {} with {} {}".format(task.__name__, task_args, kwargs),
+                    extra={"MESSAGE_ID": "UNIQUE_TASK_DUPLICATE_STOPPING"}
+                )
+                return {"error": "Duplicate task execution is cancelled"}
 
-    return unique_task
+            # executing the task
+            task_response = task(*args, **kwargs)
+
+            # task is successfully finished, add task marker to mongodb
+            try:
+                collection.insert({
+                    '_id': task_uid,
+                    'createdAt': datetime.utcnow(),
+                })
+            except PyMongoError as exc:
+                logger.exception(exc, extra={"MESSAGE_ID": "UNIQUE_TASK_POST_RESULTS_MONGODB_EXCEPTION"})
+            finally:
+                return task_response
+
+        return wrapper
+
+    return unique_task_decorator
 
 
 def concurrency_lock(*args, **kwargs):

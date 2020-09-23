@@ -1,5 +1,5 @@
 from celery_worker.celery import app, formatter
-from celery_worker.locks import concurrency_lock, unique_task_decorator
+from celery_worker.locks import concurrency_lock, unique_task
 from treasury.storage import (
     get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template,
 )
@@ -105,7 +105,7 @@ def check_contract(self, contract_id, ignore_date_signed=False):
 
 @app.task(bind=True, max_retries=TREASURY_SEND_CONTRACT_XML_RETRIES)
 @concurrency_lock
-@unique_task_decorator
+@unique_task
 def send_contract_xml(self, contract_id):
     """
     Gets all api data from prepared mongodb document
@@ -141,7 +141,7 @@ def send_contract_xml(self, contract_id):
 
 @app.task(bind=True, max_retries=TREASURY_SEND_CONTRACT_XML_RETRIES)
 @concurrency_lock
-@unique_task_decorator
+@unique_task
 def send_change_xml(self, contract_id, change_id):
     context = get_contract_context(self, contract_id)
 
