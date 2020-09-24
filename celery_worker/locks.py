@@ -90,7 +90,7 @@ def args_to_uid(args):
 def doublewrap(f):
     """
     a decorator decorator, allowing the decorator to be used as:
-    @decorator(with, arguments, and=kwargs)
+    @decorator(some_arg, some_kwarg=some_kwarg_value)
     or
     @decorator
     """

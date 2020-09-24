@@ -116,11 +116,11 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
                     if offset == next_page_kwargs["offset"]:
-                        # increase try_count so task won't be stopped by unique_task decorator
+                        # increase try_count so task won't be stopped by unique_lock decorator
                         next_page_kwargs["try_count"] = try_count + 1
                     else:
                         # reset try_count to sync all duplicate tasks
-                        # and let unique_task decorator do it's job
+                        # and let unique_lock decorator do it's job
                         next_page_kwargs.pop("try_count", None)
                     process_feed.apply_async(
                         kwargs=next_page_kwargs,
