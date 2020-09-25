@@ -147,9 +147,14 @@ class CheckTestCase(unittest.TestCase):
         )
         send_contract_xml_mock.delay.assert_called_once_with(contract_id)
 
+    @patch("treasury.tasks.send_contract_xml")
+    @patch("treasury.tasks.save_contract_context")
+    @patch("treasury.tasks.prepare_context")
+    @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
     @patch("treasury.tasks.get_public_api_data")
-    def test_check_contract_ignore_date_signed(self, get_data_mock, get_org_mock):
+    def test_check_contract_ignore_date_signed(self, get_data_mock, get_org_mock, get_context_mock,
+                                               prepare_context_mock, save_context_mock, send_contract_xml_mock):
 
         contract_id = 123456
         procuring_entity_id = 1234
@@ -167,29 +172,20 @@ class CheckTestCase(unittest.TestCase):
                 )
             )
         )
-        tender_data = dict(
-            id=tender_id,
-            procurementMethodType="competitiveDialogueEU"
-        )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
-        get_org_mock.return_value = None
+        get_data_mock.return_value = contract_data
+        get_org_mock.return_value = {"org data"}
 
         # run
         with patch("treasury.tasks.TREASURY_INT_START_DATE", "2020-08-25"):
             check_contract(contract_id, ignore_date_signed=True)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
         get_org_mock.assert_called_once_with(check_contract, procuring_entity_id)
+        get_context_mock.assert_called_once_with(check_contract, contract_data["id"])
+        prepare_context_mock.assert_not_called()
+        save_context_mock.assert_not_called()
+        send_contract_xml_mock.delay.assert_not_called()
 
     @patch("treasury.tasks.send_contract_xml")
     @patch("treasury.tasks.save_contract_context")
@@ -267,29 +263,22 @@ class CheckTestCase(unittest.TestCase):
         contract_data = dict(
             id=contract_id,
             dateSigned="2020-03-11T13:49:00+02:00",
-            tender_id=tender_id
+            tender_id=tender_id,
+            procuringEntity=dict(
+                identifier=dict(
+                    scheme="UA-EDR",
+                    id="555555"
+                )
+            )
         )
-        tender_data = dict(
-            id=tender_id,
-            procurementMethodType="competitiveDialogueEU"
-        )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
+        get_data_mock.return_value = contract_data
 
         # run
         with patch("treasury.tasks.TREASURY_INT_START_DATE", "2020-03-12"):
             check_contract(contract_id)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
         get_org_mock.assert_not_called()
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -302,8 +291,8 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
     @patch("treasury.tasks.get_public_api_data")
-    def test_check_contract_inactive(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
-                                     save_context_mock, send_contract_xml_mock):
+    def test_check_contract_invalid_identifier_scheme(self, get_data_mock, get_org_mock, get_context_mock,
+                                                    prepare_context_mock, save_context_mock, send_contract_xml_mock):
         contract_id = "4444"
         tender_id = "555555555"
         contract_data = dict(
@@ -314,30 +303,17 @@ class CheckTestCase(unittest.TestCase):
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
-                    scheme="UA-EDR"
+                    scheme="INVALID-SCHEME"
                 )
             )
         )
-        tender_data = dict(
-            id=tender_id,
-            procurementMethodType="competitiveDialogueEU"
-        )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
+        get_data_mock.return_value = contract_data
 
         # run
         check_contract(contract_id)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
         get_org_mock.assert_not_called()
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -359,6 +335,7 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id=tender_id,
+            dateSigned="2021-03-11T13:49:00+02:00",
             procuringEntity=dict(
                 identifier=dict(
                     id="12345678",
@@ -366,33 +343,13 @@ class CheckTestCase(unittest.TestCase):
                 )
             )
         )
-        tender_data = dict(
-            id=tender_id,
-            contracts=[
-                dict(
-                    id=contract_id,
-                    date="2021-03-11T13:49:00+02:00"
-                )
-            ],
-            procurementMethodType="aboveThresholdUA",
-
-        )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
+        get_data_mock.return_value = contract_data
 
         # run
         check_contract(contract_id)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -426,21 +383,7 @@ class CheckTestCase(unittest.TestCase):
                 )
             )
         )
-        tender_data = dict(
-            id=tender_id,
-            contracts=[
-                dict(
-                    id=contract_id,
-                    date="2021-03-11T13:49:00+02:00"
-                )
-            ],
-            procurementMethodType="aboveThresholdUA",
-
-        )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
+        get_data_mock.return_value = contract_data
         get_context_mock.return_value = dict(contract=dict(changes=[
             dict(id="111")
         ]))
@@ -454,13 +397,7 @@ class CheckTestCase(unittest.TestCase):
             check_contract,
             contract_id
         )
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         prepare_context_mock.assert_called_once_with(contract_data)
         save_context_mock.assert_called_once_with(
@@ -481,9 +418,10 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_contract_context")
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
+    @patch("treasury.domain.prcontract.get_public_api_data")
     @patch("treasury.tasks.get_public_api_data")
-    def test_check_contract_no_updates(self, get_data_mock, get_org_mock, get_context_mock, prepare_context_mock,
-                                       save_context_mock, send_change_xml_mock):
+    def test_check_contract_no_updates(self, get_data_mock, get_data_mock_prcontract, get_org_mock, get_context_mock,
+                                       prepare_context_mock, save_context_mock, send_change_xml_mock):
         contract_id = "4444"
         tender_id = "555555555"
         get_org_mock.return_value = {"org data"}
@@ -491,7 +429,6 @@ class CheckTestCase(unittest.TestCase):
             id=contract_id,
             status="active",
             tender_id=tender_id,
-            dateSigned="2021-03-11T13:49:00+02:00",
             changes=[
                 dict(id="111"),
                 dict(id="222"),
@@ -505,6 +442,7 @@ class CheckTestCase(unittest.TestCase):
         )
         tender_data = dict(
             id=tender_id,
+            date="2021-03-11T13:49:00+02:00",
             contracts=[
                 dict(
                     id=contract_id,
@@ -514,10 +452,8 @@ class CheckTestCase(unittest.TestCase):
             procurementMethodType="aboveThresholdUA",
 
         )
-        get_data_mock.side_effect = [
-            contract_data,
-            tender_data,
-        ]
+        get_data_mock.return_value = contract_data
+        get_data_mock_prcontract.return_value = tender_data
         get_context_mock.return_value = dict(contract=dict(changes=[
             dict(id="111"),
             dict(id="222"),
@@ -527,13 +463,8 @@ class CheckTestCase(unittest.TestCase):
         check_contract(contract_id)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_data["id"], "contract"),
-                call(check_contract, tender_id, "tender"),
-            ]
-        )
+        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        get_data_mock_prcontract.assert_called_once_with(check_contract, contract_data["tender_id"], "tender")
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         prepare_context_mock.assert_not_called()
         save_context_mock.assert_not_called()
@@ -669,7 +600,7 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.send_transactions_results")
     @patch("treasury.tasks.save_transaction_xml")
     @patch("treasury.tasks.put_transaction")
-    @patch("treasury.tasks.attach_doc_to_contract")
+    @patch("treasury.tasks.attach_doc_to_transaction")
     def test_process_transaction(self, attach_doc_mock, put_mock, save_xml_mock, send_results_mock):
         transactions_data = [
             {

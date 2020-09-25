@@ -20,19 +20,23 @@ from treasury.domain.prcontract import (
 
 class TestCase(BaseTestCase):
 
-    def test_get_contract_date(self):
+    @patch("treasury.domain.prcontract.get_public_api_data")
+    def test_get_contract_date(self, get_tender_mock):
         # 1
         contract = {
-            "dateSigned": "2020-06-15T10:34:42.821494+03:00"
+            "dateSigned": "2020-06-15T10:34:42.821494+03:00",
         }
-        result = get_contract_date(contract, tender={})
+        result = get_contract_date('check_contract_task', contract)
         self.assertEqual(result, "2020-06-15T10:34:42.821494+03:00")
 
         # 2
+        tender_id = "7777777777"
         contract = {
-            "id": "900000000"
+            "id": "900000000",
+            "tender_id": tender_id
         }
         tender = {
+            "id": tender_id,
             "contracts": [
                 {
                     "id": "900000000",
@@ -40,7 +44,8 @@ class TestCase(BaseTestCase):
                 }
             ]
         }
-        result = get_contract_date(contract, tender)
+        get_tender_mock.return_value = tender
+        result = get_contract_date("check_contract_task", contract)
         self.assertEqual(result, "2020-01-01T10:37:44.884962+03:00")
 
     @patch("treasury.domain.prcontract.get_public_api_data")

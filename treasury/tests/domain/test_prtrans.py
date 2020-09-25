@@ -3,10 +3,21 @@ import requests
 from dateutil.tz import tzoffset
 from app.tests.base import BaseTestCase
 from unittest.mock import patch, MagicMock, Mock, call
+from celery_worker.celery import app
+from celery.exceptions import Retry
 from treasury.domain.prtrans import save_transaction_xml
-from treasury.domain.prtrans import put_transaction, ds_upload, attach_doc_to_contract
-from treasury.exceptions import DocumentServiceForbiddenError, DocumentServiceError, ApiServiceError
-from treasury.settings import PUT_TRANSACTION_SUCCESSFUL_STATUS, ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS
+from treasury.domain.prtrans import put_transaction, ds_upload, attach_doc_to_transaction
+from treasury.settings import (
+    PUT_TRANSACTION_SUCCESSFUL_STATUS,
+    ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
+    DOCUMENT_ATTACH_FAILED_REQUESTS_EXCEPTIONS,
+    PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS,
+)
+
+
+@app.task
+def _mock_task(self):
+    pass
 
 
 class TestCase(BaseTestCase):
@@ -17,8 +28,9 @@ class TestCase(BaseTestCase):
         }
         source = b"abc"
         transactions_ids = ["1234567AA"]
-        save_transaction_xml(transactions_ids, source)
+        save_transaction_xml(_mock_task, transactions_ids, source)
         ds_upload_mock.assert_called_once_with(
+            _mock_task,
             file_content=source,
             file_name='Transaction_1234567AA.xml'
         )
@@ -30,8 +42,9 @@ class TestCase(BaseTestCase):
         }
         source = b"abc"
         transactions_ids = ['LL123', 'SSS222', 'GGG333', 'NNN444']
-        save_transaction_xml(transactions_ids, source)
+        save_transaction_xml(_mock_task, transactions_ids, source)
         ds_upload_mock.assert_called_once_with(
+            _mock_task,
             file_content=source,
             file_name='Transaction_LL123_and_3_others.xml'
         )
@@ -63,8 +76,9 @@ class TestCase(BaseTestCase):
 
         mock_session.return_value.get.side_effect = requests.exceptions.ConnectionError()
 
-        with self.assertRaises(ApiServiceError):
-            put_transaction(transaction)
+        actual_result = put_transaction(transaction)
+        expected_result = (PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None)
+        self.assertEqual(actual_result, expected_result)
 
         mock_session.return_value.get.side_effect = None
         mock_session.return_value.get.return_value = mock_get_response_class
@@ -91,7 +105,14 @@ class TestCase(BaseTestCase):
         result = put_transaction(transaction)
         self.assertEqual(result, (PUT_TRANSACTION_SUCCESSFUL_STATUS, {"SERVER_ID": "123_ID"}))
 
-    @patch('requests.post')
+        mock_session.return_value.put.side_effect = requests.exceptions.ConnectionError()
+        actual_result = put_transaction(transaction)
+        expected_result = (PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None)
+        self.assertEqual(actual_result, expected_result)
+
+        mock_session.return_value.get.side_effect = None
+
+    @patch('requests.Session')
     def test_ds_upload(self, mock):
 
         def get_json(self):
@@ -99,28 +120,28 @@ class TestCase(BaseTestCase):
 
         mock_response_class = type(
             "MockResponse", (object,),
-            {"status_code": 200, "json_data": "some_success_response", "json": get_json}
+            {"status_code": 200, "json_data": "some_success_response", "text": "response_text", "json": get_json}
         )
 
-        mock.return_value = mock_response_class()
-        result = ds_upload('transaction.xml', b'abc')
+        mock.return_value.post.return_value = mock_response_class()
+        result = ds_upload(_mock_task, 'transaction.xml', b'abc')
         self.assertEqual(result, 'some_success_response')
 
         mock_response_class.status_code = 403
-        with self.assertRaises(DocumentServiceForbiddenError):
-            ds_upload('transaction.xml', b'abc')
+        with self.assertRaises(Retry):
+            ds_upload(_mock_task, 'transaction.xml', b'abc')
 
         mock_response_class.status_code = 400
-        with self.assertRaises(DocumentServiceError):
-            ds_upload('transaction.xml', b'abc')
+        with self.assertRaises(Retry):
+            ds_upload(_mock_task, 'transaction.xml', b'abc')
 
         mock_response_class.side_effect = requests.exceptions.ConnectionError()
-        with self.assertRaises(DocumentServiceError):
-            ds_upload('transaction.xml', b'abc')
+        with self.assertRaises(Retry):
+            ds_upload(_mock_task, 'transaction.xml', b'abc')
         mock_response_class.side_effect = None
 
     @patch('requests.Session')
-    def test_attach_doc_to_contract(self, mock_session):
+    def test_attach_doc_to_transaction(self, mock_session):
         mock_get_response_class = type(
             "GetResponse", (object,),
             {"status_code": 400, "text": "get_response_text", "cookies": {"SERVER_ID": "123_ID"}}
@@ -133,13 +154,14 @@ class TestCase(BaseTestCase):
         mock_session.return_value.get.side_effect = requests.exceptions.ConnectionError()
 
         _cookies = {"SERVER_ID": "123_ID"}
-        with self.assertRaises(ApiServiceError):
-            attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
+        self.assertEqual(result, DOCUMENT_ATTACH_FAILED_REQUESTS_EXCEPTIONS)
 
         mock_session.return_value.get.side_effect = None
         mock_session.return_value.get.return_value = mock_get_response_class
 
-        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 400)
 
         mock_get_response_class.status_code = 200
@@ -149,17 +171,17 @@ class TestCase(BaseTestCase):
         )
         mock_session.return_value.post.return_value = mock_post_response_class
 
-        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS)
 
         mock_get_response_class.status_code = 422
-        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 422)
 
         mock_get_response_class.status_code = 403
-        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 403)
 
         mock_get_response_class.status_code = 301
-        result = attach_doc_to_contract(data, contract_id, transaction_id, _cookies)
+        result = attach_doc_to_transaction(data, contract_id, transaction_id, _cookies)
         self.assertEqual(result, 301)
