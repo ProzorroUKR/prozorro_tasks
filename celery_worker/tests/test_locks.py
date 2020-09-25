@@ -8,12 +8,15 @@ from celery_worker.locks import (
     args_to_uid,
     get_mongodb_collection,
     unique_lock,
+    DUPLICATE_COLLECTION_NAME,
 )
 from environment_settings import (
-    MONGODB_URL, MONGODB_DATABASE,
+    MONGODB_URL,
+    MONGODB_DATABASE,
     MONGODB_SERVER_SELECTION_TIMEOUT,
     MONGODB_CONNECT_TIMEOUT,
-    MONGODB_SOCKET_TIMEOUT
+    MONGODB_SOCKET_TIMEOUT,
+    MONGODB_MAX_POOL_SIZE,
 )
 import unittest
 
@@ -23,7 +26,7 @@ class LocksTestCase(unittest.TestCase):
     @patch("celery_worker.locks.MongoClient")
     def test_get_mongodb_collection(self, mongodb_client):
         client = MagicMock()
-        getattr(client, MONGODB_DATABASE).celery_worker_locks = 13
+        setattr(getattr(client, MONGODB_DATABASE), DUPLICATE_COLLECTION_NAME, 13)
         mongodb_client.return_value = client
 
         return_value = get_mongodb_collection()
@@ -33,6 +36,7 @@ class LocksTestCase(unittest.TestCase):
             serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
             connectTimeoutMS=MONGODB_CONNECT_TIMEOUT * 1000,
             socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
+            maxPoolSize=MONGODB_MAX_POOL_SIZE,
             retryWrites=True
         )
         self.assertEqual(return_value, 13)

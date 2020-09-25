@@ -11,7 +11,8 @@ from environment_settings import (
     MONGODB_URL, MONGODB_DATABASE,
     MONGODB_SERVER_SELECTION_TIMEOUT,
     MONGODB_CONNECT_TIMEOUT,
-    MONGODB_SOCKET_TIMEOUT
+    MONGODB_SOCKET_TIMEOUT,
+    MONGODB_MAX_POOL_SIZE,
 )
 import hashlib
 import sys
@@ -24,14 +25,21 @@ DUPLICATE_COLLECTION_NAME = "celery_worker_locks"
 LOCK_COLLECTION_NAME = "celery_worker_concurrency_locks"
 
 
+mongodb = None
+
+
 def get_mongodb_client():
-    return MongoClient(
-        MONGODB_URL,
-        serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
-        connectTimeoutMS=MONGODB_CONNECT_TIMEOUT * 1000,
-        socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
-        retryWrites=True
-    )
+    global mongodb
+    if not mongodb:
+        mongodb = MongoClient(
+            MONGODB_URL,
+            serverSelectionTimeoutMS=MONGODB_SERVER_SELECTION_TIMEOUT * 1000,
+            connectTimeoutMS=MONGODB_CONNECT_TIMEOUT * 1000,
+            socketTimeoutMS=MONGODB_SOCKET_TIMEOUT * 1000,
+            maxPoolSize=MONGODB_MAX_POOL_SIZE,
+            retryWrites=True
+        )
+    return mongodb
 
 
 def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME,
@@ -42,13 +50,12 @@ def get_mongodb_collection(collection_name=DUPLICATE_COLLECTION_NAME,
     return collection
 
 
-# https://docs.mongodb.com/manual/tutorial/expire-data/
-
 @app.task(bind=True, max_retries=20)
 def init_duplicate_index(self):
     try:
         get_mongodb_collection(DUPLICATE_COLLECTION_NAME).create_index(
             "createdAt",
+            # https://docs.mongodb.com/manual/tutorial/expire-data/
             expireAfterSeconds=30 * 60  # delete index if you've changed this
         )
     except PyMongoError as e:
