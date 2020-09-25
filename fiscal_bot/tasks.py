@@ -1,5 +1,5 @@
 from celery_worker.celery import app, formatter
-from celery_worker.locks import unique_task_decorator, concurrency_lock
+from celery_worker.locks import unique_lock, concurrency_lock
 from celery.utils.log import get_task_logger
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
@@ -85,7 +85,7 @@ def process_tender(self, tender_id, *args, **kwargs):
 
 @app.task(bind=True, max_retries=10)
 @concurrency_lock
-@unique_task_decorator
+@unique_lock
 def prepare_receipt_request(self, supplier, requests_reties=0):
     filename, content = build_receipt_request(self, supplier["tenderID"], supplier.get("lot_index"),
                                               supplier["identifier"], supplier["name"])
