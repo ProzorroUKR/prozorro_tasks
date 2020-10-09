@@ -1,8 +1,8 @@
 from environment_settings import TIMEZONE, FISCAL_API_HOST, FISCAL_API_PROXIES
 from datetime import datetime, timedelta
-from fiscal_bot.tasks import send_request_receipt
+from fiscal_bot.tasks import send_request_receipt, prepare_receipt_request
 from celery.exceptions import Retry
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 import requests
 import unittest
 
@@ -15,6 +15,7 @@ class ReceiptTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     def test_request_exception(self, requests_mock, retry_mock, get_result_mock):
         get_result_mock.return_value = None
+        prepare_receipt_request_task = MagicMock()
         retry_mock.side_effect = Retry
         filename = "test.xml"
         request_data = "Y29udGVudA=="
@@ -31,17 +32,20 @@ class ReceiptTestCase(unittest.TestCase):
 
         with self.assertRaises(Retry):
             send_request_receipt(
+                prepare_receipt_request_task=prepare_receipt_request_task,
                 request_data=request_data, filename=filename,
                 supplier=supplier, requests_reties=0
             )
 
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
+        prepare_receipt_request_task.assert_not_called()
 
     @patch("fiscal_bot.tasks.get_task_result")
     @patch("fiscal_bot.tasks.send_request_receipt.retry")
     @patch("fiscal_bot.tasks.requests")
     def test_request_error_status(self, requests_mock, retry_mock, get_result_mock):
         get_result_mock.return_value = None
+        prepare_receipt_request_task = MagicMock()
         retry_mock.side_effect = Retry
         filename = "test.xml"
         request_data = "Y29udGVudA=="
@@ -61,10 +65,10 @@ class ReceiptTestCase(unittest.TestCase):
         )
         with self.assertRaises(Retry):
             send_request_receipt(
+                prepare_receipt_request_task=prepare_receipt_request_task,
                 request_data=request_data, filename=filename,
                 supplier=supplier, requests_reties=0
             )
-
         retry_mock.assert_called_once_with(countdown=13)
 
     @patch("fiscal_bot.tasks.get_task_result")
@@ -74,6 +78,7 @@ class ReceiptTestCase(unittest.TestCase):
     def test_request_error_response(self, requests_mock, save_sfs_data_mock,
                                             check_request_mock, get_result_mock):
         get_result_mock.return_value = None
+        prepare_receipt_request_task = MagicMock()
         filename = "test.xml"
         request_data = "Y29udGVudA=="
 
@@ -90,9 +95,28 @@ class ReceiptTestCase(unittest.TestCase):
         )
 
         send_request_receipt(
+            prepare_receipt_request_task=prepare_receipt_request_task,
             request_data=request_data, filename=filename,
             supplier=supplier, requests_reties=0
         )
+        prepare_receipt_request_task.assert_not_called()
+        save_sfs_data_mock.apply_async.assert_not_called()
+        check_request_mock.apply_async.assert_not_called()
+
+        prepare_receipt_request.retry = Mock(
+            side_effect=Retry
+        )
+        requests_mock.post.return_value = Mock(
+            status_code=200,
+            json=lambda: {"status": "ERROR_DB"}
+        )
+        with self.assertRaises(Retry):
+            send_request_receipt(
+                prepare_receipt_request_task=prepare_receipt_request,
+                request_data=request_data, filename=filename,
+                supplier=supplier, requests_reties=0
+            )
+        prepare_receipt_request.retry.assert_called_once()
         save_sfs_data_mock.apply_async.assert_not_called()
         check_request_mock.apply_async.assert_not_called()
 
@@ -103,6 +127,7 @@ class ReceiptTestCase(unittest.TestCase):
     def test_request_success(self, decode_and_save_mock, prepare_check_request_mock,
                                      get_result_mock, save_result_mock):
         get_result_mock.return_value = None
+        prepare_receipt_request_task = MagicMock()
         filename = "test.xml"
         request_data = "whatever"
         supplier = dict(
@@ -130,6 +155,7 @@ class ReceiptTestCase(unittest.TestCase):
                     ),
                 ]
                 send_request_receipt(
+                    prepare_receipt_request_task=prepare_receipt_request_task,
                     request_data=request_data, filename=filename,
                     supplier=supplier, requests_reties=1
                 )
@@ -166,6 +192,7 @@ class ReceiptTestCase(unittest.TestCase):
                 requests_reties=1,
             )
         )
+        prepare_receipt_request_task.assert_not_called()
 
     @patch("fiscal_bot.tasks.save_task_result")
     @patch("fiscal_bot.tasks.get_task_result")
@@ -189,12 +216,14 @@ class ReceiptTestCase(unittest.TestCase):
             "kvt1Base64": "Y29udGVudA==",
         }
         get_result_mock.return_value = fiscal_response
+        prepare_receipt_request_task = MagicMock()
 
         with patch("fiscal_bot.tasks.get_now") as get_now_mock:
             get_now_mock.return_value = TIMEZONE.localize(datetime(2019, 3, 28, 12))
 
             with patch("fiscal_bot.tasks.requests") as requests_mock:
                 send_request_receipt(
+                    prepare_receipt_request_task=prepare_receipt_request_task,
                     request_data=request_data, filename=filename,
                     supplier=supplier, requests_reties=1
                 )
@@ -203,6 +232,7 @@ class ReceiptTestCase(unittest.TestCase):
             send_request_receipt,
             (supplier, 1)
         )
+        prepare_receipt_request_task.assert_not_called()
         requests_mock.post.assert_not_called()
         save_result_mock.assert_not_called()
         decode_and_save_mock.apply_async.assert_called_once_with(
