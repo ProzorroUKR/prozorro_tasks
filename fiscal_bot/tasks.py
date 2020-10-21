@@ -119,7 +119,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             )
 
 
-@app.task(bind=True, max_retries=10)
+@app.task(bind=True, max_retries=10, serializer='pickle')
 @formatter.omit(["request_data"])
 def send_request_receipt(self, prepare_receipt_request_task, request_data, filename, supplier, requests_reties):
     task_args = supplier, requests_reties

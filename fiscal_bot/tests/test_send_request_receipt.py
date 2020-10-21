@@ -2,6 +2,7 @@ from environment_settings import TIMEZONE, FISCAL_API_HOST, FISCAL_API_PROXIES
 from datetime import datetime, timedelta
 from fiscal_bot.tasks import send_request_receipt, prepare_receipt_request
 from celery.exceptions import Retry
+from celery_worker.celery import app
 from unittest.mock import patch, Mock, MagicMock
 import requests
 import unittest
@@ -193,6 +194,19 @@ class ReceiptTestCase(unittest.TestCase):
             )
         )
         prepare_receipt_request_task.assert_not_called()
+
+        @app.task(bind=True)
+        def prepare_receipt_request_task(self):
+            pass
+
+        import pickle
+        import json
+
+        with self.assertRaises(TypeError):
+            json.dumps(prepare_receipt_request_task)
+
+        res = pickle.dumps(prepare_receipt_request_task)
+        self.assertEqual(type(res), bytes)
 
     @patch("fiscal_bot.tasks.save_task_result")
     @patch("fiscal_bot.tasks.get_task_result")
