@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import request, url_for
 from flask_paginate import Pagination
 
-from payments.data import amount_format
+from payments.data import amount_convert
 from payments.messages import DESC_REPORT_TOTAL
 from payments.schemes import (
     get_scheme_value,
@@ -128,6 +128,6 @@ def get_report(rows, total=False):
     data.insert(0, headers)
 
     if total:
-        data.append([DESC_REPORT_TOTAL, amount_format(amount_total)])
+        data.append([DESC_REPORT_TOTAL, amount_convert(amount_total)])
 
     return data
