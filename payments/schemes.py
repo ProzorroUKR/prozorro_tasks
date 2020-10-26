@@ -11,6 +11,7 @@ from payments.data import (
     complainant_id,
     complainant_name,
     complainant_telephone,
+    value_amount_format,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -254,7 +255,7 @@ REPORT_AMOUNT_SCHEME_ITEM = {
     "type": "object",
     "title": "Сума, UAH",
     "path": "payment",
-    "method": lambda x: x.get("amount") if x.get("currency")=="UAH" else None,
+    "method": value_amount_format,
     "default": "",
 }
 

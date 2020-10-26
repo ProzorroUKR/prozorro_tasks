@@ -63,6 +63,9 @@ from payments.messages import (
 )
 
 
+DEFAULT_CURRENCY = "UAH"
+
+
 def complaint_status_description(status):
     return COMPLAINT_STATUS_DICT.get(status, status)
 
@@ -182,6 +185,16 @@ def date_representation(dt):
     if type(dt) is str:
         dt = dateutil.parser.parse(dt)
     return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat(sep=" ")
+
+
+def amount_format(amount):
+    return '{0:.2f}'.format(float(amount))
+
+
+def value_amount_format(value):
+    if value.get("currency") == DEFAULT_CURRENCY:
+        return amount_format(value.get("amount"))
+    return None
 
 
 DESC_REJECT_REASON_DICT = {
