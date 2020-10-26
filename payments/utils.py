@@ -129,6 +129,21 @@ PAYMENT_EXCLUDE_FIELDS = [
 ]
 
 
+REPORT_COLUMN_SMALL_INDICES = (0,)
+REPORT_COLUMN_LARGE_INDICES = (1, 2)
+
+REPORT_COLUMN_DEFAULT_MIN_LEN = 7
+REPORT_COLUMN_DEFAULT_MAX_LEN = 15
+
+REPORT_COLUMN_SMALL_MIN_LEN = 3
+REPORT_COLUMN_SMALL_MAX_LEN = 10
+
+REPORT_COLUMN_LARGE_MIN_LEN = 7
+REPORT_COLUMN_LARGE_MAX_LEN = 25
+
+REPORT_COLUMN_EXTRA_LEN = 1
+
+
 def find_replace(string, dictionary):
     for item in dictionary.keys():
         string = re.sub(item, dictionary[item], string)
@@ -390,6 +405,7 @@ def get_payments_registry_fake_data(default=None):
     except OSError:
         pass
 
+
 def generate_report_file(filename, data, title):
     total = data.pop(len(data) - 1)
     for index, row in enumerate(data):
@@ -411,10 +427,21 @@ def generate_report_file(filename, data, title):
     table_cell_format = workbook.add_format(table_properties)
     table_cell_format.set_align("top")
     for index, header in enumerate(headers):
-        min_default_len = 7 if index != 0 else 3
-        max_default_len = 15 if index != 1 else 25
-        max_len = max(max(map(lambda x: len(x[index]), data)) + 1 if data else 0, min_default_len)
-        worksheet.set_column(index, index, min(max_len, max_default_len), table_cell_format)
+        if index in REPORT_COLUMN_SMALL_INDICES:
+            min_default_len = REPORT_COLUMN_SMALL_MIN_LEN
+            max_default_len = REPORT_COLUMN_SMALL_MAX_LEN
+        elif index in REPORT_COLUMN_LARGE_INDICES:
+            min_default_len = REPORT_COLUMN_LARGE_MIN_LEN
+            max_default_len = REPORT_COLUMN_LARGE_MAX_LEN
+        else:
+            min_default_len = REPORT_COLUMN_DEFAULT_MIN_LEN
+            max_default_len = REPORT_COLUMN_DEFAULT_MAX_LEN
+        max_len = max(
+            max(map(lambda x: len(x[index]), data)) + REPORT_COLUMN_EXTRA_LEN if data else 0,
+            min_default_len
+        )
+        width = min(max_len, max_default_len)
+        worksheet.set_column(index, index, width, table_cell_format)
     worksheet.write_row(len(data) + 2, 1, total)
     workbook.close()
 
