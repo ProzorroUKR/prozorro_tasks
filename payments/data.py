@@ -199,9 +199,9 @@ def amount_convert(amount):
         return Decimal("NaN")
 
 
-def value_amount_convert(value):
+def value_amount_representation(value):
     if value.get("currency") == DEFAULT_CURRENCY:
-        return amount_convert(value.get("amount"))
+        return str(amount_convert(value.get("amount")))
     return None
 
 
