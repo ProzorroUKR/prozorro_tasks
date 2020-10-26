@@ -1,3 +1,5 @@
+from decimal import Decimal, Context, Inexact, InvalidOperation
+
 import dateutil.parser
 from pymongo.errors import PyMongoError
 
@@ -187,13 +189,19 @@ def date_representation(dt):
     return dt.astimezone(TIMEZONE).replace(microsecond=0).isoformat(sep=" ")
 
 
-def amount_format(amount):
-    return '{0:.2f}'.format(float(amount))
+def amount_convert(amount):
+    amount_decimal = Decimal(amount)
+    quantize_exp = Decimal(10) ** min(-2, amount_decimal.as_tuple().exponent)
+    quantize_context = Context(traps=[InvalidOperation, Inexact])
+    try:
+        return amount_decimal.quantize(exp=quantize_exp, context=quantize_context)
+    except (Inexact, InvalidOperation):
+        return Decimal("NaN")
 
 
-def value_amount_format(value):
+def value_amount_convert(value):
     if value.get("currency") == DEFAULT_CURRENCY:
-        return amount_format(value.get("amount"))
+        return amount_convert(value.get("amount"))
     return None
 
 
