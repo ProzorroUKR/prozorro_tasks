@@ -258,7 +258,7 @@ def report():
         )
         filters = combined_filters_or([data_success_filters, data_failed_filters])
         data = list(get_payment_list(filters))
-        rows = get_report(data)
+        rows = get_report(data, total=True)
     else:
         date = datetime.now() - timedelta(days=1)
         return redirect(url_for(

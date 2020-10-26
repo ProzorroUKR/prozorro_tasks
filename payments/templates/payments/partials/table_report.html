@@ -8,7 +8,7 @@
         {% endfor %}
     </tr>
     {% endfor %}
-    {% for row in data[1:] %}
+    {% for row in data[1:-1] %}
     <tr>
         <td class="text-center align-middle">{{ loop.index }}</td>
         {% for field in row %}
@@ -18,6 +18,14 @@
         {% endfor %}
     </tr>
     {% endfor %}
+    <tr>
+        <td class="text-center align-middle" style="visibility: hidden;"></td>
+        {% for field in data[-1] %}
+        <td>
+            {{ field }}
+        </td>
+        {% endfor %}
+    </tr>
 </table>
 {% else %}
 {% include "payments/partials/table_empty.html" %}
