@@ -110,6 +110,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             request_data = base64.b64encode(response.content).decode()
             send_request_receipt.apply_async(
                 kwargs=dict(
+                    prepare_receipt_request_task=self,
                     request_data=request_data,
                     filename=filename,
                     supplier=supplier,
@@ -120,7 +121,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
 
 @app.task(bind=True, max_retries=10)
 @formatter.omit(["request_data"])
-def send_request_receipt(self, request_data, filename, supplier, requests_reties):
+def send_request_receipt(self, prepare_receipt_request_task, request_data, filename, supplier, requests_reties):
     task_args = supplier, requests_reties
     data = get_task_result(self, task_args)
     if data is None:
@@ -142,6 +143,15 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
                 data = response.json()
 
                 if data["status"] != "OK":
+                    if data["status"] == "ERROR_DB":
+                        logger.info(
+                            "Getting receipt ERROR_DB status: {} {}, retrying ...".format(
+                                response.status_code, response.text
+                            ),
+                            extra={"MESSAGE_ID": "FISCAL_API_POST_ERROR_DB_REQUEST_ERROR"}
+                        )
+                        prepare_receipt_request_task.retry()
+                        # to avoid sending duplicate data during send_request_receipt retry
                     logger.error("Getting receipt failed: {} {}".format(response.status_code, response.text),
                                  extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
                     return

@@ -98,6 +98,7 @@ class ReceiptTestCase(unittest.TestCase):
 
             send_request_receipt_mock.apply_async.assert_called_once_with(
                 kwargs=dict(
+                    prepare_receipt_request_task=prepare_receipt_request,
                     request_data=base64.b64encode(b"content").decode(),
                     filename="hallo.xml",
                     supplier=supplier,
