@@ -91,13 +91,13 @@ def payment_find_query(data):
         "$or": [
             {
                 "$and": [
-                    {"payment.ref_obj": {"$exists": True}},
-                    {"payment.ref_obj": data.get("ref_obj")},
+                    {"payment.odb_ref": {"$exists": True}},
+                    {"payment.odb_ref": data.get("odb_ref")},
                 ]
             },
             {
                 "$and": [
-                    {"payment.ref_obj": {"$exists": False}},
+                    {"payment.odb_ref": {"$exists": False}},
                     {
                         "$or": [
                             {"_id": data_to_uid(data, keys=UID_KEYS_3)},
