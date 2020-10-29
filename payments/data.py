@@ -190,7 +190,7 @@ def date_representation(dt):
 
 
 def amount_convert(amount):
-    amount_decimal = Decimal(amount)
+    amount_decimal = Decimal(str(amount))
     quantize_exp = Decimal(10) ** min(-2, amount_decimal.as_tuple().exponent)
     quantize_context = Context(traps=[InvalidOperation, Inexact])
     try:
