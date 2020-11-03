@@ -88,15 +88,17 @@ def get_request_params():
         date_to=date_to,
     )
 
-def get_payment_pagination(total=None, **kwargs):
+def get_payment_pagination(total=None, page=None, limit=None, **kwargs):
     return Pagination(
         bs_version=4,
         link_size="sm",
         show_single_page=True,
         record_name="payments",
-        total=total,
         per_page_parameter="limit",
         page_parameter="page",
+        total=total,
+        page=page,
+        limit=limit,
         **kwargs
     )
 

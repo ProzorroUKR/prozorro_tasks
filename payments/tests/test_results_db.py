@@ -1,13 +1,10 @@
 from unittest.mock import patch, MagicMock, ANY
 
-from pymongo import DESCENDING
 from pymongo.errors import DuplicateKeyError
 
 import unittest
 
 from payments.results_db import (
-    get_payment_count,
-    get_payment_list,
     get_payment_item,
     push_payment_message,
     save_payment_item,
@@ -19,79 +16,6 @@ from payments.results_db import (
 
 
 class ResultsDBTestCase(unittest.TestCase):
-
-    @patch("payments.results_db.get_mongodb_collection")
-    def test_get_payment_count(self, get_collection):
-        collection = MagicMock()
-        collection.count_documents.return_value = 1
-        get_collection.return_value = collection
-
-        filters = {"some_filter": "some_filter_value"}
-
-        result = get_payment_count(filters)
-
-        self.assertEqual(result, 1)
-        collection.count_documents.assert_called_once_with(filters)
-
-    @patch("payments.results_db.get_mongodb_collection")
-    def test_get_payment_list(self, get_collection):
-        cursor = MagicMock()
-        cursor.sort.return_value = cursor
-
-        collection = MagicMock()
-        collection.find.return_value = cursor
-        get_collection.return_value = collection
-
-        filters = {"some_filter": "some_filter_value"}
-
-        result = get_payment_list(filters)
-
-        self.assertEqual(result, cursor)
-        collection.find.assert_called_once_with(filters)
-        cursor.sort.assert_called_once_with("createdAt", DESCENDING)
-
-    @patch("payments.results_db.get_mongodb_collection")
-    def test_get_payment_list_with_limit(self, get_collection):
-        cursor = MagicMock()
-        cursor.sort.return_value = cursor
-        cursor.limit.return_value = cursor
-
-        collection = MagicMock()
-        collection.find.return_value = cursor
-        get_collection.return_value = collection
-
-        filters = {"some_filter": "some_filter_value"}
-        limit = 5
-
-        result = get_payment_list(filters, limit=limit)
-
-        self.assertEqual(result, cursor)
-        collection.find.assert_called_once_with(filters)
-        cursor.sort.assert_called_once_with("createdAt", DESCENDING)
-        cursor.limit.assert_called_once_with(limit)
-
-    @patch("payments.results_db.get_mongodb_collection")
-    def test_get_payment_list_with_page(self, get_collection):
-        cursor = MagicMock()
-        cursor.sort.return_value = cursor
-        cursor.limit.return_value = cursor
-        cursor.skip.return_value = cursor
-
-        collection = MagicMock()
-        collection.find.return_value = cursor
-        get_collection.return_value = collection
-
-        filters = {"some_filter": "some_filter_value"}
-        limit = 5
-        page = 10
-
-        result = get_payment_list(filters, limit=limit, page=page)
-
-        self.assertEqual(result, cursor)
-        collection.find.assert_called_once_with(filters)
-        cursor.sort.assert_called_once_with("createdAt", DESCENDING)
-        cursor.limit.assert_called_once_with(limit)
-        cursor.skip.assert_called_once_with(45)
 
     @patch("payments.results_db.get_mongodb_collection")
     def test_get_payment_item(self, get_collection):

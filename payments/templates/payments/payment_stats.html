@@ -15,7 +15,7 @@
                 <a class="black-text" href="{{ href_payments }}">Оплати</a>
                 <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
             </li>
-            <li class="breadcrumb-item active">Операції</li>
+            <li class="breadcrumb-item active">Статистичні дані</li>
         </ol>
     </nav>
 </div>
@@ -74,11 +74,11 @@
 
 </div>
 
-<div class="table-responsive mb-3">
-    {% include 'payments/partials/table_payments.html' %}
+{% if counts.source or counts.type or counts.date_oper %}
+<div id="statBlock" class="d-inline-block w-100 mb-3">
+    {% include 'payments/partials/charts_stats.html' %}
 </div>
-
-{{ pagination.links }}
+{% endif %}
 
 {% endblock %}
 
