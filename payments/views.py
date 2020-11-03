@@ -12,17 +12,16 @@ from payments.message_ids import (
 )
 from liqpay_int.tasks import process_payment_data
 from payments.results_db import (
-    get_payment_list,
     get_payment_item,
-    combined_filters_or,
-    get_payment_search_filters,
-    get_payment_report_success_filters,
-    get_payment_report_failed_filters,
-    combined_filters_and,
-    get_payment_count,
+    query_combined_or,
+    query_payment_report_success,
+    query_payment_report_failed,
     save_payment_item,
     find_payment_item,
     update_payment_item,
+    get_payment_results,
+    query_payment_results,
+    get_payment_stats,
 )
 from payments.context import (
     url_for_search,
@@ -50,6 +49,7 @@ from payments.data import (
     FUNDS_UNKNOWN,
     FUNDS_ALL,
 )
+from payments.settings import RELEASE_2020_04_19
 from payments.utils import (
     get_payments_registry,
     store_payments_registry_fake,
@@ -59,6 +59,7 @@ from payments.utils import (
     get_payments_registry_fake,
     dumps_payments_registry_fake,
 )
+from tasks_utils.datetime import get_now, parse_dt_string
 
 bp = Blueprint("payments_views", __name__, template_folder="templates")
 
@@ -76,42 +77,81 @@ bp.add_app_template_global(url_for_search, "url_for_search")
 @login_groups_required(["admins", "accountants"])
 def payment_list():
     report_kwargs = get_report_params()
+    search_kwargs = get_payment_search_params()
+
+    page = search_kwargs.get("page")
+    limit = search_kwargs.get("limit")
+
     resolution_date_from = report_kwargs.get("date_resolution_from")
     resolution_date_to = report_kwargs.get("date_resolution_to")
     date_from = resolution_date_from
     date_to = resolution_date_to + timedelta(days=1) if resolution_date_to else None
-    data_success_filters = get_payment_report_success_filters(
-        resolution_date_from=date_from,
-        resolution_date_to=date_to,
-    )
-    data_failed_filters = get_payment_report_failed_filters(
-        message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
-        message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
-        message_ids_date_from=date_from,
-        message_ids_date_to=date_to,
-    )
-    report_filters = combined_filters_or([data_success_filters, data_failed_filters])
 
-    search_kwargs = get_payment_search_params()
-    search_filters = get_payment_search_filters(**search_kwargs)
+    filters = query_payment_results(date_from, date_to, **search_kwargs)
 
-    filters = combined_filters_and([search_filters, report_filters])
+    data = get_payment_results(filters, page=page, limit=limit)
 
-    rows = list(get_payment_list(filters, **search_kwargs, **report_kwargs))
-    total = get_payment_count(filters, **search_kwargs, **report_kwargs)
-    data = get_payments(rows)
+    results = data["results"]
+    meta = data["meta"]
+    total = meta["total"]
+
+    rows = get_payments(results)
+
     return render_template(
         "payments/payment_list.html",
-        rows=data,
+        rows=rows,
         pagination=get_payment_pagination(
             total=total,
-            **search_kwargs,
-            **report_kwargs
+            page=page,
+            limit=limit
         ),
         total=total,
         **search_kwargs,
         **report_kwargs
     )
+
+
+@bp.route("/stats", methods=["GET"])
+@login_groups_required(["admins", "accountants"])
+def payment_stats():
+    report_kwargs = get_report_params()
+    search_kwargs = get_payment_search_params()
+
+    resolution_date_from = report_kwargs.get("date_resolution_from")
+    resolution_date_to = report_kwargs.get("date_resolution_to")
+
+    payment_date_from = search_kwargs.get("payment_date_from")
+    payment_date_to = search_kwargs.get("payment_date_to")
+
+    if payment_date_from and payment_date_to:
+        date_from = resolution_date_from
+        date_to = resolution_date_to + timedelta(days=1) if resolution_date_to else None
+
+        filters = query_payment_results(date_from, date_to, **search_kwargs)
+
+        data = get_payment_stats(filters)
+
+        counts = data["counts"]
+
+        min_date = parse_dt_string(RELEASE_2020_04_19).date()
+        max_date = get_now().date()
+
+        return render_template(
+            "payments/payment_stats.html",
+            counts=counts,
+            min_date=min_date,
+            max_date=max_date,
+            **search_kwargs,
+            **report_kwargs
+        )
+    else:
+        date_from = get_now() - timedelta(days=30)
+        date_to = get_now()
+        return redirect(url_for(
+            "payments_views.payment_stats",
+            date_oper_from=date_from.strftime("%Y-%m-%d"),
+            date_oper_to=date_to.strftime("%Y-%m-%d")
+        ))
 
 
 @bp.route("/request", methods=["GET"])
@@ -245,22 +285,22 @@ def report():
     if date_resolution_from and date_resolution_to:
         date_from = date_resolution_from
         date_to = date_resolution_to + timedelta(days=1)
-        data_success_filters = get_payment_report_success_filters(
+        data_success_filters = query_payment_report_success(
             resolution_exists=True,
             resolution_date_from=date_from,
             resolution_date_to=date_to,
         )
-        data_failed_filters = get_payment_report_failed_filters(
+        data_failed_filters = query_payment_report_failed(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = combined_filters_or([data_success_filters, data_failed_filters])
-        data = list(get_payment_list(filters))
+        filters = query_combined_or([data_success_filters, data_failed_filters])
+        data = get_payment_results(filters)["results"]
         rows = get_report(data, total=True)
     else:
-        date = datetime.now() - timedelta(days=1)
+        date = get_now() - timedelta(days=1)
         return redirect(url_for(
             "payments_views.report",
             date_resolution_from=date.strftime("%Y-%m-%d"),
@@ -289,39 +329,38 @@ def report_download():
     date_to = date_resolution_to + timedelta(days=1)
 
     if funds in [FUNDS_STATE, FUNDS_COMPLAINANT]:
-        filters = get_payment_report_success_filters(
+        filters = query_payment_report_success(
             resolution_exists=True,
             resolution_funds=funds,
             resolution_date_from=date_from,
             resolution_date_to=date_to,
         )
     elif funds in [FUNDS_UNKNOWN]:
-        filters = get_payment_report_failed_filters(
+        filters = query_payment_report_failed(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        rows = list(get_payment_list(filters))
     elif funds in [FUNDS_ALL]:
         rows = list()
-        filters_success = get_payment_report_success_filters(
+        filters_success = query_payment_report_success(
             resolution_exists=True,
             resolution_date_from=date_from,
             resolution_date_to=date_to,
         )
-        filters_failed = get_payment_report_failed_filters(
+        filters_failed = query_payment_report_failed(
             message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
             message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
             message_ids_date_from=date_from,
             message_ids_date_to=date_to,
         )
-        filters = combined_filters_or([filters_success, filters_failed])
+        filters = query_combined_or([filters_success, filters_failed])
     else:
         abort(404)
         return
 
-    rows = list(get_payment_list(filters))
+    rows = get_payment_results(filters)["results"]
     data = get_report(rows, total=True)
     bytes_io = io.BytesIO()
     title = generate_report_title(date_resolution_from, date_resolution_to, funds)

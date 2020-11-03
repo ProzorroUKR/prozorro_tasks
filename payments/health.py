@@ -197,7 +197,7 @@ def save_health_data(data):
     historical = list(get_statuses_list(limit=1))
     if len(historical):
         historical_last = historical[0]
-        delta = datetime.now() - historical_last["createdAt"]
+        delta = datetime.utcnow() - historical_last["createdAt"]
         status_changed = False
         for key in historical_last["data"].keys():
             if key != "status":
