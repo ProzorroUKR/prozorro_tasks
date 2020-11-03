@@ -40,6 +40,10 @@
         border: 1px solid #ced4da !important;
     }
 
+    .btn.btn-payment-light.active {
+        background-color: #ced4da !important;
+    }
+
     .btn.btn-payment-light.btn-sm {
         padding-top: calc(.5rem - 1px) !important;
         padding-bottom: calc(.5rem - 1px) !important;
@@ -50,6 +54,10 @@
     }
 
     .btn-group .btn.btn-payment-light + input {
+        border-left: 0 !important;
+    }
+
+    .nav-item + .nav-item .btn.btn-payment-light {
         border-left: 0 !important;
     }
 
@@ -270,6 +278,14 @@
 
     .chart-status-total-time-wrapper .chart-status-total-time {
         height: 100%;
+    }
+
+    .chart-payments-wrapper {
+        border: 1px solid #dee2e6;
+        background-color: rgba(0,0,0,.05);
+        margin-top: -1px;
+        margin-bottom: -1px;
+        padding: 25px 10px 10px 10px;
     }
 
 </style>

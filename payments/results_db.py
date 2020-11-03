@@ -1,7 +1,7 @@
 import pymongo
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from celery.utils.log import get_task_logger
-from pymongo import DESCENDING
+from pymongo import ASCENDING, DESCENDING
 from pytz import UTC
 
 from celery_worker.locks import args_to_uid, get_mongodb_collection as base_get_mongodb_collection
@@ -10,6 +10,7 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
 from app.logging import log_exc
+from payments.data import PAYMENTS_FAILED_MESSAGE_ID_LIST, PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST
 from payments.utils import filter_payment_data
 
 logger = get_task_logger(__name__)
@@ -86,7 +87,7 @@ def data_to_uid(data, keys=None):
     ]))
 
 
-def payment_find_query(data):
+def query_payment_find(data):
     return {
         "$or": [
             {
@@ -111,29 +112,164 @@ def payment_find_query(data):
     }
 
 
-@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
-def get_payment_count(filters, **kwargs):
-    collection = get_mongodb_collection()
-    return collection.count_documents(filters)
+def pipeline_payments_count(field):
+    return [
+        {
+            "$group": {
+                "_id": field,
+                "count": {'$sum': 1}
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "counts": {'$push': {"k": {"$ifNull": ["$_id", "null"]}, "v": "$count"}},
+            }
+        },
+        {
+            "$replaceRoot": {
+                "newRoot": {"$arrayToObject": "$counts"}
+            }
+        }
+    ]
+
+
+
+
+
+def pipeline_payments_counts_date_oper():
+    return [
+        {
+            "$group": {
+                "_id": query_date_to_str(query_date_from_str("$payment.date_oper")),
+                "count": {'$sum': 1}
+            }
+        },
+        {"$match": {"_id": {"$ne": None}}},
+        {"$sort": {"_id": ASCENDING}},
+        {
+            "$group": {
+                "_id": None,
+                "counts": {'$push': {"k": "$_id", "v": "$count"}},
+            }
+        },
+        {"$replaceRoot": {"newRoot": {"$arrayToObject": "$counts"}}},
+    ]
+
+
+def pipeline_payments_counts_total():
+    return [
+        {
+            "$group": {
+                "_id": None,
+                "total": {'$sum': 1}
+            },
+        },
+        {
+            "$project": {
+                "_id": 0,
+            }
+        },
+    ]
+
+
+def pipeline_payments_results(page=None, limit=None):
+    return [
+        {
+            "$group": {
+                "_id": None,
+                "results": {'$push': '$$ROOT'}
+            }
+        },
+        {
+            "$project": {
+                "results": {
+                    "$slice": ["$results", page * limit - limit, limit]
+                } if page and limit else "$results",
+            }
+        },
+        {"$unwind": "$results"},
+        {"$replaceRoot": {"newRoot": "$results"}}
+    ]
+
+
+def project_payments_results_counts_total():
+    return {
+        "$arrayElemAt": [{
+            "$cond": {
+                "if": {"$eq": [{"$size": "$counts_total"}, 0]},
+                "then": [{"total": 0}],
+                "else": "$counts_total"
+            }
+        }, 0]
+    }
+
+
+def project_payments_results_counts(field):
+    return {"$arrayElemAt": [field, 0]}
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION")
-def get_payment_list(filters=None, page=None, limit=None, **kwargs):
+def get_payment_results(filters=None, page=None, limit=None, **kwargs):
     collection = get_mongodb_collection()
-    cursor = collection.find(filters).sort("createdAt", DESCENDING)
-    if page and limit:
-        skip = (page - 1) * limit
-        if skip >= 0:
-            cursor = cursor.skip(skip)
-    if limit:
-        cursor = cursor.limit(limit)
-    return cursor
+    pipeline = [
+        {"$match": filters},
+        {"$sort": {"createdAt": DESCENDING}},
+        {
+            "$facet": {
+                "results": pipeline_payments_results(page, limit),
+                "counts_total": pipeline_payments_counts_total(),
+            }
+        },
+        {
+            "$project": {
+                "results": 1,
+                "meta": {
+                    "$mergeObjects": [
+                        project_payments_results_counts_total(),
+                        {
+                            "page": page,
+                            "limit": limit,
+                        }]
+                }
+            }
+        }
+    ]
+    cursor = collection.aggregate(pipeline)
+    return list(cursor)[0]
+
+
+@log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_MONGODB_EXCEPTION")
+def get_payment_stats(filters=None, page=None, limit=None, **kwargs):
+    collection = get_mongodb_collection()
+    pipeline = [
+        {"$match": filters},
+        {"$sort": {"createdAt": DESCENDING}},
+        {
+            "$facet": {
+                "counts_type": pipeline_payments_count('$payment.type'),
+                "counts_source": pipeline_payments_count('$payment.source'),
+                "counts_date_oper": pipeline_payments_counts_date_oper(),
+            }
+        },
+        {
+            "$project": {
+                "counts": {
+                    "type": project_payments_results_counts("$counts_type"),
+                    "source": project_payments_results_counts("$counts_source"),
+                    "date_oper": project_payments_results_counts("$counts_date_oper")
+                },
+            }
+        }
+    ]
+    cursor = collection.aggregate(pipeline)
+    return list(cursor)[0]
 
 
 @log_exc(logger, PyMongoError, "PAYMENTS_PUSH_MESSAGE_MONGODB_EXCEPTION")
 def push_payment_message(data, message_id, message):
     collection = get_mongodb_collection()
-    query = payment_find_query(data)
+    query = query_payment_find(data)
     update = {
         "$push": {
             "messages": {
@@ -149,7 +285,7 @@ def push_payment_message(data, message_id, message):
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_RESULTS_COUNT_MONGODB_EXCEPTION")
 def find_payment_item(data, **kwargs):
     collection = get_mongodb_collection()
-    query = payment_find_query(data)
+    query = query_payment_find(data)
     return collection.find_one(query)
 
 
@@ -197,7 +333,7 @@ def update_payment_item(uid, data):
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_PARAMS_MONGODB_EXCEPTION")
 def set_payment_params(data, params):
     collection = get_mongodb_collection()
-    query = payment_find_query(data)
+    query = query_payment_find(data)
     update = {"$set": {"params": params}}
     return collection.update_one(query, update)
 
@@ -205,7 +341,7 @@ def set_payment_params(data, params):
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_AUTHOR_MONGODB_EXCEPTION")
 def set_payment_complaint_author(data, author):
     collection = get_mongodb_collection()
-    query = payment_find_query(data)
+    query = query_payment_find(data)
     update = {"$set": {"author": author}}
     return collection.update_one(query, update)
 
@@ -213,7 +349,7 @@ def set_payment_complaint_author(data, author):
 @log_exc(logger, PyMongoError, "PAYMENTS_SET_RESOLUTION_MONGODB_EXCEPTION")
 def set_payment_resolution(data, resolution):
     collection = get_mongodb_collection()
-    query = payment_find_query(data)
+    query = query_payment_find(data)
     update = {"$set": {"resolution": resolution}}
     return collection.update_one(query, update)
 
@@ -224,10 +360,10 @@ def get_payment_item_by_params(params, message_ids=None):
     filters = [{"params": params}]
     if message_ids:
         filters.append({"messages.message_id": {"$in": message_ids}})
-    return collection.find_one(combined_filters_and(filters))
+    return collection.find_one(query_combined_and(filters))
 
 
-def get_payment_search_filters(
+def query_payment_search(
     search=None,
     payment_type=None,
     payment_source=None,
@@ -246,15 +382,15 @@ def get_payment_search_filters(
         filters.append({
             "$expr": {
                 "$and": [
-                    {"$gte": [date_from_str_filter("$payment.date_oper"), payment_date_from]},
-                    {"$lt": [date_from_str_filter("$payment.date_oper"), payment_date_to + timedelta(days=1)]}
+                    {"$gte": [query_date_from_str("$payment.date_oper"), payment_date_from]},
+                    {"$lt": [query_date_from_str("$payment.date_oper"), payment_date_to + timedelta(days=1)]}
                 ]
             }
         })
-    return combined_filters_and(filters) if filters else {}
+    return query_combined_and(filters) if filters else {}
 
 
-def get_payment_report_success_filters(
+def query_payment_report_success(
     resolution_exists=None,
     resolution_date_from=None,
     resolution_date_to=None,
@@ -273,10 +409,10 @@ def get_payment_report_success_filters(
                 "$lt": resolution_date_to.isoformat()
             }
         })
-    return combined_filters_and(filters) if filters else {}
+    return query_combined_and(filters) if filters else {}
 
 
-def get_payment_report_failed_filters(
+def query_payment_report_failed(
     message_ids_include=None,
     message_ids_date_from=None,
     message_ids_date_to=None,
@@ -301,23 +437,33 @@ def get_payment_report_failed_filters(
     filters.append({"messages": {"$elemMatch": messages_match_filter}})
     if message_ids_exclude is not None:
         filters.append({"messages.message_id": {"$not": {"$in": message_ids_exclude}}})
-    return combined_filters_and(filters) if filters else {}
+    return query_combined_and(filters) if filters else {}
 
 
-def combined_filters_and(filters):
+def query_combined_and(filters):
     return {"$and": filters}
 
 
-def combined_filters_or(filters):
+def query_combined_or(filters):
     return {"$or": filters}
 
 
-def date_from_str_filter(field):
+def query_date_from_str(field, format="%d.%m.%Y %H:%M:%S"):
     return {
         "$dateFromString": {
             "dateString": field,
-            "format": "%d.%m.%Y %H:%M:%S",
+            "format": format,
             "onError": None
+        }
+    }
+
+
+def query_date_to_str(date, format="%Y-%m-%d"):
+    return {
+        "$dateToString": {
+            "date": date,
+            "format": format,
+            "onNull": None
         }
     }
 
@@ -344,3 +490,20 @@ def save_status(data):
         return insert_data
     except DuplicateKeyError:
         pass
+
+
+def query_payment_results(date_from, date_to, **search_kwargs):
+    search_filters = query_payment_search(**search_kwargs)
+    data_success_filters = query_payment_report_success(
+        resolution_date_from=date_from,
+        resolution_date_to=date_to,
+    )
+    data_failed_filters = query_payment_report_failed(
+        message_ids_include=PAYMENTS_FAILED_MESSAGE_ID_LIST,
+        message_ids_exclude=PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+        message_ids_date_from=date_from,
+        message_ids_date_to=date_to,
+    )
+    report_filters = query_combined_or([data_success_filters, data_failed_filters])
+    filters = query_combined_and([search_filters, report_filters])
+    return filters
