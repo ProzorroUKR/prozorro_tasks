@@ -223,6 +223,7 @@ def get_payment_results(filters=None, page=None, limit=None, **kwargs):
                 "results": 1,
                 "meta": {
                     "$mergeObjects": [
+                        project_payments_results_counts_total(),
                         {
                             "page": page,
                             "limit": limit,
