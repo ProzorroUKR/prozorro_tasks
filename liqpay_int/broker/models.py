@@ -5,6 +5,7 @@ from liqpay_int.broker.examples import (
     EXAMPLE_CHECKOUT_LANG,
     EXAMPLE_CHECKOUT_RESULT_URL,
     EXAMPLE_CHECKOUT_SERVER_URL,
+    EXAMPLE_CHECKOUT_ORDER_ID,
     EXAMPLE_TICKET_EMAIL,
     EXAMPLE_TICKET_ORDER_ID,
     EXAMPLE_TICKET_LANG,
@@ -33,7 +34,7 @@ model_checkout_fields = {
     "language": fields.String(description=DESC_CHECKOUT_LANG, example=EXAMPLE_CHECKOUT_LANG),
     "result_url": fields.String(description=DESC_CHECKOUT_RESULT_URL, example=EXAMPLE_CHECKOUT_RESULT_URL),
     "server_url": fields.String(description=DESC_CHECKOUT_SERVER_URL, example=EXAMPLE_CHECKOUT_SERVER_URL),
-    "order_id": fields.String(description=DESC_CHECKOUT_ORDER_ID, example=EXAMPLE_CHECKOUT_SERVER_URL),
+    "order_id": fields.String(description=DESC_CHECKOUT_ORDER_ID, example=EXAMPLE_CHECKOUT_ORDER_ID),
 }
 
 model_receipt_fields = {
