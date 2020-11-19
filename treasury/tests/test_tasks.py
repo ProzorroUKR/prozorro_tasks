@@ -192,6 +192,49 @@ class CheckTestCase(unittest.TestCase):
     @patch("treasury.tasks.prepare_context")
     @patch("treasury.tasks.get_contract_context")
     @patch("treasury.tasks.get_organisation")
+    @patch("treasury.tasks.get_public_api_data")
+    def test_check_contract_skip_not_active_status(self, get_data_mock, get_org_mock, get_context_mock,
+                                                   prepare_context_mock, save_context_mock, send_contract_xml_mock):
+        contract_id = 123456
+        procuring_entity_id = 1234
+
+        tender_id = "123456"
+        contract_data = dict(
+            id=contract_id,
+            tender_id=tender_id,
+            dateSigned="2020-05-20T13:49:00+02:00",
+            status="complete",
+            procuringEntity=dict(
+                identifier=dict(
+                    id=procuring_entity_id,
+                    scheme="UA-EDR"
+                )
+            )
+        )
+        get_data_mock.return_value = contract_data
+        get_org_mock.return_value = {"org data"}
+
+        # run
+        check_contract(contract_id)
+
+        # checks
+        self.assertEqual(
+            get_data_mock.mock_calls,
+            [
+                call(check_contract, contract_id, "contract"),
+            ]
+        )
+        get_org_mock.assert_not_called()
+        get_context_mock.assert_not_called()
+        prepare_context_mock.assert_not_called()
+        save_context_mock.assert_not_called()
+        send_contract_xml_mock.delay.assert_not_called()
+
+    @patch("treasury.tasks.send_contract_xml")
+    @patch("treasury.tasks.save_contract_context")
+    @patch("treasury.tasks.prepare_context")
+    @patch("treasury.tasks.get_contract_context")
+    @patch("treasury.tasks.get_organisation")
     @patch("treasury.tasks.get_first_stage_tender")
     @patch("treasury.tasks.get_public_api_data")
     def test_check_contract_without_plan(self, get_data_mock, get_first_stage_tender_mock, get_org_mock,
@@ -262,6 +305,7 @@ class CheckTestCase(unittest.TestCase):
         tender_id = "123456"
         contract_data = dict(
             id=contract_id,
+            status="active",
             dateSigned="2020-03-11T13:49:00+02:00",
             tender_id=tender_id,
             procuringEntity=dict(
