@@ -10,7 +10,7 @@ from treasury.templates import (
 from treasury.api_requests import send_request, get_request_response, parse_organisations, prepare_request_data
 from environment_settings import (
     TREASURY_CATALOG_UPDATE_RETRIES, TREASURY_SEND_CONTRACT_XML_RETRIES,
-    TREASURY_INT_START_DATE, API_HOST, API_VERSION, API_TOKEN, TREASURY_PROCESS_TRANSACTION_RETRIES
+    TREASURY_INT_START_DATE, TREASURY_PROCESS_TRANSACTION_RETRIES
 )
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import (
@@ -51,6 +51,10 @@ def check_contract(self, contract_id, ignore_date_signed=False):
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
+
+    if contract['status'] != 'active':
+        return logger.debug(f"Skipping contract {contract['id']} not in active status",
+                            extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
     if not ignore_date_signed:
         _date_signed = get_contract_date(self, contract)
