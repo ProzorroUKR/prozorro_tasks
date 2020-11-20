@@ -61,9 +61,9 @@ def echo_task(self, v=0):  # pragma: no cover
     logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
 
 
-@app.task(bind=True, acks_late=True, lazy=False, max_retries=None)
+@app.task(bind=True, acks_late=True, max_retries=None)
 @unique_lock(omit=PROCESS_FEED_OMIT_KEYS)
-def process_feed(self, resource="tenders", offset="", descending="", mode="_all_", cookies=None, try_count=0):
+def process_feed(self, resource="tenders", offset=None, descending=None, mode="_all_", cookies=None, try_count=0):
     logger.info("Start task {}".format(self.request.id),
                 extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})
 
@@ -71,21 +71,28 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
         descending = "1"
 
     url = FEED_URL_TEMPLATE.format(
-            host=PUBLIC_API_HOST,
-            version=API_VERSION,
-            resource=resource,
-            descending=descending,
-            offset=offset,
-            limit=API_LIMIT,
-            opt_fields="%2C".join(API_OPT_FIELDS),
-            mode=mode,
-          )
+        host=PUBLIC_API_HOST,
+        version=API_VERSION,
+        resource=resource,
+    )
+
+    params = dict(
+        feed="changes",
+        limit=API_LIMIT,
+        opt_fields=",".join(API_OPT_FIELDS),
+        mode=mode,
+    )
+    if descending:
+        params["descending"] = descending
+    if offset:
+        params["offset"] = offset
 
     try:
         response = requests.get(
             url,
+            params=params,
             cookies=requests.utils.cookiejar_from_dict(cookies or {}),
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT)
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "FEED_RETRY_EXCEPTION"})
@@ -110,9 +117,10 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                 resource=resource,
                 mode=mode,
                 offset=response_json["next_page"]["offset"],
-                descending=descending,
                 cookies=cookies
             )
+            if descending:
+                next_page_kwargs["descending"] = descending
             if len(response_json["data"]) < API_LIMIT:
                 if descending:
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
@@ -142,7 +150,6 @@ def process_feed(self, resource="tenders", offset="", descending="", mode="_all_
                     process_kwargs["offset"] = response_json["prev_page"]["offset"]
                 else:
                     logger.debug("Initialization on an empty feed result", extra={"MESSAGE_ID": "FEED_INIT_EMPTY"})
-                    process_kwargs["offset"] = ""
                     process_kwargs["try_count"] = try_count + 1
 
                 process_feed.apply_async(
