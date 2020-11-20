@@ -62,7 +62,7 @@ task_queues = tuple(
 )
 
 
-timezone = TIMEZONE
+timezone = str(TIMEZONE)
 beat_schedule = {
     'request-org-catalog-every-day': {
         'task': 'treasury.tasks.request_org_catalog',

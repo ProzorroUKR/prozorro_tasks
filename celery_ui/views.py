@@ -1,0 +1,98 @@
+import ast
+from ast import literal_eval
+
+from flask import Blueprint, render_template, redirect, url_for, request
+from app.auth import login_groups_required
+from celery_worker.locks import get_mongodb_collection, DUPLICATE_COLLECTION_NAME, lock_uid, logger
+from celery_ui.utils import (
+    revoke_task,
+    inspect_active,
+    inspect_scheduled,
+    inspect_reserved,
+    inspect_revoked, inspect_task,
+)
+from crawler.tasks import process_feed, PROCESS_FEED_OMIT_KEYS
+
+bp = Blueprint("celery_views", __name__, template_folder="templates")
+
+bp.add_app_template_filter(literal_eval, "literal_eval")
+
+@bp.route("/", methods=["GET"])
+@login_groups_required(["admins"])
+def celery():
+    return redirect(url_for("celery_views.feed"))
+
+@bp.route("/feed", methods=["GET"])
+@login_groups_required(["admins"])
+def feed():
+    task_name = "crawler.tasks.process_feed"
+
+    active=inspect_active(task_name)
+    scheduled=inspect_scheduled(task_name)
+    reserved=inspect_reserved(task_name)
+
+    def filter_resource(item, resource):
+        item_request = item.get("request") or item
+        item_kwargs = ast.literal_eval(item_request["kwargs"])
+        return item_kwargs["resource"] == resource
+
+    def filtered_inspect(resource):
+        return dict(
+            active=list(filter(lambda x: filter_resource(x, resource), active)),
+            scheduled=list(filter(lambda x: filter_resource(x, resource), scheduled)),
+            reserved=list(filter(lambda x: filter_resource(x, resource), reserved)),
+        )
+
+    resources = dict(
+        tenders=filtered_inspect("tenders"),
+        contracts=filtered_inspect("contracts"),
+    )
+
+    return render_template("celery/feed.html", resources=resources)
+
+@bp.route("/tasks", methods=["GET"])
+@login_groups_required(["admins"])
+def tasks():
+    active = inspect_active()
+    scheduled = inspect_scheduled()
+    reserved = inspect_reserved()
+    revoked = inspect_revoked()
+    inspect = dict(
+        active=active,
+        scheduled=scheduled,
+        reserved=reserved,
+        revoked=revoked,
+    )
+    return render_template("celery/tasks.html", inspect=inspect)
+
+@bp.route("/tasks/<uuid>", methods=["GET"])
+@login_groups_required(["admins"])
+def task(uuid):
+    inspect = inspect_task(uuid)
+    return render_template("celery/task.html", inspect=inspect)
+
+@bp.route("/feed/<resource>/start", methods=["POST"])
+@login_groups_required(["admins"])
+def feed_start(resource):
+    kwargs_str = request.form.get("kwargs")
+    kwargs = ast.literal_eval(kwargs_str) if kwargs_str else {}
+    kwargs["resource"] = resource
+    process_feed.delay(**kwargs)
+    return redirect(request.referrer)
+
+@bp.route("/feed/<resource>/unlock", methods=["POST"])
+@login_groups_required(["admins"])
+def unlock(resource):
+    kwargs_str = request.values.get("kwargs")
+    kwargs = ast.literal_eval(kwargs_str) if kwargs_str else {}
+    kwargs["resource"] = resource
+    task_uid = lock_uid(process_feed, (), kwargs, omit=PROCESS_FEED_OMIT_KEYS)
+    collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
+    collection.delete_one({'_id': task_uid})
+    return redirect(request.referrer)
+
+@bp.route("/tasks/<uuid>/revoke", methods=["POST"])
+@login_groups_required(["admins"])
+def revoke(uuid):
+    revoke_task(uuid)
+    return redirect(request.referrer)

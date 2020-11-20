@@ -1,0 +1,9 @@
+{% extends "celery/base.html" %}
+
+{% block content %}
+    {% include 'celery/partials/table_tasks.html' %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}
