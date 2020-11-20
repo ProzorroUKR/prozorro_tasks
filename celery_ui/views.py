@@ -36,16 +36,25 @@ def feed():
         item_kwargs = ast.literal_eval(item_request["kwargs"])
         return item_kwargs["resource"] == resource
 
-    def filtered_inspect(resource):
-        return dict(
-            active=list(filter(lambda x: filter_resource(x, resource), active)),
-            scheduled=list(filter(lambda x: filter_resource(x, resource), scheduled)),
-            reserved=list(filter(lambda x: filter_resource(x, resource), reserved)),
-        )
+    def filtered_resource(resource_name):
+        resource = dict()
+
+        active_resource = list(filter(lambda x: filter_resource(x, resource_name), active))
+        if active_resource:
+            resource["active"] = active_resource
+
+        scheduled_resource = list(filter(lambda x: filter_resource(x, resource_name), scheduled))
+        resource["scheduled"] = scheduled_resource
+
+        reserved_resource = list(filter(lambda x: filter_resource(x, resource_name), reserved))
+        if reserved_resource:
+            resource["reserved"] = reserved_resource
+
+        return resource
 
     resources = dict(
-        tenders=filtered_inspect("tenders"),
-        contracts=filtered_inspect("contracts"),
+        tenders=filtered_resource("tenders"),
+        contracts=filtered_resource("contracts"),
     )
 
     return render_template("celery/feed.html", resources=resources)
