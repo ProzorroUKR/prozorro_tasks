@@ -94,6 +94,12 @@ def args_to_uid(args):
     return uid
 
 
+def lock_uid(task, args, kwargs, omit=None):
+    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in omit}
+    return args_to_uid(
+        (task.__module__, task.__name__, args, filtered_kwargs)
+    )
+
 def doublewrap(f):
     """
     a decorator decorator, allowing the decorator to be used as:
@@ -148,13 +154,8 @@ def unique_lock(task, omit=None):
         else:
             self, key_args = None, args
 
-        key_kwargs = {
-            key: value for key, value in kwargs.items() if key not in omit
-        }
+        task_uid = lock_uid(task, key_args, kwargs, omit=omit)
 
-        task_uid = args_to_uid(
-            (task.__module__, task.__name__, key_args, key_kwargs)
-        )
         collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
         try:
             doc = collection.find_one(

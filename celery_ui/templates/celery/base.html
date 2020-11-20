@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+{{ super() }}
+
+<style type="text/css">
+
+    [data-toggle="collapse"] {
+        cursor: pointer;
+    }
+
+    .table-feed {
+        font-size: .75rem;
+        margin-bottom: 0;
+    }
+
+    .table-feed td {
+        font-size: .75rem;
+    }
+
+    .table-feed th {
+        font-size: .75rem;
+    }
+
+    .table-feed + .table-feed {
+        margin-top: .4rem;
+    }
+
+    .table-feed > tbody > tr > td {
+        padding: .4rem .4rem;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .btn.btn-feed {
+        border-radius: 0;
+        text-align: center;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block main %}
+<nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCeleryDropdown"
+                aria-controls="navbarCeleryDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCeleryDropdown">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/celery/feed">Feed</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/celery/tasks">Tasks</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid pb-5 h-100">
+    {% block content %}{% endblock %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% endblock %}

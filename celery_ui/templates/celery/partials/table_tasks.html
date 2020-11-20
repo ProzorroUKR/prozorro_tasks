@@ -1,0 +1,55 @@
+{% if "processed" in inspect %}
+<h4 class="mt-3 mb-0">
+    Active
+    <small class="text-muted">number of completed tasks</small>
+</h4>
+<div class="table-responsive mb-2">
+    {% with data=inspect["processed"] %}
+    {% include 'celery/partials/table_active.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+{% if "active" in inspect %}
+<h4 class="mt-3 mb-0">
+    Active
+    <small class="text-muted">currently executing tasks</small>
+</h4>
+<div class="table-responsive mb-2">
+    {% with data=inspect["active"] %}
+    {% include 'celery/partials/table_active.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+{% if "scheduled" in inspect %}
+<h4 class="mt-3 mb-0">
+    Scheduled
+    <small class="text-muted">scheduled (eta/countdown/retry) tasks</small>
+</h4>
+<div class="table-responsive mb-2">
+    {% with data=inspect["scheduled"] %}
+    {% include 'celery/partials/table_scheduled.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+{% if "reserved" in inspect %}
+<h4 class="mt-3 mb-0">
+    Reserved
+    <small class="text-muted">tasks that have been received, but are still waiting to be executed</small>
+</h4>
+<div class="table-responsive mb-2">
+    {% with data=inspect["reserved"] %}
+    {% include 'celery/partials/table_reserved.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+{% if "revoked" in inspect %}
+<h4 class="mt-3 mb-0">
+    Revoked
+    <small class="text-muted">cancelled tasks</small>
+</h4>
+<div class="table-responsive mb-2">
+    {% with data=inspect["revoked"] %}
+    {% include 'celery/partials/table_revoked.html' %}
+    {% endwith %}
+</div>
+{% endif %}

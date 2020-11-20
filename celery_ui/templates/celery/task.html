@@ -1,0 +1,14 @@
+{% extends "celery/base.html" %}
+
+{% block content %}
+    <h3 class="mt-3">{{ inspect["id"] }}</h3>
+    <div class="table-responsive mb-2 mt-3">
+    {% with data=inspect %}
+    {% include 'celery/partials/table_dict.html' %}
+    {% endwith %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

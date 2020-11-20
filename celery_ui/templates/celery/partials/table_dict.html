@@ -1,0 +1,30 @@
+{% if data %}
+<table class="table table-bordered table-striped table-feed">
+    {% for field in data %}
+    <tr>
+        <td>
+            {{ field }}
+        </td>
+        {% if data[field]|typing_is_dict %}
+        <td>
+            {% with data=data[field] %}
+            {% include 'celery/partials/table_dict.html' %}
+            {% endwith %}
+        </td>
+        {% elif data[field]|typing_is_list %}
+        <td>
+            {% for item in data[field] %}
+            {% with data=item %}
+            {% include 'celery/partials/table_dict.html' %}
+            {% endwith %}
+            {% endfor %}
+        </td>
+        {% else %}
+        <td>
+            {{ data[field] }}
+        </td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
