@@ -94,12 +94,6 @@ def args_to_uid(args):
     return uid
 
 
-def lock_uid(task, args, kwargs, omit=None):
-    filtered_kwargs = {key: value for key, value in kwargs.items() if key not in omit}
-    return args_to_uid(
-        (task.__module__, task.__name__, args, filtered_kwargs)
-    )
-
 def doublewrap(f):
     """
     a decorator decorator, allowing the decorator to be used as:
@@ -154,13 +148,18 @@ def unique_lock(task, omit=None):
         else:
             self, key_args = None, args
 
-        task_uid = lock_uid(task, key_args, kwargs, omit=omit)
+        filtered_kwargs = {key: value for key, value in kwargs.items() if key not in omit}
+        task_uid = "v2_" + args_to_uid(
+            (task.__module__, task.__name__, key_args, filtered_kwargs)
+        )
 
         collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
         try:
-            doc = collection.find_one(
-                {'_id': task_uid}
-            )
+            doc = collection.find_one({
+                '_id': task_uid,
+                'name': task.__name__,
+                'module': task.__module__
+            })
         except PyMongoError as exc:
             logger.exception(exc, extra={"MESSAGE_ID": "UNIQUE_TASK_GET_RESULTS_MONGODB_EXCEPTION"})
 
@@ -185,6 +184,8 @@ def unique_lock(task, omit=None):
         try:
             collection.insert({
                 '_id': task_uid,
+                'name': task.__name__,
+                'module': task.__module__,
                 'createdAt': datetime.utcnow(),
             })
         except PyMongoError as exc:
@@ -193,6 +194,14 @@ def unique_lock(task, omit=None):
             return task_response
 
     return wrapper
+
+
+def remove_unique_lock(task):
+    collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
+    collection.delete_many({
+        'name': task.__name__,
+        'module': task.__module__
+    })
 
 
 @doublewrap

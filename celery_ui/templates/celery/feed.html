@@ -4,7 +4,7 @@
     {% for resource in resources %}
     <h2 class="mt-3">Resource: {{ resource }}</h2>
     <form action='/celery/feed/{{ resource }}/unlock' method="POST" class="d-inline">
-        <button type="submit" class="btn btn-sm btn-feed btn-danger z-depth-0 mb-0 ml-0">Remove initial lock</button>
+        <button type="submit" class="btn btn-sm btn-feed btn-danger z-depth-0 mb-0 ml-0">Unlock</button>
     </form>
     <form action='/celery/feed/{{ resource }}/start' method="POST" class="d-inline">
         <button type="submit" class="btn btn-sm btn-feed btn-primary z-depth-0 mb-0 ml-0">Start</button>

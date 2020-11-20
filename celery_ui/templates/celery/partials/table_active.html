@@ -1,5 +1,6 @@
 <table class="table table-bordered table-striped table-feed mt-3">
     <tr class="thead-dark">
+        <th>Expand</th>
         <th>Name</th>
         <th>UUID</th>
         <th>Ack</th>
@@ -7,18 +8,26 @@
         <th>kwargs</th>
     </tr>
     {% for row in data %}
-    <tr data-toggle='collapse'
-        data-target='#collapse-{{ row["id"] }}-active'
-        aria-expanded='true'
-        aria-controls='collapse-{{ row["id"] }}-active'>
+    <tr>
+        <td class="text-center" style="vertical-align: middle"
+            data-toggle='collapse'
+            data-target='#collapse-{{ row["id"] }}-active'
+            aria-expanded='true'
+            aria-controls='collapse-{{ row["id"] }}-active'>
+            <i class="fa fa-angle-double-down"></i>
+        </td>
         <td>{{ row["name"] }}</td>
-        <td>{{ row["id"] }}</td>
+        <td>
+            <a href='/celery/tasks/{{ row["id"] }}' class="text-primary">
+                {{ row["id"] }}
+            </a>
+        </td>
         <td>{{ row["acknowledged"] }}</td>
         <td>{{ row["args"] }}</td>
         <td>{{ row["kwargs"] }}</td>
     </tr>
     <tr class="collapse" id='collapse-{{ row["id"] }}-active'>
-        <td colspan="5">
+        <td colspan="6">
             {% with data=row %}
             {% include 'celery/partials/table_dict.html' %}
             {% endwith %}

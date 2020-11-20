@@ -4,7 +4,11 @@
     </tr>
     {% for row in data %}
     <tr>
-        <td>{{ row }}</td>
+        <td>
+            <a href='/celery/tasks/{{ row }}' class="text-primary">
+                {{ row }}
+            </a>
+        </td>
     </tr>
     {% endfor %}
     {% if not data|length %}

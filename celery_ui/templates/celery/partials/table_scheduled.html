@@ -31,12 +31,6 @@
             {% with data=row %}
             {% include 'celery/partials/table_dict.html' %}
             {% endwith %}
-            {% if resource %}
-            <form action='/celery/feed/{{ resource }}/unlock' method="POST" class="d-inline">
-                <input name="kwargs" value='{{ row["request"]["kwargs"] }}' type="hidden">
-                <button type="submit" class="btn btn-sm btn-feed btn-danger z-depth-0 ml-0 mb-0">Remove lock</button>
-            </form>
-            {% endif %}
             <form action='/celery/tasks/{{ row["request"]["id"] }}/revoke' method="POST" class="d-inline">
                 <button type="submit" class="btn btn-sm btn-feed btn-warning z-depth-0 ml-0 mb-0">Revoke</button>
             </form>

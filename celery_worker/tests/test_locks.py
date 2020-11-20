@@ -107,15 +107,20 @@ class LocksTestCase(unittest.TestCase):
             test_method(1, 2, message="Hi")
 
         # check that decorator checked the lock and set it
-        task_uid = args_to_uid(
+        task_uid = "v2_" + args_to_uid(
             ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid}
+            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
-            {"_id": task_uid, "createdAt": datetime_mock.utcnow.return_value}
+            {
+                "_id": task_uid,
+                "name": "test_method",
+                "module": "celery_worker.tests.test_locks",
+                "createdAt": datetime_mock.utcnow.return_value
+            }
         )
 
     @patch("celery_worker.locks.get_mongodb_collection")
@@ -136,11 +141,11 @@ class LocksTestCase(unittest.TestCase):
             test_method(1, 2, message="Hi")
 
         # check that decorator checked the lock and set it
-        task_uid = args_to_uid(
+        task_uid = "v2_" + args_to_uid(
             ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid}
+            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
         )
         test_method_procedure.assert_not_called()
         get_collection.return_value.insert.assert_not_called()
@@ -163,15 +168,20 @@ class LocksTestCase(unittest.TestCase):
             test_method(1, 2, message="Hi")
 
         # check that decorator checked the lock and set it
-        task_uid = args_to_uid(
+        task_uid = "v2_" + args_to_uid(
             ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid}
+            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
-            {"_id": task_uid, "createdAt": datetime_mock.utcnow.return_value}
+            {
+                "_id": task_uid,
+                "name": "test_method",
+                "module": "celery_worker.tests.test_locks",
+                "createdAt": datetime_mock.utcnow.return_value
+            }
         )
 
     @patch("celery_worker.locks.get_mongodb_collection")
@@ -199,11 +209,11 @@ class LocksTestCase(unittest.TestCase):
                 test_method(1, 2, message="Hi")
 
         # check that decorator checked the lock and set it
-        task_uid = args_to_uid(
+        task_uid = "v2_" + args_to_uid(
             ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid}
+            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
         )
         test_method_procedure.assert_not_called()
         get_collection.return_value.insert.assert_not_called()
@@ -232,15 +242,20 @@ class LocksTestCase(unittest.TestCase):
             test_method(1, 2, message="Hi")
 
         # check that decorator checked the lock and set it
-        task_uid = args_to_uid(
+        task_uid = "v2_" + args_to_uid(
             ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid}
+            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
         )
         test_method_procedure.assert_called_once_with(test_method, 1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
-            {"_id": task_uid, "createdAt": datetime_mock.utcnow.return_value}
+            {
+                "_id": task_uid,
+                "name": "test_method",
+                "module": "celery_worker.tests.test_locks",
+                "createdAt": datetime_mock.utcnow.return_value
+            }
         )
 
 
