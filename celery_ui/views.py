@@ -3,7 +3,7 @@ from ast import literal_eval
 
 from flask import Blueprint, render_template, redirect, url_for, request
 from app.auth import login_groups_required
-from celery_worker.locks import get_mongodb_collection, DUPLICATE_COLLECTION_NAME, lock_uid, logger
+from celery_worker.locks import remove_unique_lock
 from celery_ui.utils import (
     revoke_task,
     inspect_active,
@@ -11,7 +11,7 @@ from celery_ui.utils import (
     inspect_reserved,
     inspect_revoked, inspect_task,
 )
-from crawler.tasks import process_feed, PROCESS_FEED_OMIT_KEYS
+from crawler.tasks import process_feed
 
 bp = Blueprint("celery_views", __name__, template_folder="templates")
 
@@ -95,9 +95,7 @@ def unlock(resource):
     kwargs_str = request.values.get("kwargs")
     kwargs = ast.literal_eval(kwargs_str) if kwargs_str else {}
     kwargs["resource"] = resource
-    task_uid = lock_uid(process_feed, (), kwargs, omit=PROCESS_FEED_OMIT_KEYS)
-    collection = get_mongodb_collection(DUPLICATE_COLLECTION_NAME)
-    collection.delete_one({'_id': task_uid})
+    remove_unique_lock(process_feed)
     return redirect(request.referrer)
 
 @bp.route("/tasks/<uuid>/revoke", methods=["POST"])

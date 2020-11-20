@@ -15,6 +15,15 @@ KOMBU_CONNECT_TIMEOUT = 5
 DEFAULT_TIMEOUT = 3.0
 
 
+def kombu_connection():
+    # https://github.com/celery/celery/issues/5067
+    return kombu.Connection(
+        CELERY_BROKER_URL,
+        connect_timeout=KOMBU_CONNECT_TIMEOUT,
+        transport_options=KOMBU_TRANSPORT_OPTIONS
+    )
+
+
 def inspect_task(uuid):
     return dict(
         id=uuid
@@ -98,25 +107,31 @@ def inspect_method(method_name, task_name=None, timeout=DEFAULT_TIMEOUT):
     """
     :return:
     """
-    # https://github.com/celery/celery/issues/5067
-    connection = kombu.Connection(
-        CELERY_BROKER_URL,
-        connect_timeout=KOMBU_CONNECT_TIMEOUT,
-        transport_options=KOMBU_TRANSPORT_OPTIONS
+    connection = kombu_connection()
+    inspect = app.control.inspect(
+        timeout=timeout,
+        connection=connection
     )
-    inspect = app.control.inspect(timeout=timeout, connection=connection)
     method = getattr(inspect, method_name)
     response = method() or method()  # sometimes first call returns None
+    connection.close()
     tasks = list()
-    for worker, values in response.items():
-        for value in values:
-            if task_name is not None:
-                task_request = value.get("request", None) or value
-                if task_request["type"] == task_name or task_name is None:
+    if response:
+        for worker, values in response.items():
+            for value in values:
+                if task_name is not None:
+                    task_request = value.get("request", None) or value
+                    if task_request["type"] == task_name or task_name is None:
+                        tasks.append(value)
+                else:
                     tasks.append(value)
-            else:
-                tasks.append(value)
     return tasks
 
 def revoke_task(uuid, terminate=False):
-    return app.control.revoke(uuid, terminate=terminate)
+    connection = kombu_connection()
+    app.control.revoke(
+        uuid,
+        terminate=terminate,
+        connection=connection
+    )
+    connection.close()
