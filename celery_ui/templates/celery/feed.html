@@ -4,7 +4,8 @@
     {% for resource in resources %}
     <h2 class="mt-3">Resource: {{ resource }}</h2>
     <form action='/celery/feed/{{ resource }}/start' method="POST" class="d-inline">
-        <button type="submit" class="btn btn-sm btn-feed btn-primary z-depth-0 mb-0 ml-0">
+        <button type="submit" class="btn btn-sm btn-feed btn-primary btn-submit-form z-depth-0 mb-0 ml-0">
+            <i class="fas fa-circle-notch fa-spin spinner-submit-form mr-2 d-none"></i>
             Start Forward/Backward
         </button>
     </form>
@@ -16,7 +17,8 @@
         <input name="kwargs"
                value="{'descending': '1', 'offset': '{{ offset }}'}"
                type="hidden">
-        <button type="submit" class="btn btn-sm btn-feed btn-success z-depth-0 mb-0 ml-0">
+        <button type="submit" class="btn btn-sm btn-feed btn-success btn-submit-form z-depth-0 mb-0 ml-0">
+            <i class="fas fa-circle-notch fa-spin spinner-submit-form mr-2 d-none"></i>
             Start Backward
         </button>
     </form>
@@ -25,7 +27,8 @@
     {% endif %}
     {% endwith %}
     <form action='/celery/feed/{{ resource }}/unlock' method="POST" class="d-inline">
-        <button type="submit" class="btn btn-sm btn-feed btn-danger z-depth-0 mb-0 ml-0">
+        <button type="submit" class="btn btn-sm btn-feed btn-danger btn-submit-form z-depth-0 mb-0 ml-0">
+            <i class="fas fa-circle-notch fa-spin spinner-submit-form mr-2 d-none"></i>
             Remove locks
         </button>
     </form>
@@ -37,4 +40,5 @@
 
 {% block scripts %}
 {{ super() }}
+{% include 'celery/partials/form_sumbit_script.html' %}
 {% endblock %}

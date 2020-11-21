@@ -32,7 +32,10 @@
             {% include 'celery/partials/table_dict.html' %}
             {% endwith %}
             <form action='/celery/tasks/{{ row["request"]["id"] }}/revoke' method="POST" class="d-inline">
-                <button type="submit" class="btn btn-sm btn-feed btn-warning z-depth-0 ml-0 mb-0">Revoke</button>
+                <button type="submit" class="btn btn-sm btn-feed btn-warning btn-submit-form z-depth-0 ml-0 mb-0">
+                    <i class="fas fa-circle-notch fa-spin spinner-submit-form mr-2 d-none"></i>
+                    Revoke
+                </button>
             </form>
         </td>
     </tr>

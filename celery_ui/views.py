@@ -1,3 +1,4 @@
+import json
 from ast import literal_eval
 
 from flask import Blueprint, render_template, redirect, url_for, request
@@ -86,6 +87,8 @@ def feed_start(resource):
     kwargs = literal_eval(kwargs_str) if kwargs_str else {}
     kwargs["resource"] = resource
     process_feed.delay(**kwargs)
+    if request.content_type == 'application/json':
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
     return redirect(request.referrer)
 
 @bp.route("/feed/<resource>/unlock", methods=["POST"])
@@ -95,10 +98,14 @@ def unlock(resource):
     kwargs = literal_eval(kwargs_str) if kwargs_str else {}
     kwargs["resource"] = resource
     remove_unique_lock(process_feed)
+    if request.content_type == 'application/json':
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
     return redirect(request.referrer)
 
 @bp.route("/tasks/<uuid>/revoke", methods=["POST"])
 @login_groups_required(["admins"])
 def revoke(uuid):
     revoke_task(uuid)
+    if request.content_type == 'application/json':
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
     return redirect(request.referrer)
