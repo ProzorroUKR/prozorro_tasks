@@ -1,4 +1,3 @@
-import ast
 from ast import literal_eval
 
 from flask import Blueprint, render_template, redirect, url_for, request
@@ -33,7 +32,7 @@ def feed():
 
     def filter_resource(item, resource):
         item_request = item.get("request") or item
-        item_kwargs = ast.literal_eval(item_request["kwargs"])
+        item_kwargs = literal_eval(item_request["kwargs"])
         return item_kwargs["resource"] == resource
 
     def filtered_resource(resource_name):
@@ -83,8 +82,8 @@ def task(uuid):
 @bp.route("/feed/<resource>/start", methods=["POST"])
 @login_groups_required(["admins"])
 def feed_start(resource):
-    kwargs_str = request.form.get("kwargs")
-    kwargs = ast.literal_eval(kwargs_str) if kwargs_str else {}
+    kwargs_str = request.values.get("kwargs")
+    kwargs = literal_eval(kwargs_str) if kwargs_str else {}
     kwargs["resource"] = resource
     process_feed.delay(**kwargs)
     return redirect(request.referrer)
@@ -93,7 +92,7 @@ def feed_start(resource):
 @login_groups_required(["admins"])
 def unlock(resource):
     kwargs_str = request.values.get("kwargs")
-    kwargs = ast.literal_eval(kwargs_str) if kwargs_str else {}
+    kwargs = literal_eval(kwargs_str) if kwargs_str else {}
     kwargs["resource"] = resource
     remove_unique_lock(process_feed)
     return redirect(request.referrer)

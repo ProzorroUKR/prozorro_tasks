@@ -68,12 +68,14 @@ class ProcessTestCase(unittest.TestCase):
                 FEED_URL_TEMPLATE.format(
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
-                    limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
+                    limit=API_LIMIT,
                     descending="1",
-                    offset="",
-                    mode="_all_"
+                    mode="_all_",
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -124,12 +126,14 @@ class ProcessTestCase(unittest.TestCase):
                 FEED_URL_TEMPLATE.format(
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
-                    limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
+                    limit=API_LIMIT,
                     descending="1",
-                    offset="",
                     mode="_all_",
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -189,12 +193,14 @@ class ProcessTestCase(unittest.TestCase):
                 FEED_URL_TEMPLATE.format(
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
-                    limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
+                    limit=API_LIMIT,
                     descending="1",
-                    offset="",
                     mode="test",
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -246,12 +252,14 @@ class ProcessTestCase(unittest.TestCase):
                 FEED_URL_TEMPLATE.format(
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
-                    limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS),
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
+                    limit=API_LIMIT,
                     descending="1",
-                    offset="",
                     mode="_all_",
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -264,7 +272,6 @@ class ProcessTestCase(unittest.TestCase):
                     kwargs={
                         'resource': 'tenders',
                         'mode': '_all_',
-                        'offset': '',
                         'cookies': {'SERVER_ID': server_id},
                         'try_count': 1,
                     }
@@ -295,11 +302,13 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
                     descending="1",
-                    offset="",
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -310,7 +319,6 @@ class ProcessTestCase(unittest.TestCase):
             kwargs={
                 'resource': 'tenders',
                 'mode': '_all_',
-                'offset': '',
                 'cookies': {'SERVER_ID': server_id},
                 'try_count': 2,
             }
@@ -346,11 +354,13 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
                     descending="1",
-                    offset="",
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -411,11 +421,13 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
-                    descending="",
+                ),
+                params=dict(
+                    feed="changes",
                     offset=1,
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -426,7 +438,6 @@ class ProcessTestCase(unittest.TestCase):
                 'resource': 'tenders',
                 'mode': '_all_',
                 'offset': 2,
-                'descending': '',
                 'cookies': {'SERVER_ID': server_id}
             }
         )
@@ -461,11 +472,13 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
-                    descending="",
+                ),
+                params=dict(
+                    feed="changes",
                     offset=1,
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -476,7 +489,6 @@ class ProcessTestCase(unittest.TestCase):
                 'resource': 'tenders',
                 'mode': '_all_',
                 'offset': 2,
-                'descending': '',
                 'cookies': {'SERVER_ID': server_id}
             },
             countdown=WAIT_MORE_RESULTS_COUNTDOWN
@@ -512,11 +524,14 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
                     descending=1,
                     offset=-1,
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -562,11 +577,14 @@ class ProcessTestCase(unittest.TestCase):
                     host=PUBLIC_API_HOST,
                     version=API_VERSION,
                     resource="tenders",
+                ),
+                params=dict(
+                    feed="changes",
                     descending=1,
                     offset=-1,
                     mode="_all_",
                     limit=API_LIMIT,
-                    opt_fields="%2C".join(API_OPT_FIELDS)
+                    opt_fields=",".join(API_OPT_FIELDS)
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
