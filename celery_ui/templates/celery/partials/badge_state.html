@@ -1,0 +1,23 @@
+{% if state == 'FAILURE' %}
+<span class="badge badge-pill badge-danger z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'PENDING'%}
+<span class="badge badge-pill badge-secondary z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'RECEIVED' %}
+<span class="badge badge-pill badge-dark z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'RETRY'%}
+<span class="badge badge-pill badge-warning z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'REVOKED'%}
+<span class="badge badge-pill badge-info z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'STARTED'%}
+<span class="badge badge-pill badge-primary z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'SUCCESS'%}
+<span class="badge badge-pill badge-success z-depth-0 w-100 p-1">{{ state }}</span>
+{% endif %}
+
+{% if state == 'SCHEDULED' %}
+<span class="badge badge-pill badge-dark z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'ACTIVE'%}
+<span class="badge badge-pill badge-primary z-depth-0 w-100 p-1">{{ state }}</span>
+{% elif state == 'RESERVED'%}
+<span class="badge badge-pill badge-secondary z-depth-0 w-100 p-1">{{ state }}</span>
+{% endif %}

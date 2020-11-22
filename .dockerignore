@@ -22,3 +22,4 @@ coverage.xml
 *,cover
 *.log
 .git
+events.db

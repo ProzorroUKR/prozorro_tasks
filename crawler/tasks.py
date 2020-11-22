@@ -167,7 +167,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             logger.warning("Offset {} failed with cookies {}".format(offset, cookies),
                            extra={"MESSAGE_ID": "FEED_OFFSET_FAILED"})
 
-            if not descending:  # for forward process only
+            if not descending or not offset:  # for forward process only
                 logger.info("Feed process reinitialization",
                             extra={"MESSAGE_ID": "FEED_REINITIALIZATION"})
                 retry_kwargs = {k: v for k, v in self.request.kwargs.items()

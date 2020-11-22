@@ -1,6 +1,8 @@
 import pytz
 import os
 
+TRUE_VARS =  (True, 'True', 'true', 'yes', '1', 1)
+
 TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
@@ -56,7 +58,7 @@ SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", None)
 
 APP_AUTH_FILE = os.environ.get("APP_AUTH_FILE", None)
 APP_AUIP_FILE = os.environ.get("APP_AUIP_FILE", None)
-APP_AUIP_ENABLED = os.environ.get("APP_AUIP_ENABLED", False)
+APP_AUIP_ENABLED = os.environ.get("APP_AUIP_ENABLED", False) in TRUE_VARS
 
 APP_X_FORWARDED_NUMBER = int(os.environ.get("APP_X_FORWARDED_NUMBER", 0))
 
@@ -73,7 +75,7 @@ LIQPAY_PUBLIC_KEY = os.environ.get("LIQPAY_PUBLIC_KEY", "")
 LIQPAY_PRIVATE_KEY = os.environ.get("LIQPAY_PRIVATE_KEY", "")
 LIQPAY_SANDBOX_PUBLIC_KEY = os.environ.get("LIQPAY_SANDBOX_PUBLIC_KEY", "")
 LIQPAY_SANDBOX_PRIVATE_KEY = os.environ.get("LIQPAY_SANDBOX_PRIVATE_KEY", "")
-LIQPAY_SANDBOX_BY_DEFAULT_ENABLED = os.environ.get("LIQPAY_SANDBOX_BY_DEFAULT_ENABLED", False)
+LIQPAY_SANDBOX_BY_DEFAULT_ENABLED = os.environ.get("LIQPAY_SANDBOX_BY_DEFAULT_ENABLED", False) in TRUE_VARS
 LIQPAY_TAX_PERCENTAGE = float(os.environ.get("LIQPAY_TAX_PERCENTAGE", 0))
 
 PAYMENTS_SKIP_TENDER_DAYS = int(os.environ.get("PAYMENTS_SKIP_TENDER_DAYS", 10))
@@ -85,7 +87,7 @@ TREASURY_WSDL_URL = os.environ.get("TREASURY_WSDL_URL",
                                    "http://46.164.148.178:24310/bars.webservices.dksu/prozorro/prozorroapi.asmx?WSDL")
 TREASURY_USER = os.environ.get("TREASURY_USER", "prozorrouser")
 TREASURY_PASSWORD = os.environ.get("TREASURY_PASSWORD", "111111")
-TREASURY_SKIP_REQUEST_VERIFY = os.environ.get("TREASURY_SKIP_REQUEST_VERIFY", False)
+TREASURY_SKIP_REQUEST_VERIFY = os.environ.get("TREASURY_SKIP_REQUEST_VERIFY", False) in TRUE_VARS
 TREASURY_CATALOG_UPDATE_RETRIES = int(os.environ.get("TREASURY_CATALOG_UPDATE_RETRIES", 20))
 TREASURY_PROCESS_TRANSACTION_RETRIES = int(os.environ.get("TREASURY_PROCESS_TRANSACTION_RETRIES", 10))
 TREASURY_SEND_CONTRACT_XML_RETRIES = int(os.environ.get("TREASURY_SEND_CONTRACT_XML_RETRIES", 20))
@@ -95,3 +97,6 @@ TREASURY_ORG_COLLECTION = os.environ.get("TREASURY_ORG_COLLECTION", "organisatio
 TREASURY_XML_TEMPLATES_COLLECTION = os.environ.get("TREASURY_XML_TEMPLATES_COLLECTION", "xml_templates")
 TREASURY_OBLIGATION_COLLECTION = os.environ.get("TREASURY_OBLIGATION_COLLECTION", "obligations")
 TREASURY_DATETIME_FMT = os.environ.get("TREASURY_DATETIME_FMT", "%Y-%m-%dT%H:%M:%S")
+
+CELERY_UI_EVENTS_MAX_WORKERS = int(os.environ.get("CELERY_UI_EVENTS_MAX_WORKERS", 5000))
+CELERY_UI_EVENTS_MAX_TASKS = int(os.environ.get("CELERY_UI_EVENTS_MAX_TASKS", 10000))
