@@ -68,6 +68,9 @@
     {% endwith %}
     {% endif %}
     {% endfor %}
+    {% if pagination %}
+    {{ pagination.links }}
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}
