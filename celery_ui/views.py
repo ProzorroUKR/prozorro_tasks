@@ -44,7 +44,7 @@ bp.add_app_template_filter(timestamp_representation, "timestamp_representation")
 bp.add_app_template_filter(python_pretty_representation, "python_pretty_representation")
 
 TASKS_EVENTS_DEFAULT_PAGE = 1
-TASKS_EVENTS_DEFAULT_LIMIT = 10
+TASKS_EVENTS_DEFAULT_LIMIT = 100
 
 @bp.route("/", methods=["GET"])
 @login_groups_required(["admins"])
