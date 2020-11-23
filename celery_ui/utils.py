@@ -1,6 +1,6 @@
 import kombu
 
-from flower.utils.tasks import iter_tasks
+from flower.utils.tasks import iter_tasks, get_task_by_id
 
 from celery_worker.celery import app
 from environment_settings import CELERY_BROKER_URL
@@ -16,7 +16,7 @@ KOMBU_TRANSPORT_OPTIONS = {
 
 DEFAULT_TIMEOUT = 3.0
 
-DEFAULT_TASKS_SORT = "-received"
+TASKS_EVENTS_DEFAULT_SORT = "-received"
 
 
 def kombu_connection():
@@ -154,10 +154,7 @@ def inspect_tasks(task_type=None):
 
 
 def revoke_task(uuid, terminate=False):
-    app.control.revoke(
-        uuid,
-        terminate=terminate,
-    )
+    app.control.revoke(uuid, terminate=terminate)
 
 def task_as_dict(task):
     task_dict = task.as_dict() if task else {}
@@ -166,14 +163,22 @@ def task_as_dict(task):
     return task_dict
 
 
+def retrieve_task(uuid):
+    from celery_ui.events import events
+    task_instance = get_task_by_id(events, uuid)
+    task_dict = task_as_dict(task_instance)
+    return task_dict
+
+
 def retrieve_tasks(task_type=None, search=None):
     from celery_ui.events import events
-    tasks_instances_list = iter_tasks(
+    tasks_instances_list = list(iter_tasks(
         events,
         type=task_type,
         search=search,
-        sort_by=DEFAULT_TASKS_SORT
-    )
+        sort_by=TASKS_EVENTS_DEFAULT_SORT
+    ))
+    total = len(tasks_instances_list)
     tasks_list = []
     for task_uuid, task_instance in tasks_instances_list:
         task_dict = task_as_dict(task_instance)

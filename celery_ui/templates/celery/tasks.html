@@ -30,6 +30,9 @@
     {% include 'celery/partials/table_tasks.html' %}
     </div>
     {% endwith %}
+    {% if pagination %}
+    {{ pagination.links }}
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}
