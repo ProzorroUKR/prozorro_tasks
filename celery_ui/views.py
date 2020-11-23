@@ -108,6 +108,7 @@ def feed(resource):
                 limit=limit,
                 total=len(filtered_tasks),
             ),
+            default_limit=TASKS_EVENTS_DEFAULT_LIMIT,
         )
 
 @bp.route("/tasks", methods=["GET"])
@@ -130,6 +131,7 @@ def tasks():
                 limit=limit,
                 total=len(tasks_list),
             ),
+            default_limit=TASKS_EVENTS_DEFAULT_LIMIT,
         )
 
 @bp.route("/tasks/<uuid>", methods=["GET"])
