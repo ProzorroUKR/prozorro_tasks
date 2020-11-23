@@ -12,8 +12,18 @@
                             <h2 class="card-title h1-responsive pt-3 mb-5 font-bold">
                                 <strong>Prozorro Integrations UI</strong>
                             </h2>
-                            <a href="/celery" class="btn btn-outline-white btn-md"><i class="fas fa-cogs left"></i> Celery</a>
-                            <a href="/payments" class="btn btn-outline-white btn-md"><i class="fas fa-coins left"></i> Payments</a>
+                            {% with url=url_for("celery_views.celery") %}
+                            <a href="{{ url }}" class="btn btn-outline-white btn-md">
+                                <i class="fas fa-cogs left"></i>
+                                Celery
+                            </a>
+                            {% endwith %}
+                            {% with url=url_for("payments_views.payment_list") %}
+                            <a href="{{ url }}" class="btn btn-outline-white btn-md">
+                                <i class="fas fa-coins left"></i>
+                                Payments
+                            </a>
+                            {% endwith %}
                         </div>
                     </div>
                 </div>

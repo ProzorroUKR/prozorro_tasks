@@ -1,12 +1,33 @@
 {% extends "celery/base.html" %}
 
 {% block content %}
-    <h3 class="mt-3">{{ inspect["id"] }}</h3>
+    {% if data %}
+    <h4 class="mt-3">{% if data["name"] %}{{ data["name"] }} {% endif %}<small class="text-muted">{{ data["uuid"] }}</small></h4>
+    {% if data["state"] in ('RECEIVED', 'RETRY', 'SCHEDULED') %}
+    {% with url=url_for("celery_views.revoke", uuid=data["uuid"]) %}
+    <form action="{{ url }}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-sm btn-feed btn-warning btn-submit-form z-depth-0 ml-0 mb-0">
+            <i class="fas fa-circle-notch fa-spin spinner-submit-form d-none"></i>
+            Revoke
+        </button>
+    </form>
+    {% endwith %}
+    {% endif %}
+    <button class="btn btn-sm btn-feed btn-success z-depth-0 mr-0 float-right"
+            onClick="window.location.reload();">
+        Refresh
+    </button>
     <div class="table-responsive mb-2 mt-3">
-    {% with data=inspect %}
-    {% include 'celery/partials/table_dict.html' %}
+    {% with data=data %}
+    <h5 class="pt-3">Basic</h5>
+    {% include 'celery/partials/table_task_basic.html' %}
+    <h5 class="pt-3">Advanced</h5>
+    {% include 'celery/partials/table_task_adv.html' %}
     {% endwith %}
     </div>
+    {% else %}
+    <h3 class="mt-3">Task not found</h3>
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}

@@ -17,6 +17,8 @@
 
     .table-feed td {
         font-size: .75rem;
+        max-width: 500px;
+        word-wrap: break-word;
     }
 
     .table-feed th {
@@ -36,6 +38,61 @@
     .btn.btn-feed {
         border-radius: 0;
         text-align: center;
+    }
+
+    .btn.btn-feed-filter {
+        margin: 0;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .btn.btn-feed-filter:hover {
+        z-index: auto;
+    }
+
+    .btn.btn-feed-light {
+        color: #495057 !important;
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    .btn.btn-feed-light.active {
+        background-color: #ced4da !important;
+    }
+
+    .btn.btn-feed-light.btn-sm {
+        padding-top: calc(.5rem - 1px) !important;
+        padding-bottom: calc(.5rem - 1px) !important;
+    }
+
+    .btn-group .btn.btn-feed-light + .btn {
+        border-left: 0 !important;
+    }
+
+    .btn-group .btn.btn-feed-light + input {
+        border-left: 0 !important;
+    }
+
+    .group-feed-filter {
+        height: 100%;
+    }
+
+    .group-feed-filter .dropdown-menu {
+        border-radius: 0;
+        padding: 2px;
+    }
+
+    .input-feed {
+        border-radius: 0;
+        font-size: .64rem;
+    }
+
+    .input-feed[type="text"] {
+        height: 100%;
+    }
+
+    .btn-toolbar-feed {
+        margin: 0 -.25rem;
     }
 
 </style>

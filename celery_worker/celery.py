@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 from environment_settings import CELERY_BROKER_URL, SENTRY_DSN, SENTRY_ENVIRONMENT
 from celery import Celery
 from celery.signals import after_setup_logger, after_setup_task_logger

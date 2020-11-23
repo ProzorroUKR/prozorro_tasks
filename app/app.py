@@ -15,15 +15,12 @@ from liqpay_int.api import bp as liqpay_resources_bp
 from treasury.api.views import bp as treasury_resources_bp
 from celery_ui.views import bp as celery_views_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
+from celery_ui.events import events
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-cache = Cache(config={'CACHE_TYPE': 'simple'})
-
-app = Flask(__name__, template_folder="templates")
-
-cache.init_app(app)
+# Logging
 
 default_handler.setFormatter(JsonFormatter(
     "%(levelname)s %(asctime)s %(module)s %(process)d "
@@ -34,13 +31,29 @@ logger_root = logging.getLogger()
 logger_root.addHandler(default_handler)
 logger_root.setLevel(logging.INFO)
 
+# Flask
+
+cache = Cache(config={'CACHE_TYPE': 'simple'})
+app = Flask(__name__, template_folder="templates")
+cache.init_app(app)
+
+# Celery events thread
+events.start()
+
+# Swagger
+
 app.config.SWAGGER_UI_DOC_EXPANSION = "list"
+
+# Middleware
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=APP_X_FORWARDED_NUMBER)
 app.wsgi_app = RequestId(app.wsgi_app)
+
+# Views
 
 app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
 app.register_blueprint(liqpay_resources_bp, url_prefix="/liqpay")
 app.register_blueprint(treasury_resources_bp, url_prefix='/treasury')
 app.register_blueprint(celery_views_bp, url_prefix='/celery')
+

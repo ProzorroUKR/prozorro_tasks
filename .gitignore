@@ -68,3 +68,4 @@ payments.db
 
 # Celery
 celerybeat-schedule
+events.db

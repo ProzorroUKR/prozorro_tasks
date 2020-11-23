@@ -1,18 +1,22 @@
 import kombu
 
+from flower.utils.tasks import iter_tasks
+
 from celery_worker.celery import app
 from environment_settings import CELERY_BROKER_URL
 
 
+KOMBU_CONNECT_TIMEOUT = 5
 KOMBU_TRANSPORT_OPTIONS = {
     "max_retries": 5,
     "interval_start": 1,
     "interval_step": 1,
     "interval_max": 2,
 }
-KOMBU_CONNECT_TIMEOUT = 5
 
 DEFAULT_TIMEOUT = 3.0
+
+DEFAULT_TASKS_SORT = "-received"
 
 
 def kombu_connection():
@@ -24,12 +28,7 @@ def kombu_connection():
     )
 
 
-def inspect_task(uuid):
-    return dict(
-        id=uuid
-    )
-
-def inspect_scheduled(task_name=None, timeout=DEFAULT_TIMEOUT):
+def inspect_scheduled(task_type=None, timeout=DEFAULT_TIMEOUT):
     """
     :param task_name:
     :param timeout:
@@ -50,9 +49,9 @@ def inspect_scheduled(task_name=None, timeout=DEFAULT_TIMEOUT):
             }]
         }
     """
-    return inspect_method("scheduled", task_name=task_name, timeout=timeout)
+    return inspect_method("scheduled", task_type=task_type, timeout=timeout)
 
-def inspect_active(task_name=None, timeout=DEFAULT_TIMEOUT):
+def inspect_active(task_type=None, timeout=DEFAULT_TIMEOUT):
     """
     :param task_name:
     :param timeout:
@@ -70,9 +69,9 @@ def inspect_active(task_name=None, timeout=DEFAULT_TIMEOUT):
             }]
         }
     """
-    return inspect_method("active", task_name=task_name, timeout=timeout)
+    return inspect_method("active", task_type=task_type, timeout=timeout)
 
-def inspect_reserved(task_name=None, timeout=DEFAULT_TIMEOUT):
+def inspect_reserved(task_type=None, timeout=DEFAULT_TIMEOUT):
     """
     :param task_name:
     :param timeout:
@@ -90,9 +89,9 @@ def inspect_reserved(task_name=None, timeout=DEFAULT_TIMEOUT):
             }]
         }
     """
-    return inspect_method("reserved", task_name=task_name, timeout=timeout)
+    return inspect_method("reserved", task_type=task_type, timeout=timeout)
 
-def inspect_revoked(task_name=None, timeout=DEFAULT_TIMEOUT):
+def inspect_revoked(task_type=None, timeout=DEFAULT_TIMEOUT):
     """
     :param task_name:
     :param timeout:
@@ -101,9 +100,9 @@ def inspect_revoked(task_name=None, timeout=DEFAULT_TIMEOUT):
     revoked task example
         '0f84b98b-7b7e-4527-8465-4ad6ba2e2a69'
     """
-    return inspect_method("revoked", task_name=task_name, timeout=timeout)
+    return inspect_method("revoked", task_type=task_type, timeout=timeout)
 
-def inspect_method(method_name, task_name=None, timeout=DEFAULT_TIMEOUT):
+def inspect_method(method_name, task_type=None, timeout=DEFAULT_TIMEOUT):
     """
     :return:
     """
@@ -119,19 +118,64 @@ def inspect_method(method_name, task_name=None, timeout=DEFAULT_TIMEOUT):
     if response:
         for worker, values in response.items():
             for value in values:
-                if task_name is not None:
+                if task_type is not None:
                     task_request = value.get("request", None) or value
-                    if task_request["type"] == task_name or task_name is None:
+                    if task_request["type"] == task_type or task_type is None:
+                        value["worker"] = worker
                         tasks.append(value)
                 else:
+                    value["worker"] = worker
                     tasks.append(value)
     return tasks
 
+
+def inspect_tasks(task_type=None):
+    tasks_list = []
+    active = reversed(inspect_active(task_type=task_type))
+    for task_inspect_dict in active:
+        task_dict = task_inspect_dict
+        task_dict["worker"] = task_inspect_dict["worker"]
+        task_dict["state"] = "ACTIVE"
+        tasks_list.append(task_dict)
+    scheduled = reversed(inspect_scheduled(task_type=task_type))
+    for task_inspect_dict in scheduled:
+        task_dict = task_inspect_dict["request"]
+        task_dict["eta"] = task_inspect_dict["eta"]
+        task_dict["worker"] = task_inspect_dict["worker"]
+        task_dict["state"] = "SCHEDULED"
+        tasks_list.append(task_dict)
+    reserved = reversed(inspect_reserved(task_type=task_type))
+    for task_inspect_dict in reserved:
+        task_dict = task_inspect_dict
+        task_dict["worker"] = task_inspect_dict["worker"]
+        task_dict["state"] = "RESERVED"
+        tasks_list.append(task_dict)
+    return tasks_list
+
+
 def revoke_task(uuid, terminate=False):
-    connection = kombu_connection()
     app.control.revoke(
         uuid,
         terminate=terminate,
-        connection=connection
     )
-    connection.close()
+
+def task_as_dict(task):
+    task_dict = task.as_dict() if task else {}
+    if task_dict.get('worker'):
+        task_dict['worker'] = task_dict['worker'].hostname
+    return task_dict
+
+
+def retrieve_tasks(task_type=None, search=None):
+    from celery_ui.events import events
+    tasks_instances_list = iter_tasks(
+        events,
+        type=task_type,
+        search=search,
+        sort_by=DEFAULT_TASKS_SORT
+    )
+    tasks_list = []
+    for task_uuid, task_instance in tasks_instances_list:
+        task_dict = task_as_dict(task_instance)
+        tasks_list.append(task_dict)
+    return tasks_list

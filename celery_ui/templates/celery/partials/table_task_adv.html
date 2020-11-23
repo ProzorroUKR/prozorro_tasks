@@ -1,0 +1,22 @@
+<table class="table table-bordered table-striped table-feed">
+    {% for field in data %}
+    {% if field not in ("name", "uuid", "state", "args", "kwargs", "result") %}
+    <tr>
+        <td>{{ field }}</td>
+        {% if field in ("received", "started", "succeeded", "timestamp") %}
+        <td>{{ data[field]|timestamp_representation }}</td>
+        {% elif field == "eta" %}
+        <td>{{ data[field]|date_representation }}</td>
+        {% elif field == "children" %}
+        <td>
+            {% with data=data[field] %}
+            {% include 'celery/partials/table_dict.html' %}
+            {% endwith %}
+        </td>
+        {% else %}
+        <td>{{ data[field] }}</td>
+        {% endif %}
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>

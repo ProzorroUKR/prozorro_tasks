@@ -1,0 +1,24 @@
+<script type="application/javascript">
+    $(function() {
+        $(".btn-submit-form").parent().submit(function(e) {
+            var $form = $(e.currentTarget);
+            var action = e.currentTarget.action;
+            var $spinner = $form.find(".spinner-submit-form");
+            $spinner.removeClass("d-none");
+            e.preventDefault();
+            $.ajax({
+                url: action,
+                type: 'post',
+                contentType: 'application/json',
+                dataType: 'application/json',
+                data: $form.serialize(),
+                complete: function(data) {
+                    setTimeout(function() {
+                        $spinner.addClass("d-none");
+                    }, 1000);
+                }
+            });
+
+        });
+    });
+</script>

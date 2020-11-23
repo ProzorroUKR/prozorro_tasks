@@ -17,6 +17,7 @@ bp = Blueprint("app_views", __name__, template_folder="templates")
 
 bp.add_app_template_filter(typing_is_dict, "typing_is_dict")
 bp.add_app_template_filter(typing_is_list, "typing_is_list")
+
 bp.add_app_template_filter(prozorro_portal_url, "prozorro_portal_url")
 bp.add_app_template_filter(prozorro_portal_tender_path, "prozorro_portal_tender_path")
 bp.add_app_template_filter(prozorro_api_url, "prozorro_api_url")
