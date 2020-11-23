@@ -106,7 +106,7 @@ def feed(resource):
             pagination = get_tasks_pagination(
                 page=page,
                 limit=limit,
-                total=len(tasks_list),
+                total=len(filtered_tasks),
             ),
         )
 
