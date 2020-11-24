@@ -28,4 +28,12 @@ zeep>=3.4,<4
 vine==1.3.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
+
+############
+### On standards version update you should consider
+### to update it in all related repos and chronograph db:
+### https://github.com/ProzorroUKR/openprocurement.api
+### https://github.com/ProzorroUKR/openprocurement.audit.api
+### https://github.com/ProzorroUKR/prozorro_tasks
+############
 git+git://github.com/ProzorroUKR/standards.git@1.0.3
