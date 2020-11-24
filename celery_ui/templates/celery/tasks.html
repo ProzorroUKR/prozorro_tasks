@@ -2,24 +2,37 @@
 
 {% block content %}
     <h4 class="mt-3">Tasks</h4>
-    <div class="btn-toolbar btn-toolbar-feed float-right mb-2" role="toolbar">
-        <div class="mx-1">
+    <div class="btn-toolbar btn-toolbar-feed float-right" role="toolbar">
+        <div class="mx-1 mb-2">
+            {% if default_limit %}
+            {% with label='Limit' %}
+            {% with arg='limit' %}
+            {% with choices=['10', '25', '50', '100', '1000'] %}
+            {% include 'celery/partials/filter_dropdown.html' %}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+            {% endif %}
+        </div>
+        <div class="mx-1 mb-2">
             {% with url=url_for(request.endpoint) %}
             {% with is_inspect=request.args.get('inspect') != '1' %}
             <a href="{{ url }}{% if is_inspect %}?inspect=1{% endif %}"
-               class="btn btn-sm btn-feed btn-success btn-submit-form z-depth-0">
+               class="btn btn-sm btn-feed btn-feed-filter btn-success btn-submit-form z-depth-0">
                 {% if is_inspect %}Inspect{% else %}Events{% endif %}
             </a>
             {% endwith %}
             {% endwith %}
-            <button class="btn btn-sm btn-feed btn-success z-depth-0 mr-0"
+        </div>
+        <div class="mx-1 mb-2">
+            <button class="btn btn-sm btn-feed btn-feed-filter btn-success z-depth-0"
                     onClick="window.location.reload();">
                 Refresh
             </button>
         </div>
     </div>
-    <div class="btn-toolbar btn-toolbar-feed float-left mb-2" role="toolbar">
-        <div class="mx-1">
+    <div class="btn-toolbar btn-toolbar-feed float-left" role="toolbar">
+        <div class="mx-1 mb-2">
             {% with arg='search' %}
             {% include 'celery/partials/filter_search.html' %}
             {% endwith %}
@@ -33,6 +46,7 @@
     {% if pagination %}
     {{ pagination.links }}
     {% endif %}
+
 {% endblock %}
 
 {% block scripts %}

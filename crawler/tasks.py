@@ -40,8 +40,6 @@ RETRY_REQUESTS_EXCEPTIONS = (
     requests.exceptions.ConnectionError,
 )
 
-PROCESS_FEED_OMIT_KEYS = ("cookies",)
-
 
 @app.task(bind=True)
 @unique_lock
@@ -62,7 +60,7 @@ def echo_task(self, v=0):  # pragma: no cover
 
 
 @app.task(bind=True, acks_late=True, lazy=False, max_retries=None)
-@unique_lock(omit=PROCESS_FEED_OMIT_KEYS)
+@unique_lock(omit=("cookies",))
 def process_feed(self, resource="tenders", offset=None, descending=None, mode="_all_", cookies=None, try_count=0):
     logger.info("Start task {}".format(self.request.id),
                 extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})

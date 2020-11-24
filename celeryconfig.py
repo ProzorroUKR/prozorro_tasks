@@ -77,7 +77,6 @@ task_queues = tuple(
     Queue('celery',  routing_key=''),  # default
 )
 
-
 timezone = str(TIMEZONE)
 beat_schedule = {
     'request-org-catalog-every-day': {
