@@ -28,3 +28,4 @@ zeep>=3.4,<4
 vine==1.3.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
+git+git://github.com/ProzorroUKR/standards.git@1.0.3
