@@ -7,6 +7,19 @@
     {% if resource != 'other' %}
     <div class="btn-toolbar btn-toolbar-feed float-right" role="toolbar">
         <div class="mx-1 mb-2">
+            {% if default_limit %}
+            {% with label='Limit' %}
+            {% with arg='limit' %}
+            {% with endpoint_args={'resource': resource} if resource else None %}
+            {% with choices=['10', '25', '50', '100', '1000'] %}
+            {% include 'celery/partials/filter_dropdown.html' %}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+            {% endif %}
+        </div>
+        <div class="mx-1 mb-2">
             {% with url=url_for("celery_views.feed", resource=resource) %}
             {% if url != url_for(request.endpoint, resource=resource) %}
             <a href="{{ url }}"
