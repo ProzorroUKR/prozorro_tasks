@@ -36,4 +36,4 @@ git+https://github.com/liqpay/sdk-python#egg=liqpay-python
 ### https://github.com/ProzorroUKR/openprocurement.audit.api
 ### https://github.com/ProzorroUKR/prozorro_tasks
 ############
-git+git://github.com/ProzorroUKR/standards.git@1.0.3
+git+git://github.com/ProzorroUKR/standards.git@1.0.4
