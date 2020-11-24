@@ -16,16 +16,6 @@ DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
 
 
-def url_for_search(endpoint, exclude=None, include=None):
-    args = request.args
-    exclude = exclude or []
-    args = {key: value for key, value in args.items() if value and key not in exclude}
-    if include:
-        args.update(**include)
-    args = {key: value for key, value in args.items() if value}
-    return url_for(endpoint, **args)
-
-
 def get_string_param(name, default=None):
     return request.args.get(name, default)
 

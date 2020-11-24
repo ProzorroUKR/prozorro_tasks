@@ -24,7 +24,6 @@ from payments.results_db import (
     get_payment_stats,
 )
 from payments.context import (
-    url_for_search,
     get_payment_search_params,
     get_payment_pagination,
     get_report,
@@ -69,8 +68,6 @@ bp.add_app_template_filter(payment_message_list_status, "payment_message_list_st
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
-
-bp.add_app_template_global(url_for_search, "url_for_search")
 
 
 @bp.route("/", methods=["GET"])

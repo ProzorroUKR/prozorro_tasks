@@ -2,11 +2,24 @@ import typing
 import uuid
 from ipaddress import ip_network
 
+from flask import request, url_for
+
 from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
 
 DEFAULT_CONFIG_VALUE_SEPARATOR = ","
 DEFAULT_AUTH_ID_SEPARATOR = "_"
 DEFAULT_X_FORWARDED_SEPARATOR = ","
+
+
+def url_for_search(endpoint, endpoint_args=None, exclude=None, include=None):
+    args = request.args
+    exclude = exclude or []
+    endpoint_args = endpoint_args or {}
+    args = {key: value for key, value in args.items() if value and key not in exclude}
+    if include:
+        args.update(**include)
+    args = {key: value for key, value in args.items() if value}
+    return url_for(endpoint, **endpoint_args, **args)
 
 
 def split_config_value(value, separator=DEFAULT_CONFIG_VALUE_SEPARATOR):

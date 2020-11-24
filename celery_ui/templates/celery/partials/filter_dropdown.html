@@ -12,7 +12,7 @@
     </div>
     <div class="dropdown-menu">
         {% for choice in choices %}
-        {% with href=url_for_search(request.url_rule.endpoint, exclude=['page'], include={arg: choice} if choice != default_limit else {}) %}
+        {% with href=url_for_search(request.url_rule.endpoint, endpoint_args=endpoint_args, exclude=['page'], include={arg: choice}) %}
         <a href="{{ href }}" class="dropdown-item dropdown-item-feed{% if value==choice %} active{% endif %}">
             {{ choice }}
         </a>
