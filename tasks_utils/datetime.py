@@ -1,14 +1,13 @@
 from environment_settings import TIMEZONE
 from datetime import datetime, time, timedelta
 import dateutil.parser
-import json
 
-# from https://github.com/ProzorroUKR/standards/tree/master/calendar
-with open("tasks_utils/workdays_off.json") as f:
-    HOLIDAYS = set(json.load(f))
+import standards
 
-with open("tasks_utils/weekends_on.json") as f:
-    WORKING_WEEKENDS = set(json.load(f))
+
+# from https://github.com/ProzorroUKR/standards/tree/master/calendars
+HOLIDAYS = standards.load("calendars/workdays_off.json")
+WORKING_WEEKENDS = standards.load("calendars/weekends_on.json")
 
 
 def is_working_time(dt, custom_wd=None, working_weekends_enabled=False):
