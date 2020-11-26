@@ -1,5 +1,9 @@
 from environment_settings import TREASURY_WSDL_URL, TREASURY_USER, TREASURY_PASSWORD, TREASURY_SKIP_REQUEST_VERIFY
-from tasks_utils.requests import RETRY_REQUESTS_EXCEPTIONS, get_exponential_request_retry_countdown
+from tasks_utils.requests import (
+    RETRY_REQUESTS_EXCEPTIONS,
+    get_exponential_request_retry_countdown,
+    get_task_retry_logger_method,
+)
 from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.utils.log import get_task_logger
 from zeep import Client
@@ -42,10 +46,13 @@ def send_request(task, xml, sign="", message_id=None, method_name="GetRef"):
         raise task.retry(exc=exc, countdown=get_exponential_request_retry_countdown(task))
     else:
         if response.status_code != 200:
-            logger.error(
+            logger_method = get_task_retry_logger_method(task, logger)
+            logger_method(
                 f"Unexpected status code {response.status_code}:{response.content}",
-                extra={"MESSAGE_ID": "TREASURY_UNSUCCESSFUL_STATUS_CODE",
-                       "STATUS_CODE": response.status_code})
+                extra={
+                    "MESSAGE_ID": "TREASURY_UNSUCCESSFUL_STATUS_CODE",
+                    "STATUS_CODE": response.status_code,
+                })
         else:
             code, text = parse_request_response(response.content)
             if code == 0:
@@ -118,10 +125,13 @@ def get_request_response(task, message_id):
         raise task.retry(exc=exc, countdown=get_exponential_request_retry_countdown(task))
     else:
         if response.status_code != 200:
-            logger.error(
+            logger_method = get_task_retry_logger_method(task, logger)
+            logger_method(
                 f"Unexpected status code {response.status_code}:{response.content}",
-                extra={"MESSAGE_ID": "TREASURY_UNSUCCESSFUL_STATUS_CODE",
-                       "STATUS_CODE": response.status_code})
+                extra={
+                    "MESSAGE_ID": "TREASURY_UNSUCCESSFUL_STATUS_CODE",
+                    "STATUS_CODE": response.status_code,
+                })
             raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
         else:
             return parse_response_content(response.content)

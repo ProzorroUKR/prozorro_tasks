@@ -51,6 +51,16 @@ def get_exponential_request_retry_countdown(task, request=None):
     return min(countdown, EXPONENTIAL_RETRY_MAX)
 
 
+def get_task_retry_logger_method(
+    task_obj, logger_obj,
+    default_method='warning',
+    fallback_method='error'
+):
+    if task_obj.request.retries < task_obj.max_retries:
+        return getattr(logger_obj, default_method)
+    return getattr(logger_obj, fallback_method)
+
+
 def get_public_api_data(task, uid, document_type="tender"):
     try:
         response = requests.get(
@@ -62,10 +72,13 @@ def get_public_api_data(task, uid, document_type="tender"):
         raise task.retry(exc=exc)
     else:
         if response.status_code != 200:
-            logger.error(
-                f"Unexpected code {response.status_code} while getting {document_type} {uid}: {response.text}",
-                extra={"MESSAGE_ID": "GET_DOC_UNSUCCESSFUL_CODE",
-                       "STATUS_CODE": response.status_code})
+            logger_method = get_task_retry_logger_method(task, logger)
+            logger_method(
+                f"Unexpected status code {response.status_code} while getting {document_type} {uid}: {response.text}",
+                extra={
+                    "MESSAGE_ID": "GET_DOC_UNSUCCESSFUL_CODE",
+                    "STATUS_CODE": response.status_code,
+                })
             raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
         else:
             try:
@@ -91,10 +104,13 @@ def download_file(task, url):
         raise task.retry(exc=exc)
     else:
         if response.status_code != 200:
-            logger.error(
+            logger_method = get_task_retry_logger_method(task, logger)
+            logger_method(
                 f"Unexpected code {response.status_code} while getting file {url}: {response.text}",
-                extra={"MESSAGE_ID": "GET_FILE_UNSUCCESSFUL_CODE",
-                       "STATUS_CODE": response.status_code})
+                extra={
+                    "MESSAGE_ID": "GET_FILE_UNSUCCESSFUL_CODE",
+                    "STATUS_CODE": response.status_code,
+                })
             raise task.retry(countdown=get_exponential_request_retry_countdown(task, response))
         else:
             return get_filename_from_response(response), response.content
@@ -113,9 +129,13 @@ def ds_upload(task, file_name, file_content):
         raise task.retry(exc=exc)
     else:
         if response.status_code != 200:
-            logger.error(f"Incorrect upload status for doc {file_name}",
-                         extra={"MESSAGE_ID": "POST_DOC_API_ERROR",
-                                "STATUS_CODE": response.status_code})
+            logger_method = get_task_retry_logger_method(task, logger)
+            logger_method(
+                f"Incorrect upload status for doc {file_name}",
+                extra={
+                    "MESSAGE_ID": "POST_DOC_API_ERROR",
+                    "STATUS_CODE": response.status_code,
+                })
             raise task.retry(countdown=get_request_retry_countdown(response))
 
         response_json = response.json()
@@ -148,7 +168,8 @@ def get_json_or_retry(task, response):
     try:
         resp_json = response.json()
     except json.decoder.JSONDecodeError:
-        logger.error(
+        logger_method = get_task_retry_logger_method(task, logger)
+        logger_method(
             "JSONDecodeError of response",
             extra={
                 "MESSAGE_ID": "RESP_JSON_DECODE_EXCEPTION",

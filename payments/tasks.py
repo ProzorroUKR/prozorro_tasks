@@ -23,8 +23,7 @@ from payments.utils import (
     request_cdb_tender_data,
     get_resolution,
 )
-from tasks_utils.requests import get_exponential_request_retry_countdown
-
+from tasks_utils.requests import get_exponential_request_retry_countdown, get_task_retry_logger_method
 
 logger = get_task_logger(__name__)
 
@@ -58,11 +57,12 @@ def process_tender(self, tender_id, *args, **kwargs):
         raise self.retry(countdown=countdown, exc=exc)
     else:
         if response.status_code != 200:
-            logger.warning("Unexpected status code {} while getting tender {}: {}".format(
+            logger_method = get_task_retry_logger_method(self, logger)
+            logger_method("Unexpected status code {} while getting tender {}: {}".format(
                 response.status_code, tender_id, response.text
             ), extra={
                 "MESSAGE_ID": "PAYMENTS_CRAWLER_GET_TENDER_UNSUCCESSFUL_CODE",
-                "STATUS_CODE": response.status_code
+                "STATUS_CODE": response.status_code,
             })
             countdown = get_exponential_request_retry_countdown(self, response)
             raise self.retry(countdown=countdown)

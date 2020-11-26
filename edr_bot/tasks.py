@@ -1,7 +1,11 @@
 from celery_worker.celery import app, formatter
 from celery_worker.locks import unique_lock, concurrency_lock
 from celery.utils.log import get_task_logger
-from tasks_utils.requests import get_request_retry_countdown, get_exponential_request_retry_countdown
+from tasks_utils.requests import (
+    get_request_retry_countdown,
+    get_exponential_request_retry_countdown,
+    get_task_retry_logger_method,
+)
 from tasks_utils.settings import (
     CONNECT_TIMEOUT,
     READ_TIMEOUT,
@@ -14,7 +18,7 @@ from edr_bot.settings import (
 from edr_bot.results_db import (
     get_upload_results,
     save_upload_results,
-    set_upload_results_attached
+    set_upload_results_attached,
 )
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
@@ -57,10 +61,13 @@ def process_tender(self, tender_id, *args, **kwargs):
         raise self.retry(exc=exc)
     else:
         if response.status_code != 200:
-            logger.error("Unexpected status code {} while getting tender {}".format(
+            logger_method = get_task_retry_logger_method(self, logger)
+            logger_method("Unexpected status code {} while getting tender {}".format(
                 response.status_code, tender_id
-            ), extra={"MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
-                      "STATUS_CODE": response.status_code})
+            ), extra={
+                "MESSAGE_ID": "EDR_GET_TENDER_CODE_ERROR",
+                "STATUS_CODE": response.status_code,
+            })
             raise self.retry(countdown=get_request_retry_countdown(response))
 
         tender_data = response.json()["data"]
@@ -215,8 +222,8 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
         data_list = []
 
         if (response.status_code == 404 and isinstance(resp_json, dict)
-           and len(resp_json.get('errors', "")) > 0 and len(resp_json.get('errors')[0].get('description', '')) > 0
-           and resp_json.get('errors')[0].get('description')[0].get('error', {}).get('code', '') == u"notFound"):
+            and len(resp_json.get('errors', "")) > 0 and len(resp_json.get('errors')[0].get('description', '')) > 0
+            and resp_json.get('errors')[0].get('description')[0].get('error', {}).get('code', '') == u"notFound"):
             logger.warning('Empty response for {} code {}={}.'.format(tender_id, param, code),
                            extra={"MESSAGE_ID": "EDR_GET_DATA_EMPTY_RESPONSE"})
 
@@ -258,7 +265,6 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
 @app.task(bind=True)
 @formatter.omit(["data"])
 def upload_to_doc_service(self, data, tender_id, item_name, item_id):
-
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
     unique_data = {k: v for k, v in data.items() if k != "meta"}
@@ -285,9 +291,13 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
             raise self.retry(exc=exc)
         else:
             if response.status_code != 200:
-                logger.error("Incorrect upload status for doc {}".format(data['meta']['id']),
-                             extra={"MESSAGE_ID": "EDR_POST_DOC_ERROR",
-                                    "STATUS_CODE": response.status_code})
+                logger_method = get_task_retry_logger_method(self, logger)
+                logger_method(
+                    "Incorrect upload status for doc {}".format(data['meta']['id']),
+                    extra={
+                        "MESSAGE_ID": "EDR_POST_DOC_ERROR",
+                        "STATUS_CODE": response.status_code,
+                    })
                 raise self.retry(countdown=get_request_retry_countdown(response))
 
             response_json = response.json()
@@ -378,7 +388,10 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
             elif response.status_code != 201:
                 logger.warning("Incorrect upload status while attaching doc {} to tender {}".format(
                     meta_id, tender_id
-                ), extra={"MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR", "STATUS_CODE": response.status_code})
+                ), extra={
+                    "MESSAGE_ID": "EDR_ATTACH_STATUS_ERROR",
+                    "STATUS_CODE": response.status_code,
+                })
                 raise self.retry(countdown=get_request_retry_countdown(response))
             else:
                 # won't raise anything

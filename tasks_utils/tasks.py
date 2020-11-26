@@ -41,9 +41,12 @@ def upload_to_doc_service(self, name, content, doc_type,
             raise self.retry(exc=exc)
         else:
             if response.status_code != 200:
-                logger.error("Incorrect upload status for doc {}".format(name),
-                             extra={"MESSAGE_ID": "POST_DOC_API_ERROR",
-                                    "STATUS_CODE": response.status_code})
+                logger.error(
+                    "Incorrect upload status for doc {}".format(name),
+                    extra={
+                        "MESSAGE_ID": "POST_DOC_API_ERROR",
+                        "STATUS_CODE": response.status_code,
+                    })
                 raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
             response_json = response.json()
@@ -120,8 +123,10 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                 elif response.status_code == 403:
                     logger.warning(
                         "Can't upload document: {}".format(response.json),
-                        extra={"MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS", "STATUS_CODE": response.status_code}
-                    )
+                        extra={
+                            "MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS",
+                            "STATUS_CODE": response.status_code,
+                        })
                 elif response.status_code != 201:
                     logger.warning("Incorrect upload status while attaching doc {} to tender {}: {}".format(
                         data["title"], tender_id, response.text
