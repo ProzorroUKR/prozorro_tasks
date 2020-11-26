@@ -14,7 +14,7 @@ from environment_settings import (
 )
 from celery.utils.log import get_task_logger
 from tasks_utils.requests import (
-    get_public_api_data, sign_data, get_exponential_request_retry_countdown
+    get_public_api_data, sign_data, get_exponential_request_retry_countdown, get_task_retry_logger_method,
 )
 from tasks_utils.datetime import get_now
 from datetime import timedelta
@@ -203,7 +203,7 @@ def request_org_catalog(self):
 def receive_org_catalog(self, message_id):
     response = get_request_response(self, message_id=message_id)
     if response is None:  # isn't ready ?
-        logger_method = logger.warning if self.request.retries < TREASURY_CATALOG_UPDATE_RETRIES else logger.error
+        logger_method = get_task_retry_logger_method(self, logger)
         logger_method(f"Empty response for org catalog request",
                       extra={"MESSAGE_ID": "TREASURY_ORG_CATALOG_EMPTY"})
         raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))

@@ -18,7 +18,7 @@ from tasks_utils.datetime import get_now, get_working_datetime, working_days_cou
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
 from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
-from tasks_utils.requests import get_filename_from_response
+from tasks_utils.requests import get_filename_from_response, get_task_retry_logger_method
 from datetime import timedelta
 import requests
 import base64
@@ -45,10 +45,13 @@ def process_tender(self, tender_id, *args, **kwargs):
         raise self.retry(exc=exc)
     else:
         if response.status_code != 200:
-            logger.error("Unexpected status code {} while getting tender {}: {}".format(
+            logger_method = get_task_retry_logger_method(self, logger)
+            logger_method("Unexpected status code {} while getting tender {}: {}".format(
                 response.status_code, tender_id, response.text
-            ), extra={"MESSAGE_ID": "FISCAL_GET_TENDER_UNSUCCESSFUL_CODE",
-                      "STATUS_CODE": response.status_code})
+            ), extra={
+                "MESSAGE_ID": "FISCAL_GET_TENDER_UNSUCCESSFUL_CODE",
+                "STATUS_CODE": response.status_code,
+            })
             raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
 
         tender = response.json()["data"]

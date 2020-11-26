@@ -106,7 +106,7 @@ class RequestTestCase(unittest.TestCase):
                     send_request(task, b"", sign=b"", message_id=1, method_name="GetRef")
 
     def test_send_request_error(self):
-        task = Mock(retry=RetryExc)
+        task = Mock(retry=RetryExc, max_retries=42)
         task.request.retries = 0
 
         session_mock = Mock(post=Mock(return_value=Mock(status_code=500, content=b"Internal error")))
@@ -215,7 +215,7 @@ class ResponseTestCase(unittest.TestCase):
                         get_request_response(task, 1)
 
     def test_get_response_error(self):
-        task = Mock(retry=RetryExc)
+        task = Mock(retry=RetryExc, max_retries=42)
         task.request.retries = 0
 
         session_mock = Mock(post=Mock(return_value=Mock(status_code=500, content=b"Internal error")))

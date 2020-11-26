@@ -41,7 +41,7 @@ from payments.utils import (
     check_complaint_value_amount,
     check_complaint_value_currency,
 )
-from tasks_utils.requests import get_exponential_request_retry_countdown
+from tasks_utils.requests import get_exponential_request_retry_countdown, get_task_retry_logger_method
 
 logger = get_task_logger(__name__)
 
@@ -123,7 +123,7 @@ def process_payment_complaint_search(self, payment_data, payment_params, cookies
             response.status_code, complaint_pretty_id
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_SEARCH_CODE_ERROR,
-            "STATUS_CODE": response.status_code
+            "STATUS_CODE": response.status_code,
         })
         if response.status_code == 412:
             raise self.retry(countdown=0, kwargs=dict(
@@ -219,11 +219,12 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     cookies.update(response.cookies.get_dict())
 
     if response.status_code != 200:
-        logger.warning("Unexpected status code {} while getting complaint {}".format(
+        logger_method = get_task_retry_logger_method(self, logger)
+        logger_method("Unexpected status code {} while getting complaint {}".format(
             response.status_code, complaint_id
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_CODE_ERROR,
-            "STATUS_CODE": response.status_code
+            "STATUS_CODE": response.status_code,
         })
         if response.status_code == 412:
             raise self.retry(countdown=0, kwargs=dict(
@@ -331,11 +332,12 @@ def process_payment_complaint_patch(self, payment_data, complaint_params, patch_
     cookies.update(response.cookies.get_dict())
 
     if response.status_code != 200:
-        logger.warning("Unexpected status code {} while patching complaint {} of tender {}: {}".format(
+        logger_method = get_task_retry_logger_method(self, logger)
+        logger_method("Unexpected status code {} while patching complaint {} of tender {}: {}".format(
             response.status_code, complaint_id, tender_id, patch_data
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_PATCH_COMPLAINT_CODE_ERROR,
-            "STATUS_CODE": response.status_code
+            "STATUS_CODE": response.status_code,
         })
         if response.status_code == 412:
             raise self.retry(countdown=0, kwargs=dict(
@@ -407,11 +409,12 @@ def process_payment_complaint_recheck(self, payment_data, complaint_params, patc
     tender_id = complaint_params.get("tender_id")
 
     if response.status_code != 200:
-        logger.warning("Unexpected status code {} while getting complaint {} of tender {}".format(
+        logger_method = get_task_retry_logger_method(self, logger)
+        logger_method("Unexpected status code {} while getting complaint {} of tender {}".format(
             response.status_code, complaint_id, tender_id
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_RECHECK_CODE_ERROR,
-            "STATUS_CODE": response.status_code
+            "STATUS_CODE": response.status_code,
         })
         if response.status_code == 412:
             raise self.retry(countdown=0, kwargs=dict(
