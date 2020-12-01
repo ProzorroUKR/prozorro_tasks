@@ -604,10 +604,10 @@ class GetPaymentsRegistryTestCase(unittest.TestCase):
         date_to = MagicMock()
         requests.post.side_effect = Exception
 
-        result = get_payments_registry(date_from, date_to)
+        with self.assertRaises(Exception):
+            result = get_payments_registry(date_from, date_to)
 
-        self.assertEqual(requests.post.call_count, 1)
-        self.assertIsNone(result)
+            self.assertEqual(requests.post.call_count, 1)
 
     @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", None)
     @patch("payments.utils.requests")
