@@ -348,14 +348,11 @@ def get_resolution(complaint_data):
 def get_payments_registry(date_from, date_to):
     if LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
-        try:
-            return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
-                "account": LIQPAY_PROZORRO_ACCOUNT,
-                "date_from": int(date_from.timestamp() * 1000),
-                "date_to": int(date_to.timestamp() * 1000)
-            }).json()
-        except Exception:
-            pass
+        return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
+            "account": LIQPAY_PROZORRO_ACCOUNT,
+            "date_from": int(date_from.timestamp() * 1000),
+            "date_to": int(date_to.timestamp() * 1000)
+        }).json()
 
 def get_payments_registry_fake(date_from, date_to):
     messages = get_payments_registry_fake_data()
