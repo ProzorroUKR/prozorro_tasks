@@ -148,6 +148,7 @@ class TestCase(BaseTestCase):
         tender = dict(
             procurementMethodType="negotiation",
             id="45677",
+            title="Розподіл природного газу для об'єкту СЗРУ",
             contracts=[
                 dict(id="111"),
                 dict(
