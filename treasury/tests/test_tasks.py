@@ -721,7 +721,7 @@ class CheckTestCase(unittest.TestCase):
         send_transactions_results(transactions_statuses, transactions_data, message_id)
 
         mock_xml.assert_called_once_with(
-            date='2015-02-03T00:00:00', rec_count='2', reg_sum='1200', register_id=message_id, status_id='1'
+            date='2015-02-03T00:00:00', rec_count='2', reg_sum='1200.0', register_id=message_id, status_id='1'
         )
 
         # send_request_mock.assert_called_once_with(
@@ -732,7 +732,7 @@ class CheckTestCase(unittest.TestCase):
         send_transactions_results(transactions_statuses, transactions_data, message_id)
 
         mock_xml.assert_called_once_with(
-            date='2015-02-03T00:00:00', rec_count='3', reg_sum='1200', register_id=message_id, status_id='0'
+            date='2015-02-03T00:00:00', rec_count='3', reg_sum='1200.0', register_id=message_id, status_id='0'
         )
 
         mock_xml.reset_mock()
@@ -740,5 +740,41 @@ class CheckTestCase(unittest.TestCase):
         send_transactions_results(transactions_statuses, transactions_data, message_id)
 
         mock_xml.assert_called_once_with(
-            date='2015-02-03T00:00:00', rec_count='0', reg_sum='1200', register_id=message_id, status_id='-1'
+            date='2015-02-03T00:00:00', rec_count='0', reg_sum='1200.0', register_id=message_id, status_id='-1'
+        )
+
+    @patch("treasury.tasks.render_transactions_confirmation_xml")
+    @patch("treasury.tasks.get_now")
+    @patch("treasury.tasks.sign_data")
+    @patch("treasury.tasks.send_request")
+    def test_send_transactions_results_reg_sum(
+            self, send_request_mock, sign_mock, get_now_mock, mock_xml
+    ):
+
+        get_now_mock.return_value = datetime(2020, 2, 3)
+
+        with open("treasury/tests/fixtures/transactions_confirmation.xml", "rb") as f:
+            confirmation_data = f.read()
+
+        mock_xml.return_value = confirmation_data
+        sign_mock.return_value = '12345sign'
+
+        transactions_doc_sq_data = [
+            4336, 647.32, 685, 11998.56, 598.11, 6266.04, 761.4, 2474, 1907.2, 404.49, 31300,
+            21389.9, 20459, 1760.39, 12090, 8838, 7300, 156348, 2460, 1000, 629, 350, 240, 505,
+            64490.4, 5940, 985, 1055, 354, 849, 26860, 1700, 14000, 64000
+        ]
+        transactions_statuses = [True for _ in range(len(transactions_doc_sq_data))]
+
+        transactions_data = [
+            {'ref': 100+index, 'id_contract': 12345, 'doc_sq': value}
+            for index, value in enumerate(transactions_doc_sq_data)
+        ]
+
+        message_id = '123456_message'
+
+        send_transactions_results(transactions_statuses, transactions_data, message_id)
+
+        mock_xml.assert_called_once_with(
+            date='2020-02-03T00:00:00', rec_count='34', reg_sum='474980.81', register_id=message_id, status_id='0'
         )
