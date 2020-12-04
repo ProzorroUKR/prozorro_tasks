@@ -30,6 +30,7 @@ from treasury.settings import (
     DOCUMENT_ATTACH_FAILED_PRECONDITION_STATUS,
 )
 from collections import namedtuple
+from decimal import Decimal
 
 logger = get_task_logger(__name__)
 
@@ -268,7 +269,7 @@ def send_transactions_results(self, transactions_statuses, transactions_data, me
     else:
         raise TransactionsQuantityServerErrorHTTPException()
 
-    transactions_values_sum = sum([trans['doc_sq'] for trans in transactions_data])
+    transactions_values_sum = float(sum([Decimal(str(trans['doc_sq'])) for trans in transactions_data]))
 
     xml_document = render_transactions_confirmation_xml(
         register_id=str(message_id),
