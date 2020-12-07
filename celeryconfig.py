@@ -58,6 +58,7 @@ task_modules = [
     'liqpay_int',
     'payments',
     'treasury',
+    'chronograph',
 ]
 
 # Route tasks to different queues

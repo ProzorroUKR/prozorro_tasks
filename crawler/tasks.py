@@ -1,39 +1,26 @@
+import requests
+
 from celery.utils.log import get_task_logger
 from celery_worker.celery import app
 from celery_worker.locks import unique_lock
 from crawler.settings import (
-    CONNECT_TIMEOUT, READ_TIMEOUT, API_LIMIT, API_OPT_FIELDS,
-    FEED_URL_TEMPLATE, WAIT_MORE_RESULTS_COUNTDOWN
+    CONNECT_TIMEOUT,
+    READ_TIMEOUT,
+    API_LIMIT,
+    FEED_URL_TEMPLATE,
+    WAIT_MORE_RESULTS_COUNTDOWN,
 )
-from environment_settings import PUBLIC_API_HOST, API_VERSION, CRAWLER_TENDER_HANDLERS
-from edr_bot.handlers import edr_bot_tender_handler
-from payments.handlers import payments_tender_handler
+from environment_settings import (
+    PUBLIC_API_HOST,
+    API_VERSION,
+)
 from tasks_utils.requests import get_request_retry_countdown
-from fiscal_bot.handlers import fiscal_bot_tender_handler
-from treasury.handlers import contract_handler
-import requests
+
+from crawler import resources
 
 
 logger = get_task_logger(__name__)
 
-
-# TENDER_HANDLERS contains code that will be executed for every feed item
-# these functions SHOULD NOT use database/API/any other IO calls
-# handlers can add new tasks to the queue
-# example: if(item["status"] == "awarding"){ attach_edr_yaml.delay(item["id"]) }
-
-
-CONTRACT_HANDLERS = [
-    contract_handler,
-]
-TENDER_HANDLERS = [
-    edr_bot_tender_handler,
-    fiscal_bot_tender_handler,
-    payments_tender_handler,
-]
-if CRAWLER_TENDER_HANDLERS:
-    logger.info("Filtering tender handler with provided set: {}".format(CRAWLER_TENDER_HANDLERS))
-    TENDER_HANDLERS = [i for i in TENDER_HANDLERS if i.__name__ in CRAWLER_TENDER_HANDLERS]
 
 RETRY_REQUESTS_EXCEPTIONS = (
     requests.exceptions.Timeout,
@@ -65,6 +52,10 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
     logger.info("Start task {}".format(self.request.id),
                 extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})
 
+    config = resources.configs.get(resource)
+
+    cookies = cookies or {}
+
     if not offset:  # initialization
         descending = "1"
 
@@ -77,9 +68,10 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
     params = dict(
         feed="changes",
         limit=API_LIMIT,
-        opt_fields=",".join(API_OPT_FIELDS),
         mode=mode,
     )
+    if config.opt_fields:
+        params["opt_fields"] = ",".join(config.opt_fields)
     if descending:
         params["descending"] = descending
     if offset:
@@ -89,7 +81,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
         response = requests.get(
             url,
             params=params,
-            cookies=requests.utils.cookiejar_from_dict(cookies or {}),
+            cookies=cookies,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -97,18 +89,21 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
         raise self.retry(exc=exc)
     else:
         if response.status_code == 200:
+            # handle cookies
+            if response.cookies:
+                cookies = response.cookies.get_dict()
+
+            # get response data
             response_json = response.json()
-            item_handlers = globals().get(f"{resource[:-1].upper()}_HANDLERS", "")
+
+            # call handlers (TENDER_HANDLERS, CONTRACT_HANDLERS, FRAMEWORK_HANDLERS
+            item_handlers = config.handlers
             for item in response_json["data"]:
                 for handler in item_handlers:
                     try:
-                        handler(item)
+                        handler(item, cookies=cookies)
                     except Exception as e:
                         logger.exception(e, extra={"MESSAGE_ID": "FEED_HANDLER_EXCEPTION"})
-
-            # handle cookies
-            if response.cookies:
-                cookies = requests.utils.dict_from_cookiejar(response.cookies)
 
             # schedule getting the next page
             next_page_kwargs = dict(
@@ -158,7 +153,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             logger.warning("Precondition failed with cookies {}".format(cookies),
                            extra={"MESSAGE_ID": "FEED_PRECONDITION_FAILED"})
             retry_kwargs = dict(**self.request.kwargs)
-            retry_kwargs["cookies"] = requests.utils.dict_from_cookiejar(response.cookies)
+            retry_kwargs["cookies"] = response.cookies.get_dict()
             raise self.retry(kwargs=retry_kwargs)
 
         elif response.status_code == 404:  # "Offset expired/invalid"

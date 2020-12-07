@@ -17,7 +17,7 @@ def valid_qualification_limited_tender(tender):
             tender['procurementMethodType'] in qualification_procedures_limited)
 
 
-def edr_bot_tender_handler(tender):
+def edr_bot_tender_handler(tender, **kwargs):
     if (
         valid_qualification_tender(tender) or
         valid_pre_qualification_tender(tender) or
