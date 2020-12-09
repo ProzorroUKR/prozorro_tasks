@@ -7,7 +7,12 @@ TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
 
-CRAWLER_TENDER_HANDLERS = set(i.strip() for i in os.environ.get("CRAWLER_TENDER_HANDLERS", "").split(",") if i.strip())
+def environ_list(name, sep=","):
+    return [i.strip() for i in os.environ.get(name, "").split(sep) if i.strip()]
+
+CRAWLER_TENDER_HANDLERS = set(environ_list("CRAWLER_TENDER_HANDLERS"))
+CRAWLER_CONTRACT_HANDLERS = set(environ_list("CRAWLER_CONTRACT_HANDLERS"))
+CRAWLER_FRAMEWORK_HANDLERS = set(environ_list("CRAWLER_FRAMEWORK_HANDLERS"))
 
 MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://root:example@mongo:27017")
 MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "tasks")
@@ -20,6 +25,8 @@ PUBLIC_API_HOST = os.environ.get("PUBLIC_API_HOST", "https://public.api.openproc
 API_HOST = os.environ.get("API_HOST", "https://lb.api.openprocurement.org")
 API_VERSION = os.environ.get("API_VERSION", "2.4")
 API_TOKEN = os.environ.get("API_TOKEN", "robot")
+
+CHRONOGRAPH_API_TOKEN = os.environ.get("CHRONOGRAPH_API_TOKEN", "chronograph")
 
 DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.gov.ua")
 DS_USER = os.environ.get("DS_USER", "bot")
