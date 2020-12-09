@@ -56,7 +56,8 @@ def get_task_retry_logger_method(
     default_method='warning',
     fallback_method='error'
 ):
-    if hasattr(task_obj, "max_retries") and task_obj.request.retries < task_obj.max_retries:
+    max_retries = getattr(task_obj, "max_retries", None)
+    if max_retries and task_obj.request.retries < max_retries:
         return getattr(logger_obj, default_method)
     return getattr(logger_obj, fallback_method)
 
