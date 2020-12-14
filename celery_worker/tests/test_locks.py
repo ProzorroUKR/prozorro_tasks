@@ -108,17 +108,17 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = "v2_" + args_to_uid(
-            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
+            (test_method.__module__, test_method.__name__, (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
+            {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
             {
                 "_id": task_uid,
-                "name": "test_method",
-                "module": "celery_worker.tests.test_locks",
+                "name": test_method.__name__,
+                "module": test_method.__module__,
                 "createdAt": datetime_mock.utcnow.return_value
             }
         )
@@ -142,10 +142,10 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = "v2_" + args_to_uid(
-            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
+            (test_method.__module__, test_method.__name__, (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
+            {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_not_called()
         get_collection.return_value.insert.assert_not_called()
@@ -169,17 +169,17 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = "v2_" + args_to_uid(
-            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
+            (test_method.__module__, test_method.__name__, (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
+            {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
             {
                 "_id": task_uid,
-                "name": "test_method",
-                "module": "celery_worker.tests.test_locks",
+                "name": test_method.__name__,
+                "module": test_method.__module__,
                 "createdAt": datetime_mock.utcnow.return_value
             }
         )
@@ -191,7 +191,7 @@ class LocksTestCase(unittest.TestCase):
         test_method_procedure = Mock()
 
         # create decorated function
-        @app.task(bind=True)
+        @app.task(bind=True, lazy=False)
         @unique_lock
         def test_method(self, *args, **kwargs):
             test_method_procedure(*args, **kwargs)
@@ -210,10 +210,10 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = "v2_" + args_to_uid(
-            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
+            (test_method.__module__, test_method.__name__, (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
+            {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_not_called()
         get_collection.return_value.insert.assert_not_called()
@@ -225,7 +225,7 @@ class LocksTestCase(unittest.TestCase):
         test_method_procedure = Mock()
 
         # create decorated function
-        @app.task(bind=True)
+        @app.task(bind=True, lazy=False)
         @unique_lock
         def test_method(self, *args, **kwargs):
             test_method_procedure(self, *args, **kwargs)
@@ -243,17 +243,17 @@ class LocksTestCase(unittest.TestCase):
 
         # check that decorator checked the lock and set it
         task_uid = "v2_" + args_to_uid(
-            ("celery_worker.tests.test_locks", "test_method", (1, 2), dict(message="Hi"))
+            (test_method.__module__, test_method.__name__, (1, 2), dict(message="Hi"))
         )
         get_collection.return_value.find_one.assert_called_once_with(
-            {"_id": task_uid, "name": "test_method", "module": "celery_worker.tests.test_locks"}
+            {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(test_method, 1, 2, message="Hi")
         get_collection.return_value.insert.assert_called_once_with(
             {
                 "_id": task_uid,
-                "name": "test_method",
-                "module": "celery_worker.tests.test_locks",
+                "name": test_method.__name__,
+                "module": test_method.__module__,
                 "createdAt": datetime_mock.utcnow.return_value
             }
         )

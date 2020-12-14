@@ -6,9 +6,10 @@ test:
   image: python:3.7
   script:
     - pip install -r requirements.txt
+    - pip install pytest
     - pip install coverage
     - pip install coveralls
-    - coverage run --source=. -m unittest discover
+    - coverage run --source=. -m pytest -v
     - coverage html
     - mv htmlcov/ public/
     - coverage report
