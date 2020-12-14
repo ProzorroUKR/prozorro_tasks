@@ -48,7 +48,7 @@ class TestHandlerCase(unittest.TestCase):
             exc=requests_mock.get.side_effect
         )
 
-    @patch("payments.tasks.process_payment_complaint_data")
+    @patch("liqpay_int.tasks.process_payment_complaint_data")
     def test_handle_mongodb_error(self, process_payment_complaint_data):
         complaint_token = "test_token"
         complaint_code = sha512(complaint_token.encode()).hexdigest()[:8].upper()
@@ -241,7 +241,7 @@ class TestHandlerCase(unittest.TestCase):
             countdown=DEFAULT_RETRY_AFTER
         )
 
-    @patch("payments.tasks.process_payment_complaint_data")
+    @patch("liqpay_int.tasks.process_payment_complaint_data")
     def test_handle_200_response_valid_complaint(self, process_payment_complaint_data):
         complaint_token = "test_token"
         complaint_code = sha512(complaint_token.encode()).hexdigest()[:8].upper()
@@ -255,7 +255,7 @@ class TestHandlerCase(unittest.TestCase):
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
         with patch("payments.utils.requests") as requests_mock, \
-             patch("payments.tasks.set_payment_params") as set_payment_params, \
+             patch("liqpay_int.tasks.set_payment_params") as set_payment_params, \
              patch("payments.logging.push_payment_message") as push_payment_message:
 
             requests_mock.get.return_value = Mock(
@@ -291,7 +291,7 @@ class TestHandlerCase(unittest.TestCase):
             )
         )
 
-    @patch("payments.tasks.process_payment_complaint_data")
+    @patch("liqpay_int.tasks.process_payment_complaint_data")
     def test_handle_200_response_invalid_complaint(self, process_payment_complaint_data):
         complaint_token = "test_token"
         payment_data = {"description": "UA-2020-03-17-000090-a.a2-11111111"}
@@ -308,7 +308,7 @@ class TestHandlerCase(unittest.TestCase):
         )
 
         with patch("payments.utils.requests") as requests_mock, \
-             patch("payments.tasks.set_payment_params") as set_payment_params, \
+             patch("liqpay_int.tasks.set_payment_params") as set_payment_params, \
              patch("payments.logging.push_payment_message") as push_payment_message:
 
             requests_mock.get.return_value = Mock(
@@ -337,8 +337,8 @@ class TestHandlerCase(unittest.TestCase):
 
         process_payment_complaint_data.apply_async.assert_not_called()
 
-    @patch("payments.tasks.COMPLAINT_NOT_FOUND_MAX_RETRIES", 0)
-    @patch("payments.tasks.process_payment_complaint_data")
+    @patch("liqpay_int.tasks.COMPLAINT_NOT_FOUND_MAX_RETRIES", 0)
+    @patch("liqpay_int.tasks.process_payment_complaint_data")
     def test_handle_200_response_invalid_complaint_max_retries(self, process_payment_complaint_data):
         complaint_token = "test_token"
         payment_data = {"description": "UA-2020-03-17-000090-a.a2-11111111"}
@@ -351,7 +351,7 @@ class TestHandlerCase(unittest.TestCase):
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
         with patch("payments.utils.requests") as requests_mock, \
-             patch("payments.tasks.set_payment_params") as set_payment_params, \
+             patch("liqpay_int.tasks.set_payment_params") as set_payment_params, \
              patch("payments.logging.push_payment_message") as push_payment_message:
 
             requests_mock.get.return_value = Mock(
@@ -376,8 +376,8 @@ class TestHandlerCase(unittest.TestCase):
 
         process_payment_complaint_data.apply_async.assert_not_called()
 
-    @patch("payments.tasks.COMPLAINT_NOT_FOUND_MAX_RETRIES", 0)
-    @patch("payments.tasks.process_payment_complaint_data")
+    @patch("liqpay_int.tasks.COMPLAINT_NOT_FOUND_MAX_RETRIES", 0)
+    @patch("liqpay_int.tasks.process_payment_complaint_data")
     def test_handle_200_response_invalid_code(self, process_payment_complaint_data):
         complaint_token = "test_token"
         payment_data = {"description": "UA-2020-03-17-000090-a.a2-11111111"}
@@ -390,7 +390,7 @@ class TestHandlerCase(unittest.TestCase):
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
         with patch("payments.utils.requests") as requests_mock, \
-             patch("payments.tasks.set_payment_params") as set_payment_params, \
+             patch("liqpay_int.tasks.set_payment_params") as set_payment_params, \
              patch("payments.logging.push_payment_message") as push_payment_message:
 
             requests_mock.get.return_value = Mock(

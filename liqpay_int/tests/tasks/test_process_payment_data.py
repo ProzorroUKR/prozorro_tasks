@@ -8,7 +8,7 @@ from liqpay_int.tasks import process_payment_data
 
 class TestHandlerCase(unittest.TestCase):
 
-    @patch("payments.tasks.process_payment_complaint_search")
+    @patch("liqpay_int.tasks.process_payment_complaint_search")
     def test_handle_valid_description(self, process_payment_complaint_search):
         payment_data = {"description": "UA-2020-03-17-000090-a.a2-12AD3F12"}
 
@@ -26,7 +26,7 @@ class TestHandlerCase(unittest.TestCase):
 
 
     @patch("payments.logging.push_payment_message")
-    @patch("payments.tasks.process_payment_complaint_search")
+    @patch("liqpay_int.tasks.process_payment_complaint_search")
     def test_handle_invalid_description(self, process_payment_complaint_search, push_payment_message):
         payment_data = {"description": "Invalid"}
 

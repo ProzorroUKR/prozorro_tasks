@@ -202,7 +202,7 @@ class TestHandlerCase(unittest.TestCase):
             countdown=DEFAULT_RETRY_AFTER
         )
 
-    @patch("payments.tasks.process_payment_complaint_recheck")
+    @patch("liqpay_int.tasks.process_payment_complaint_recheck")
     def test_handle_403_response(self, process_payment_complaint_recheck):
         payment_data = {"description": "test"}
         complaint_params = {"test": "test"}
