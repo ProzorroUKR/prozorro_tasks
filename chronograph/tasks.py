@@ -28,9 +28,6 @@ def recheck_framework(self, framework_id, cookies=None):
     try:
         response = requests.get(
             url,
-            headers={
-                "Authorization": "Bearer {}".format(CHRONOGRAPH_API_TOKEN),
-            },
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             cookies=cookies or {}
         )
