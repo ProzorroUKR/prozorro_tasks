@@ -50,8 +50,8 @@ class CrawlerIHandlersTestCase(unittest.TestCase):
             self.assertEqual(
                 handler.call_args_list,
                 [
-                    call({'id': 'a' * 32}, cookies=cookies),
-                    call({'id': 'b' * 32}, cookies=cookies)
+                    call({'id': 'a' * 32}),
+                    call({'id': 'b' * 32})
                 ]
             )
 

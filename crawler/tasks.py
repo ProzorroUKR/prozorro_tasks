@@ -101,7 +101,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             for item in response_json["data"]:
                 for handler in item_handlers:
                     try:
-                        handler(item, cookies=cookies)
+                        handler(item)
                     except Exception as e:
                         logger.exception(e, extra={"MESSAGE_ID": "FEED_HANDLER_EXCEPTION"})
 
