@@ -50,7 +50,12 @@ def recheck_framework(self, framework_id, cookies=None):
 
     cookies = response.cookies.get_dict()
 
-    if not "next_check" in response.json()["data"]:
+    if "next_check" not in response.json()["data"]:
+        logger.warning("Skip framework {} without next_check".format(
+            framework_id
+        ), extra={
+            "MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_SKIP",
+        })
         return
 
     try:
