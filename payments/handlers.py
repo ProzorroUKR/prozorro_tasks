@@ -7,6 +7,6 @@ from datetime import timedelta
 
 def payments_tender_handler(tender, **kwargs):
     delta = get_now() - parse_dt_string(tender['dateModified'])
-    if tender['procurementMethodType'] not in non_complaint_procedures:
-        if delta < timedelta(days=PAYMENTS_SKIP_TENDER_DAYS):
+    if delta < timedelta(days=PAYMENTS_SKIP_TENDER_DAYS):
+        if tender.get('procurementMethodType') not in non_complaint_procedures:
             process_tender.delay(tender_id=tender['id'])
