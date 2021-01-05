@@ -15,6 +15,7 @@ logger = get_task_logger(__name__)
 
 
 CHRONOGRAPH_CHECK_MAX_RETRIES = None
+CHRONOGRAPH_CHECK_MAX_RETRIES_404 = 10
 
 
 @app.task(bind=True, max_retries=CHRONOGRAPH_CHECK_MAX_RETRIES)
@@ -43,6 +44,13 @@ def recheck_framework(self, framework_id, cookies=None):
                 "MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_GET_CODE_ERROR",
                 "STATUS_CODE": response.status_code,
             })
+            if response.status_code == 412:  # Precondition failed
+                retry_kwargs = dict(**self.request.kwargs)
+                retry_kwargs["cookies"] = response.cookies.get_dict()
+                raise self.retry(countdown=0, kwargs=retry_kwargs)
+            elif response.status_code == 404:
+                if self.request.retries > CHRONOGRAPH_CHECK_MAX_RETRIES_404:
+                    return
             raise self.retry(countdown=get_exponential_request_retry_countdown(response))
 
     cookies = response.cookies.get_dict()
