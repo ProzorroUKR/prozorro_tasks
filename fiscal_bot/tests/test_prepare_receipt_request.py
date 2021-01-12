@@ -96,6 +96,7 @@ class ReceiptTestCase(unittest.TestCase):
                 files={'file': ("hallo.xml", b"unencrypted contents")},
                 auth=(API_SIGN_USER, API_SIGN_PASSWORD),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
             send_request_receipt_mock.apply_async.assert_called_once_with(

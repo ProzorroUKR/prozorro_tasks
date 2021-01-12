@@ -78,6 +78,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             files={'file': (name, data)},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
 
         upload_to_doc_service_mock.delay.assert_called_once_with(
@@ -100,7 +101,10 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             requests_mock.post.return_value = MagicMock(
                 status_code=200,
                 content=data,
-                headers={"content-disposition": "attachment; filename={}.p7s".format(name)},
+                headers={
+                    "content-disposition": "attachment; filename={}.p7s".format(name),
+                    "User-agent": "prozorro_tasks",
+                },
             )
 
             decode_and_save_data(name, base64.b64encode(data), tender_id, award_id)
@@ -110,6 +114,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             files={'file': (name, data)},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
 
         upload_to_doc_service_mock.delay.assert_called_once_with(

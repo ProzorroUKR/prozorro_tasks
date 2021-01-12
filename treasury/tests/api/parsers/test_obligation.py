@@ -21,7 +21,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=xml,
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -53,7 +53,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, method_name='Obligation', should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -86,7 +86,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, method_name='Obligation', should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -116,7 +116,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, method_name='Obligation', should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -142,7 +142,7 @@ class XMLObligationDataParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, method_name='Obligation', should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,

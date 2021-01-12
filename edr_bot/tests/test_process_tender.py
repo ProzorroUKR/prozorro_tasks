@@ -220,7 +220,10 @@ class TestHandlerCase(unittest.TestCase):
                         ]
                     },
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
             process_tender(tender_id)
 
@@ -256,7 +259,10 @@ class TestHandlerCase(unittest.TestCase):
                         ]
                     },
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
             process_tender(tender_id)
 
@@ -388,7 +394,10 @@ class TestHandlerCase(unittest.TestCase):
                         ]
                     },
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
 
             process_tender(tender_id)
@@ -417,7 +426,10 @@ class TestHandlerCase(unittest.TestCase):
                         ]
                     },
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
 
             process_tender(tender_id)

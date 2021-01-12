@@ -92,7 +92,7 @@ class RequestTestCase(unittest.TestCase):
             TREASURY_WSDL_URL,
             data='<request></request>',
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={'content-type': 'text/xml'},
+            headers={'content-type': 'text/xml', 'User-agent': 'prozorro_tasks'},
         )
         self.assertEqual(result, (0, None))
 
@@ -200,7 +200,7 @@ class ResponseTestCase(unittest.TestCase):
             TREASURY_WSDL_URL,
             data=prepare_data_mock.return_value,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={'content-type': 'text/xml'},
+            headers={'content-type': 'text/xml', 'User-agent': 'prozorro_tasks'},
         )
         parse_res_mock.assert_called_once_with(raw_response)
         self.assertEqual(result, 3)

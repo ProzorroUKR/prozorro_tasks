@@ -26,7 +26,7 @@ class PrtransTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -109,7 +109,7 @@ class PrtransTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
 
         self.assertEqual(
@@ -143,7 +143,7 @@ class PrtransTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -177,7 +177,7 @@ class PrtransTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,

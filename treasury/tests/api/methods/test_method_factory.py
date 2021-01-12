@@ -11,7 +11,7 @@ class MethodFactoryTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(b"", method_name="eee"),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,

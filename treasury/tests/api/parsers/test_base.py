@@ -10,7 +10,7 @@ class BaseParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -30,7 +30,7 @@ class BaseParserTestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, should_encode=False, should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,

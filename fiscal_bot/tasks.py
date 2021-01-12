@@ -16,7 +16,7 @@ from fiscal_bot.settings import FISCAL_BOT_START_DATE
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
-from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS, DEFAULT_HEADERS
 from tasks_utils.requests import get_filename_from_response, get_task_retry_logger_method
 from datetime import timedelta
 import requests
@@ -38,6 +38,7 @@ def process_tender(self, tender_id, *args, **kwargs):
         response = requests.get(
             url,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "FISCAL_GET_TENDER_EXCEPTION"})
@@ -97,6 +98,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             files={'file': (filename, content)},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
         logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"})
@@ -130,7 +132,8 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
             response = requests.post(
                 '{}/cabinet/public/api/exchange/report'.format(FISCAL_API_HOST),
                 proxies=FISCAL_API_PROXIES,
-                json=[{'contentBase64': request_data, 'fname': filename}]
+                json=[{'contentBase64': request_data, 'fname': filename}],
+                headers=DEFAULT_HEADERS,
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
             logger.exception(e, extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
@@ -201,6 +204,7 @@ def decode_and_save_data(self, name, data, tender_id, award_id):
             files={'file': (name, base64.b64decode(data))},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
         logger.exception(e, extra={"MESSAGE_ID": "FISCAL_DECRYPT_API_ERROR"})
@@ -243,6 +247,7 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
             files={'file': (uid, uid.encode())},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
         logger.exception(e, extra={"MESSAGE_ID": "FISCAL_ENCRYPT_API_ERROR"})
@@ -292,7 +297,8 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                 '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 proxies=FISCAL_API_PROXIES,
-                data=request_data
+                data=request_data,
+                headers=DEFAULT_HEADERS,
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
             logger.exception(e, extra={"MESSAGE_ID": "FISCAL_API_CHECK_RESPONSE_ERROR"})

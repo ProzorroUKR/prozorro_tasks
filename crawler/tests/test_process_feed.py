@@ -79,6 +79,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         self.assertEqual(
@@ -137,6 +138,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         self.assertEqual(
@@ -204,6 +206,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         self.assertEqual(
@@ -263,6 +266,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
         self.assertEqual(
             process_feed.apply_async.call_args_list,
@@ -312,6 +316,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         process_feed.apply_async.assert_called_once_with(
@@ -364,6 +369,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         self.assertEqual(
@@ -431,6 +437,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         process_feed.apply_async.assert_called_once_with(
@@ -482,6 +489,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         process_feed.apply_async.assert_called_once_with(
@@ -535,6 +543,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         process_feed.apply_async.assert_called_once_with(
@@ -588,6 +597,7 @@ class ProcessTestCase(unittest.TestCase):
                 ),
                 cookies={'SERVER_ID': server_id},
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                headers={'User-agent': 'prozorro_tasks'},
             )
 
         process_feed.apply_async.assert_not_called()

@@ -1,5 +1,5 @@
 import requests
-from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS, DEFAULT_HEADERS
 from tasks_utils.requests import mount_retries_for_request, get_exponential_request_retry_countdown
 from treasury.exceptions import DocumentServiceForbiddenError, DocumentServiceError, ApiServiceError
 from environment_settings import (
@@ -32,6 +32,7 @@ def save_transaction_xml(task, transactions_ids, source):
 
 def ds_upload(task, file_name, file_content):
     session = requests.Session()
+    session.headers.update(DEFAULT_HEADERS)
     mount_retries_for_request(session, status_forcelist=(408, 409, 412, 429, 500, 502, 503, 504))
 
     try:
@@ -40,6 +41,7 @@ def ds_upload(task, file_name, file_content):
             auth=(DS_USER, DS_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             files={'file': (file_name, file_content)},
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.error(exc, extra={"MESSAGE_ID": "DOCUMENT_SERVICE_REQUEST_ERROR"})
@@ -93,6 +95,7 @@ def put_transaction(transaction):
     timeout = (CONNECT_TIMEOUT, READ_TIMEOUT)
 
     session = requests.Session()
+    session.headers.update(DEFAULT_HEADERS)
     mount_retries_for_request(session, status_forcelist=(404, 408, 409, 412, 429, 500, 502, 503, 504))
 
     url = f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}/transactions/{transaction_id}"
@@ -101,7 +104,10 @@ def put_transaction(transaction):
         "TRANSACTION_ID": transaction_id,
     }
     try:
-        get_response = session.get(f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}")
+        get_response = session.get(
+            f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}",
+            headers=DEFAULT_HEADERS,
+        )
         server_id = get_response.cookies.get("SERVER_ID", None)
         server_id_cookie = {"SERVER_ID": server_id}
 
@@ -128,7 +134,10 @@ def put_transaction(transaction):
     try:
         response = session.put(
             url, json={'data': data}, timeout=timeout,
-            headers={'Authorization': 'Bearer {}'.format(API_TOKEN)},
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                **DEFAULT_HEADERS,
+            },
             cookies=server_id_cookie
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -175,6 +184,7 @@ def attach_doc_to_transaction(data, contract_id, transaction_id, server_id_cooki
     )
 
     session = requests.Session()
+    session.headers.update(DEFAULT_HEADERS)
     mount_retries_for_request(session, status_forcelist=(404, 408, 409, 412, 429, 500, 502, 503, 504))
 
     try:
@@ -182,6 +192,7 @@ def attach_doc_to_transaction(data, contract_id, transaction_id, server_id_cooki
             get_url,
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                **DEFAULT_HEADERS,
             },
             timeout=timeout,
             cookies=server_id_cookie
@@ -211,6 +222,7 @@ def attach_doc_to_transaction(data, contract_id, transaction_id, server_id_cooki
             json={'data': data},
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                **DEFAULT_HEADERS,
             },
             timeout=timeout,
             cookies=server_id_cookie

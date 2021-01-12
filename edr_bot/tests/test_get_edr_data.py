@@ -68,6 +68,7 @@ class TestHandlerCase(unittest.TestCase):
                 headers={
                     'X-Request-ID': resp_id,
                     'content-type': 'application/json',
+                    'User-agent': 'prozorro_tasks',
                 }
             )
 
@@ -108,7 +109,10 @@ class TestHandlerCase(unittest.TestCase):
                     'data': [{"test": 1}],
                     "meta": {"detailsSourceDate": source_date}
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
             with patch("edr_bot.tasks.uuid4") as uuid4_mock:
                 uuid4_mock.return_value = Mock(hex="b" * 32)
@@ -149,7 +153,10 @@ class TestHandlerCase(unittest.TestCase):
                     'data': [{"test": 1}, {"test": 2}],
                     "meta": {"detailsSourceDate": source_date}
                 }),
-                headers={'X-Request-ID': response_id}
+                headers={
+                    'X-Request-ID': response_id,
+                    'User-agent': 'prozorro_tasks',
+                }
             )
             with patch("edr_bot.tasks.uuid4") as uuid4_mock:
                 uuid4_mock.return_value = Mock(hex="b" * 32)

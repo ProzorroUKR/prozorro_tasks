@@ -9,7 +9,7 @@ from tasks_utils.requests import (
     get_task_retry_logger_method,
     get_exponential_request_retry_countdown,
 )
-from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS, DEFAULT_HEADERS
 
 logger = get_task_logger(__name__)
 
@@ -30,7 +30,8 @@ def recheck_framework(self, framework_id, cookies=None):
         response = requests.get(
             url,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            cookies=cookies or {}
+            cookies=cookies or {},
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_GET_EXCEPTION"})
@@ -69,7 +70,8 @@ def recheck_framework(self, framework_id, cookies=None):
             json={"data": {}},
             headers={
                 "Authorization": "Bearer {}".format(CHRONOGRAPH_API_TOKEN),
-                "X-Client-Request-ID": uuid4().hex
+                "X-Client-Request-ID": uuid4().hex,
+                **DEFAULT_HEADERS,
             },
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             cookies=cookies

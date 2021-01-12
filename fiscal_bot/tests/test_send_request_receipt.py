@@ -138,6 +138,7 @@ class ReceiptTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/report'.format(FISCAL_API_HOST),
             json=[{'contentBase64': request_data, 'fname': filename}],
             proxies=FISCAL_API_PROXIES,
+            headers={'User-agent': 'prozorro_tasks'},
         )
         get_result_mock.assert_called_once_with(
             send_request_receipt,
