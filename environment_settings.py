@@ -11,7 +11,7 @@ def environ_list(name, sep=","):
     return [i.strip() for i in os.environ.get(name, "").split(sep) if i.strip()]
 
 CONNECT_TIMEOUT = float(os.environ.get("CONNECT_TIMEOUT", 5.0))
-READ_TIMEOUT = float(os.environ.get("READ_TIMEOUT", 30.0))
+READ_TIMEOUT = float(os.environ.get("READ_TIMEOUT", 120.0))
 DEFAULT_RETRY_AFTER = int(os.environ.get("DEFAULT_RETRY_AFTER", 5))
 EXPONENTIAL_RETRY_BASE = int(os.environ.get("EXPONENTIAL_RETRY_BASE", 5))
 EXPONENTIAL_RETRY_MAX = int(os.environ.get("EXPONENTIAL_RETRY_MAX", 60 * 60))
