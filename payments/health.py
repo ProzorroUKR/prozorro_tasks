@@ -14,13 +14,11 @@ from environment_settings import (
     MONGODB_SERVER_SELECTION_TIMEOUT,
     MONGODB_CONNECT_TIMEOUT,
     MONGODB_SOCKET_TIMEOUT,
-    CELERY_BROKER_URL,
+    CELERY_BROKER_URL, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from liqpay_int.utils import generate_liqpay_status_params, liqpay_request
 from payments.results_db import get_statuses_list, save_status
 from payments.utils import request_cdb_head_spore, request_cdb_complaint_search
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
-
 
 HEATH_DATA_INTERVAL_SECONDS = 10 * 60
 

@@ -5,7 +5,7 @@ from unittest.mock import patch, Mock, call, ANY
 
 from celery.exceptions import Retry
 
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from environment_settings import DEFAULT_RETRY_AFTER
 from liqpay_int.tasks import process_payment_complaint_patch
 from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_EXCEPTION,

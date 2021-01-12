@@ -4,12 +4,12 @@ import requests
 from celery.utils.log import get_task_logger
 
 from celery_worker.celery import app
-from environment_settings import API_HOST, API_VERSION, CHRONOGRAPH_API_TOKEN
+from environment_settings import API_HOST, API_VERSION, CHRONOGRAPH_API_TOKEN, CONNECT_TIMEOUT, READ_TIMEOUT
 from tasks_utils.requests import (
     get_task_retry_logger_method,
     get_exponential_request_retry_countdown,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
 
 logger = get_task_logger(__name__)
 

@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 from tasks_utils.requests import get_request_retry_countdown, get_exponential_request_retry_countdown
-from tasks_utils.settings import DEFAULT_RETRY_AFTER, EXPONENTIAL_RETRY_MAX
+from environment_settings import DEFAULT_RETRY_AFTER, EXPONENTIAL_RETRY_MAX
 import unittest
 
 

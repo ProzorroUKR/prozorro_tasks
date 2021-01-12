@@ -11,9 +11,8 @@ from environment_settings import (
     LIQPAY_SANDBOX_PRIVATE_KEY,
     LIQPAY_TAX_PERCENTAGE,
     LIQPAY_API_HOST,
-    LIQPAY_API_PROXIES,
+    LIQPAY_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 
 class LiqPay(liqpay.LiqPay):

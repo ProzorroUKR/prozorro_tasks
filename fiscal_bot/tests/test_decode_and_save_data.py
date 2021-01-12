@@ -1,7 +1,6 @@
-from environment_settings import API_SIGN_USER, API_SIGN_HOST, API_SIGN_PASSWORD
+from environment_settings import API_SIGN_USER, API_SIGN_HOST, API_SIGN_PASSWORD, CONNECT_TIMEOUT, READ_TIMEOUT
 from fiscal_bot.tasks import decode_and_save_data
 from fiscal_bot.settings import DOC_TYPE
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.exceptions import Retry
 from unittest.mock import patch, MagicMock
 import base64

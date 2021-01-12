@@ -6,7 +6,7 @@ from unittest.mock import patch, Mock, call
 
 from celery.exceptions import Retry
 
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from environment_settings import DEFAULT_RETRY_AFTER
 from payments.tasks import process_tender
 from payments.utils import (
     ALLOWED_COMPLAINT_RESOLUTION_STATUSES,

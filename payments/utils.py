@@ -20,7 +20,7 @@ from environment_settings import (
     LIQPAY_INTEGRATION_API_HOST,
     LIQPAY_PROZORRO_ACCOUNT,
     LIQPAY_INTEGRATION_API_PATH,
-    LIQPAY_API_PROXIES,
+    LIQPAY_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from payments.data import (
     complaint_funds_description,
@@ -32,7 +32,6 @@ from payments.data import (
     STATUS_COMPLAINT_STOPPED,
     STATUS_COMPLAINT_DECLINED,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 
 logger = get_task_logger(__name__)
 

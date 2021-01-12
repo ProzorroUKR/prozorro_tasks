@@ -1,5 +1,7 @@
-from environment_settings import API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD, TIMEZONE
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
+from environment_settings import (
+    API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD, TIMEZONE, CONNECT_TIMEOUT,
+    READ_TIMEOUT,
+)
 from fiscal_bot.tasks import prepare_check_request
 from celery.exceptions import Retry
 from datetime import datetime

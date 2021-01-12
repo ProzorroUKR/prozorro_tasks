@@ -1,10 +1,12 @@
-from environment_settings import TREASURY_WSDL_URL, TREASURY_USER, TREASURY_PASSWORD, TREASURY_SKIP_REQUEST_VERIFY
+from environment_settings import (
+    TREASURY_WSDL_URL, TREASURY_USER, TREASURY_PASSWORD, TREASURY_SKIP_REQUEST_VERIFY,
+    CONNECT_TIMEOUT, READ_TIMEOUT,
+)
 from tasks_utils.requests import (
     RETRY_REQUESTS_EXCEPTIONS,
     get_exponential_request_retry_countdown,
     get_task_retry_logger_method,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.utils.log import get_task_logger
 from zeep import Client
 from zeep.transports import Transport

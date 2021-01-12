@@ -2,9 +2,9 @@ from celery_worker.celery import app, formatter
 from celery.utils.log import get_task_logger
 from environment_settings import (
     API_HOST, API_TOKEN, API_VERSION,
-    DS_HOST, DS_USER, DS_PASSWORD,
+    DS_HOST, DS_USER, DS_PASSWORD, CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER, RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
 from tasks_utils.results_db import (
     get_task_result,
     save_task_result,

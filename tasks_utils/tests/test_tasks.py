@@ -1,6 +1,8 @@
-from environment_settings import API_HOST, API_TOKEN, API_VERSION, DS_HOST, DS_USER, DS_PASSWORD
+from environment_settings import (
+    API_HOST, API_TOKEN, API_VERSION, DS_HOST, DS_USER, DS_PASSWORD, CONNECT_TIMEOUT,
+    READ_TIMEOUT,
+)
 from tasks_utils.tasks import attach_doc_to_tender, upload_to_doc_service
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
 from celery.exceptions import Retry
 from unittest.mock import patch, MagicMock
 import requests

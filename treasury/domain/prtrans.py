@@ -1,9 +1,9 @@
 import requests
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
 from tasks_utils.requests import mount_retries_for_request, get_exponential_request_retry_countdown
 from treasury.exceptions import DocumentServiceForbiddenError, DocumentServiceError, ApiServiceError
 from environment_settings import (
-    API_VERSION, DS_HOST, DS_USER, DS_PASSWORD,
+    API_VERSION, DS_HOST, DS_USER, DS_PASSWORD, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from environment_settings import API_HOST, API_VERSION, API_TOKEN
 from app.logging import getLogger

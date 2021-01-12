@@ -1,5 +1,4 @@
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
-from environment_settings import SPREAD_TENDER_TASKS_INTERVAL
+from environment_settings import SPREAD_TENDER_TASKS_INTERVAL, DEFAULT_RETRY_AFTER
 from uuid import uuid4
 from unittest.mock import patch, Mock, call
 from celery.exceptions import Retry

@@ -4,14 +4,13 @@ from celery.utils.log import get_task_logger
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
-    FISCAL_API_HOST, FISCAL_API_PROXIES
+    FISCAL_API_HOST, FISCAL_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
 )
 from fiscal_bot.settings import (
     IDENTIFICATION_SCHEME, DOC_TYPE,
     WORKING_DAYS_BEFORE_REQUEST_AGAIN, REQUEST_MAX_RETRIES,
     WORKING_TIME,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER
 from fiscal_bot.fiscal_api import build_receipt_request
 from fiscal_bot.settings import FISCAL_BOT_START_DATE
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
