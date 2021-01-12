@@ -5,7 +5,7 @@ from uuid import uuid4
 from unittest.mock import patch, Mock
 from celery.exceptions import Retry
 
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from environment_settings import DEFAULT_RETRY_AFTER
 from payments.tasks import process_complaint_params
 from payments.message_ids import (
     PAYMENTS_PATCH_COMPLAINT_PENDING_SUCCESS,

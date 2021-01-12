@@ -1,8 +1,6 @@
 from app.app import cache
-from environment_settings import PUBLIC_API_HOST
+from environment_settings import PUBLIC_API_HOST, CONNECT_TIMEOUT, READ_TIMEOUT
 from payments.utils import request_cdb_tender_data, request_cdb_complaint_data
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
-
 
 CACHE_TIMEOUT = 60 * 10
 

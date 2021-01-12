@@ -6,10 +6,6 @@ from tasks_utils.requests import (
     get_exponential_request_retry_countdown,
     get_task_retry_logger_method,
 )
-from tasks_utils.settings import (
-    CONNECT_TIMEOUT,
-    READ_TIMEOUT,
-)
 from edr_bot.settings import (
     DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
@@ -24,7 +20,7 @@ from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
     EDR_API_HOST, EDR_API_PORT, EDR_API_VERSION, EDR_API_USER, EDR_API_PASSWORD,
     DS_HOST, DS_USER, DS_PASSWORD,
-    SPREAD_TENDER_TASKS_INTERVAL,
+    SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from uuid import uuid4
 import requests

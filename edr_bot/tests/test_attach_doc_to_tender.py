@@ -1,5 +1,4 @@
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
-from environment_settings import API_TOKEN, API_VERSION, API_HOST
+from environment_settings import API_TOKEN, API_VERSION, API_HOST, CONNECT_TIMEOUT, READ_TIMEOUT
 from edr_bot.tasks import attach_doc_to_tender
 from unittest.mock import patch, Mock
 from celery.exceptions import Retry

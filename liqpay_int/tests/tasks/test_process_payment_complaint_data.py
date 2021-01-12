@@ -5,7 +5,7 @@ from unittest.mock import patch, Mock, call, ANY
 
 from celery.exceptions import Retry
 
-from tasks_utils.settings import DEFAULT_RETRY_AFTER
+from environment_settings import DEFAULT_RETRY_AFTER
 from payments.data import STATUS_COMPLAINT_PENDING, STATUS_COMPLAINT_MISTAKEN
 from payments.message_ids import (
     PAYMENTS_GET_COMPLAINT_CODE_ERROR,

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from json import JSONDecodeError
 from unittest.mock import patch, MagicMock
 
-from environment_settings import API_HOST, API_VERSION, PUBLIC_API_HOST
+from environment_settings import API_HOST, API_VERSION, PUBLIC_API_HOST, CONNECT_TIMEOUT, READ_TIMEOUT
 from payments.utils import (
     get_payment_params,
     get_item_data,
@@ -26,8 +26,6 @@ from payments.utils import (
     put_payments_registry_fake_data,
     get_payments_registry_fake_data,
 )
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
-
 
 VALID_ZONED_COMPLAINT_STR = "UA-2020-03-17-000090-a.c2-12ABCDEF"
 VALID_ZONED_COMPLAINT_MULTIPLE_STR = "UA-2020-03-17-000090-a.c112-12ABCDEF"

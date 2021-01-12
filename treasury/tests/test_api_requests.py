@@ -1,5 +1,4 @@
-from environment_settings import TREASURY_PASSWORD, TREASURY_USER, TREASURY_WSDL_URL
-from tasks_utils.settings import CONNECT_TIMEOUT, READ_TIMEOUT
+from environment_settings import TREASURY_PASSWORD, TREASURY_USER, TREASURY_WSDL_URL, CONNECT_TIMEOUT, READ_TIMEOUT
 from treasury.api_requests import (
     parse_request_response, prepare_request_data, send_request,
     prepare_get_response_data, parse_response_content, get_request_response,
