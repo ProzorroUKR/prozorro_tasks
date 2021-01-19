@@ -4,7 +4,7 @@ from environment_settings import (
     API_HOST, API_TOKEN, API_VERSION,
     DS_HOST, DS_USER, DS_PASSWORD, CONNECT_TIMEOUT, READ_TIMEOUT, DEFAULT_RETRY_AFTER,
 )
-from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS, DEFAULT_HEADERS
 from tasks_utils.results_db import (
     get_task_result,
     save_task_result,
@@ -35,6 +35,7 @@ def upload_to_doc_service(self, name, content, doc_type,
                 auth=(DS_USER, DS_PASSWORD),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 files={'file': (name, base64.b64decode(content))},
+                headers=DEFAULT_HEADERS
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
             logger.exception(exc, extra={"MESSAGE_ID": "POST_DOC_API_ERROR"})
@@ -86,6 +87,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
             tender_id=tender_id,
             item_name=item_name,
             item_id=item_id,
+            headers=DEFAULT_HEADERS,
         )
         # get SERVER_ID cookie
         try:
@@ -94,6 +96,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 headers={
                     'Authorization': 'Bearer {}'.format(API_TOKEN),
+                    **DEFAULT_HEADERS,
                 }
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -108,6 +111,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                     headers={
                         'Authorization': 'Bearer {}'.format(API_TOKEN),
+                        **DEFAULT_HEADERS,
                     },
                     cookies=head_response.cookies,
                 )

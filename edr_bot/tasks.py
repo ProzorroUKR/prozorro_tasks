@@ -28,6 +28,7 @@ import json
 import yaml
 import io
 
+from tasks_utils.settings import DEFAULT_HEADERS
 from tasks_utils.tasks import ATTACH_DOC_MAX_RETRIES
 
 logger = get_task_logger(__name__)
@@ -49,7 +50,10 @@ def process_tender(self, tender_id, *args, **kwargs):
     try:
         response = requests.get(
             url,
-            headers={"X-Client-Request-ID": uuid4().hex},
+            headers={
+                "X-Client-Request-ID": uuid4().hex,
+                **DEFAULT_HEADERS,
+            },
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -197,7 +201,10 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
             url,
             auth=(EDR_API_USER, EDR_API_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={"X-Client-Request-ID": meta["id"]}
+            headers={
+                "X-Client-Request-ID": meta["id"],
+                **DEFAULT_HEADERS,
+            }
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_DATA_EXCEPTION"})
@@ -280,7 +287,10 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
                 auth=(DS_USER, DS_PASSWORD),
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                 files=files,
-                headers={'X-Client-Request-ID': data['meta']['id']}
+                headers={
+                    'X-Client-Request-ID': data['meta']['id'],
+                    **DEFAULT_HEADERS,
+                }
             )
         except RETRY_REQUESTS_EXCEPTIONS as exc:
             logger.exception(exc, extra={"MESSAGE_ID": "EDR_POST_DOC_EXCEPTION"})
@@ -352,6 +362,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': meta_id,
+                **DEFAULT_HEADERS,
             }
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -368,6 +379,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
                 headers={
                     'Authorization': 'Bearer {}'.format(API_TOKEN),
                     'X-Client-Request-ID': meta_id,
+                    **DEFAULT_HEADERS,
                 },
                 cookies=head_response.cookies,
             )

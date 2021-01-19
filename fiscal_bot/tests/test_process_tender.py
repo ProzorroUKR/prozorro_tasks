@@ -26,6 +26,7 @@ class TenderTestCase(unittest.TestCase):
                 tender_id=tender_id,
             ),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
         prepare_receipt_request.assert_not_called()
         retry_mock.assert_called_once_with(exc=requests_mock.get.side_effect)
@@ -52,6 +53,7 @@ class TenderTestCase(unittest.TestCase):
                 tender_id=tender_id,
             ),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
         prepare_receipt_request.assert_not_called()
         retry_mock.assert_called_once_with(countdown=10)

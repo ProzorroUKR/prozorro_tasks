@@ -40,6 +40,7 @@ class CheckResponseTestCase(unittest.TestCase):
             files={'file': (str(uid), str(uid).encode())},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
         check_for_response_file_mock.delay.assert_not_called()
@@ -75,6 +76,7 @@ class CheckResponseTestCase(unittest.TestCase):
             files={'file': (str(uid), str(uid).encode())},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
         retry_mock.assert_called_once_with(countdown=16)
         check_for_response_file_mock.delay.assert_not_called()
@@ -107,6 +109,7 @@ class CheckResponseTestCase(unittest.TestCase):
             files={'file': (str(uid), str(uid).encode())},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers={'User-agent': 'prozorro_tasks'},
         )
         check_for_response_file_mock.delay.assert_called_once_with(
             request_data=base64.b64encode(encoded_content).decode(),

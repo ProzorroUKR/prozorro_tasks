@@ -74,6 +74,7 @@ class AttachDocTestCase(unittest.TestCase):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': file_data['meta']['id'],
+                'User-agent': 'prozorro_tasks',
             },
             cookies={'SERVER_ID': server_id},
         )
@@ -114,6 +115,7 @@ class AttachDocTestCase(unittest.TestCase):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': file_data['meta']['id'],
+                'User-agent': 'prozorro_tasks',
             },
             cookies={'SERVER_ID': server_id},
         )
@@ -151,6 +153,7 @@ class AttachDocTestCase(unittest.TestCase):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': file_data['meta']['id'],
+                'User-agent': 'prozorro_tasks',
             },
             cookies={'SERVER_ID': server_id},
         )
@@ -191,6 +194,7 @@ class AttachDocTestCase(unittest.TestCase):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': file_data['meta']['id'],
+                'User-agent': 'prozorro_tasks',
             },
             cookies={'SERVER_ID': server_id},
         )
@@ -230,6 +234,7 @@ class AttachDocTestCase(unittest.TestCase):
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
                 'X-Client-Request-ID': file_data['meta']['id'],
+                'User-agent': 'prozorro_tasks',
             },
             cookies={'SERVER_ID': server_id},
         )

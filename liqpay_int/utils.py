@@ -13,6 +13,7 @@ from environment_settings import (
     LIQPAY_API_HOST,
     LIQPAY_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
+from tasks_utils.settings import DEFAULT_HEADERS
 
 
 class LiqPay(liqpay.LiqPay):
@@ -34,7 +35,8 @@ class LiqPay(liqpay.LiqPay):
             data=request_data,
             verify=False,
             proxies=self._proxies,
-            timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
+            timeout=timeout or (CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS
         )
         return response
 

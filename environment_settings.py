@@ -15,6 +15,7 @@ READ_TIMEOUT = float(os.environ.get("READ_TIMEOUT", 120.0))
 DEFAULT_RETRY_AFTER = int(os.environ.get("DEFAULT_RETRY_AFTER", 5))
 EXPONENTIAL_RETRY_BASE = int(os.environ.get("EXPONENTIAL_RETRY_BASE", 5))
 EXPONENTIAL_RETRY_MAX = int(os.environ.get("EXPONENTIAL_RETRY_MAX", 60 * 60))
+USER_AGENT = os.environ.get("USER_AGENT", "prozorro_tasks")
 
 CRAWLER_TENDER_HANDLERS = set(environ_list("CRAWLER_TENDER_HANDLERS"))
 CRAWLER_CONTRACT_HANDLERS = set(environ_list("CRAWLER_CONTRACT_HANDLERS"))

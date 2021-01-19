@@ -1,5 +1,5 @@
 from tasks_utils.settings import (
-    RETRY_REQUESTS_EXCEPTIONS,
+    RETRY_REQUESTS_EXCEPTIONS, DEFAULT_HEADERS,
 )
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
@@ -67,6 +67,7 @@ def get_public_api_data(task, uid, document_type="tender"):
         response = requests.get(
             f"{PUBLIC_API_HOST}/api/{API_VERSION}/{document_type}s/{uid}",
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "GET_DOC_EXCEPTION"})
@@ -99,6 +100,7 @@ def download_file(task, url):
         response = requests.get(
             url,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "GET_FILE_EXCEPTION"})
@@ -124,6 +126,7 @@ def ds_upload(task, file_name, file_content):
             auth=(DS_USER, DS_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             files={'file': (file_name, file_content)},
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "POST_DOC_API_ERROR"})
@@ -150,6 +153,7 @@ def sign_data(task, data):
             files={'file': ('name', data)},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
         logger.exception(e, extra={"MESSAGE_ID": "SIGN_DATA_REQUEST_ERROR"})

@@ -17,7 +17,7 @@ from environment_settings import (
 from tasks_utils.requests import get_request_retry_countdown
 
 from crawler import resources
-
+from tasks_utils.settings import DEFAULT_HEADERS
 
 logger = get_task_logger(__name__)
 
@@ -83,6 +83,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             params=params,
             cookies=cookies,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "FEED_RETRY_EXCEPTION"})
@@ -110,7 +111,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
                 resource=resource,
                 mode=mode,
                 offset=response_json["next_page"]["offset"],
-                cookies=cookies
+                cookies=cookies,
             )
             if descending:
                 next_page_kwargs["descending"] = descending

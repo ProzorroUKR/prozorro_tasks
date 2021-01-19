@@ -32,6 +32,7 @@ from payments.data import (
     STATUS_COMPLAINT_STOPPED,
     STATUS_COMPLAINT_DECLINED,
 )
+from tasks_utils.settings import DEFAULT_HEADERS
 
 logger = get_task_logger(__name__)
 
@@ -236,7 +237,10 @@ def get_cdb_spore_url(host=PUBLIC_API_HOST):
 
 def get_cdb_request_headers(client_request_id=None, authorization=False):
     client_request_id = client_request_id or "req-payments-" + str(uuid4())
-    headers = {"X-Client-Request-ID": client_request_id}
+    headers = {
+        "X-Client-Request-ID": client_request_id,
+        **DEFAULT_HEADERS,
+    }
     if authorization:
         headers.update({"Authorization": "Bearer {}".format(API_TOKEN)})
     return headers

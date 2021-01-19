@@ -16,7 +16,7 @@ class TestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=xml,
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,
@@ -63,7 +63,7 @@ class TestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=xml,
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -150,7 +150,7 @@ class TestCase(BaseTestCase):
         response = self.client.post(
             '/treasury',
             data=prepare_request(xml, should_compress=False),
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml", "User-agent": "prozorro_tasks"}
         )
         self.assertEqual(
             response.data,

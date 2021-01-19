@@ -85,6 +85,7 @@ class CheckResponseTestCase(unittest.TestCase):
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             proxies=FISCAL_API_PROXIES,
+            headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -125,6 +126,7 @@ class CheckResponseTestCase(unittest.TestCase):
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             proxies=FISCAL_API_PROXIES,
+            headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -165,6 +167,7 @@ class CheckResponseTestCase(unittest.TestCase):
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             proxies=FISCAL_API_PROXIES,
+            headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
@@ -198,6 +201,7 @@ class CheckResponseTestCase(unittest.TestCase):
                     data=request_data,
                     timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
                     proxies=FISCAL_API_PROXIES,
+                    headers={'User-agent': 'prozorro_tasks'},
                 )
             ]
         )

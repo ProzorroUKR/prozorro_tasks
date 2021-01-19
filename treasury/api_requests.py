@@ -14,6 +14,8 @@ from lxml import etree
 from requests import Session
 import base64
 
+from tasks_utils.settings import DEFAULT_HEADERS
+
 logger = get_task_logger(__name__)
 
 
@@ -34,6 +36,7 @@ def send_request(task, xml, sign="", message_id=None, method_name="GetRef"):
     request_data = prepare_request_data(task, xml, sign, message_id, method_name)
 
     session = Session()
+    session.headers.update(DEFAULT_HEADERS)
     if TREASURY_SKIP_REQUEST_VERIFY:
         session.verify = False
     try:
@@ -41,7 +44,10 @@ def send_request(task, xml, sign="", message_id=None, method_name="GetRef"):
             TREASURY_WSDL_URL,
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={'content-type': 'text/xml'},
+            headers={
+                'content-type': 'text/xml',
+                **DEFAULT_HEADERS,
+            },
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})
@@ -113,6 +119,7 @@ def prepare_get_response_data(task, message_id):
 def get_request_response(task, message_id):
     request_data = prepare_get_response_data(task, message_id)
     session = Session()
+    session.headers.update(DEFAULT_HEADERS)
     if TREASURY_SKIP_REQUEST_VERIFY:
         session.verify = False
     try:
@@ -120,7 +127,10 @@ def get_request_response(task, message_id):
             TREASURY_WSDL_URL,
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={'content-type': 'text/xml'},
+            headers={
+                'content-type': 'text/xml',
+                **DEFAULT_HEADERS,
+            },
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_REQUEST_EXCEPTION"})

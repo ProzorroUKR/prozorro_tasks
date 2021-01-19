@@ -47,6 +47,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         requests_mock.post.assert_not_called()
@@ -87,6 +88,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         requests_mock.post.assert_called_once_with(
@@ -96,6 +98,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
 
@@ -133,6 +136,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         requests_mock.post.assert_called_once_with(
@@ -142,6 +146,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
 
@@ -178,6 +183,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         requests_mock.post.assert_called_once_with(
@@ -187,6 +193,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         get_task_result_mock.assert_called_once_with(
@@ -253,6 +260,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         requests_mock.post.assert_called_once_with(
@@ -262,6 +270,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
 
@@ -304,7 +313,10 @@ class AttachToTenderTestCase(unittest.TestCase):
         requests_mock.head.assert_called_once_with(
             url,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            headers={'Authorization': 'Bearer {}'.format(API_TOKEN)}
+            headers={
+                'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
+            }
         )
         requests_mock.post.assert_called_once_with(
             url,
@@ -313,6 +325,7 @@ class AttachToTenderTestCase(unittest.TestCase):
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers={
                 'Authorization': 'Bearer {}'.format(API_TOKEN),
+                'User-agent': 'prozorro_tasks',
             }
         )
         save_task_result_mock.assert_not_called()
@@ -347,6 +360,7 @@ class DSUploadTestCase(unittest.TestCase):
             auth=(DS_USER, DS_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             files={'file': (name, b"hello")},
+            headers={'User-agent': 'prozorro_tasks'},
         )
         attach_doc_to_tender_mock.assert_not_called()
 
@@ -375,6 +389,7 @@ class DSUploadTestCase(unittest.TestCase):
             auth=(DS_USER, DS_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             files={'file': (name, b"hello")},
+            headers={'User-agent': 'prozorro_tasks'},
         )
         attach_doc_to_tender_mock.assert_not_called()
 
@@ -416,6 +431,7 @@ class DSUploadTestCase(unittest.TestCase):
             auth=(DS_USER, DS_PASSWORD),
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             files={'file': (name, b"hi")},
+            headers={'User-agent': 'prozorro_tasks'},
         )
         attach_doc_to_tender_mock.delay.assert_called_once_with(
             item_name="award",
