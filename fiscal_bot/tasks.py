@@ -17,7 +17,11 @@ from tasks_utils.datetime import get_now, get_working_datetime, working_days_cou
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
 from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
-from tasks_utils.requests import get_filename_from_response, get_task_retry_logger_method
+from tasks_utils.requests import (
+    get_filename_from_response,
+    get_task_retry_logger_method,
+    get_exponential_request_retry_countdown,
+)
 from datetime import timedelta
 import requests
 import base64
@@ -120,7 +124,7 @@ def prepare_receipt_request(self, supplier, requests_reties=0):
             )
 
 
-@app.task(bind=True, max_retries=10)
+@app.task(bind=True, max_retries=50)
 @formatter.omit(["request_data"])
 def send_request_receipt(self, request_data, filename, supplier, requests_reties):
     task_args = supplier, requests_reties
@@ -138,15 +142,37 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
         else:
             if response.status_code != 200:
                 logger.error("Unsuccessful status code: {} {}".format(response.status_code, response.text),
-                             extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
+                             extra={"MESSAGE_ID": "FISCAL_API_POST_INVALID_STATUS_CODE_RESPONSE_ERROR"})
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
             else:
                 data = response.json()
 
                 if data["status"] != "OK":
-                    logger.error("Getting receipt failed: {} {}".format(response.status_code, response.text),
-                                 extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
-                    return
+                    if data["status"] != "ERROR_DB":
+                        logger.info(
+                            "Getting receipt status: {} {}, retrying ...".format(
+                                response.status_code, response.text
+                            ),
+                            extra={"MESSAGE_ID": "FISCAL_API_POST_DATA_STATUS_ERROR_RESPONSE"}
+                        )
+                        self.retry(
+                            countdown=get_exponential_request_retry_countdown(self, response)
+                        )
+                    else:
+                        if "CallableStatementCallback" in data["message"]:
+                            logger.error(
+                                "Getting receipt failed: {} {}".format(response.status_code, response.text),
+                                extra={"MESSAGE_ID": "FISCAL_API_POST_CALLABLE_STATEMENT_CALLBACK_ERROR_RESPONSE"}
+                            )
+                            self.retry(
+                                countdown=get_exponential_request_retry_countdown(self, response)
+                            )
+                        else:
+                            logger.error(
+                                "Getting receipt failed: {} {}".format(response.status_code, response.text),
+                                extra={"MESSAGE_ID": "FISCAL_API_POST_DATA_STATUS_ERROR_DB_RESPONSE"}
+                            )
+                            return
                 else:
                     uid = save_task_result(self, data, task_args)
                     logger.info(
