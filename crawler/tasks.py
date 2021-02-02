@@ -1,6 +1,7 @@
 import requests
 
 from celery.utils.log import get_task_logger
+
 from celery_worker.celery import app
 from celery_worker.locks import unique_lock
 from crawler.settings import (
@@ -9,6 +10,11 @@ from crawler.settings import (
     API_LIMIT,
     FEED_URL_TEMPLATE,
     WAIT_MORE_RESULTS_COUNTDOWN,
+)
+from crawler.utils import (
+    put_date_modified_lock,
+    update_date_modified_lock,
+    handle_date_modified_lock,
 )
 from environment_settings import (
     PUBLIC_API_HOST,
@@ -38,6 +44,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
     # for initialization: start with backward feed request
     if not offset:
         descending = "1"
+        put_date_modified_lock(resource)
 
     url = FEED_URL_TEMPLATE.format(
         host=PUBLIC_API_HOST,
@@ -88,6 +95,19 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
                         handler(item)
                     except Exception as e:
                         logger.exception(e, extra={"MESSAGE_ID": "FEED_HANDLER_EXCEPTION"})
+
+            # handle reinitialization with lock by dateModified
+            date_modified_list = [item["dateModified"] for item in data if "dateModified" in item]
+            if not descending:
+                # save dateModified on forward crawling
+                max_date_modified = max(date_modified_list) if date_modified_list else None
+                update_date_modified_lock(resource, max_date_modified)
+            elif descending and offset:
+                # stop backward crawling when reach saved dateModified
+                min_date_modified = min(date_modified_list) if date_modified_list else None
+                if handle_date_modified_lock(resource, min_date_modified):
+                    logger.info("Stopping backward crawling early", extra={"MESSAGE_ID": "FEED_BACKWARD_EARLY_FINISH"})
+                    return
 
             # schedule getting the next page
             next_page_kwargs = dict(
@@ -157,4 +177,5 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             logger.warning("Unexpected status code {}: {}".format(response.status_code, response.text),
                            extra={"MESSAGE_ID": "FEED_UNEXPECTED_STATUS"})
             raise self.retry(countdown=get_request_retry_countdown(response))
+
 
