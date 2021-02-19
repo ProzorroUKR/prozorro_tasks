@@ -10,9 +10,15 @@ from fiscal_bot.settings import (
     IDENTIFICATION_SCHEME, DOC_TYPE,
     WORKING_DAYS_BEFORE_REQUEST_AGAIN, REQUEST_MAX_RETRIES,
     WORKING_TIME,
+    NUMBER_OF_WORKING_DAYS_FOR_REQUEST_RETRY_MAPPING,
 )
 from fiscal_bot.fiscal_api import build_receipt_request
 from fiscal_bot.settings import FISCAL_BOT_START_DATE
+from fiscal_bot.utils import (
+    save_check_receipt_task_info,
+    get_check_receipt_tasks_info_by_tender_id,
+    get_check_receipt_task_info_by_id,
+)
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
 from tasks_utils.tasks import upload_to_doc_service
 from tasks_utils.results_db import get_task_result, save_task_result
@@ -292,27 +298,66 @@ def prepare_check_request(self, uid, supplier, request_time, requests_reties):
 @app.task(bind=True, max_retries=None)
 @formatter.omit(["request_data"])
 def check_for_response_file(self, request_data, supplier, request_time, requests_reties):
+    """"
+    * Checking for response file. In case no answer after WORKING_DAYS_BEFORE_REQUEST_AGAIN ->
+    called new prepare_receipt_request.
+    * If successful response appears in any task with same tenderID -> Stop all check_for_response_file tasks for
+     specified tenderID.
+
+    requests_reties / days | 1 2 3 4 5 6 7 8 9 10
+    -----------------------|---------------------
+    initial task           | + + + + + + + + + +
+    1st task               |     + + + + + + + +
+    2nd task               |         + + + + + +
+    """
+
+    task_id = self.request.id
+    tender_id = supplier["tender_id"]
+    tender_check_receipts_tasks = get_check_receipt_tasks_info_by_tender_id(tender_id)
+
+    if any([record["receiptFileSuccessfullySaved"] for record in tender_check_receipts_tasks]):
+        logger.warning(
+            "Receipt file for {} tender has been already obtained by another task. Stop checking.".format(tender_id),
+            extra={"MESSAGE_ID": "FISCAL_API_STOP_CHECKING_DUE_TO_ANOTHER_SUCCESSFUL_TASK"}
+        )
+        return
+
+    try:
+        number_of_working_days_for_check = NUMBER_OF_WORKING_DAYS_FOR_REQUEST_RETRY_MAPPING[requests_reties]
+    except KeyError:
+        logger.error(extra={"MESSAGE_ID": "UNEXPECTED_REQUEST_RETRY_NUMBER"})
+        return
 
     days_passed = working_days_count_since(request_time, working_weekends_enabled=True)
+    check_receipt_task_info = get_check_receipt_task_info_by_id(task_id)
+
+    if check_receipt_task_info:
+        has_called_new_check_receipt_task = check_receipt_task_info['hasCalledNewCheckReceiptTask']
+    else:
+        has_called_new_check_receipt_task = False
 
     if days_passed > WORKING_DAYS_BEFORE_REQUEST_AGAIN:
+        if not has_called_new_check_receipt_task:
 
-        if requests_reties < REQUEST_MAX_RETRIES:
-            prepare_receipt_request.delay(
-                supplier=supplier,
-                requests_reties=requests_reties + 1
-            )
-            logger.warning(
-                "Request retry scheduled",
-                extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_SCHEDULED"}
-            )
-        else:
-            logger.warning(
-                "Additional requests number {} exceeded".format(REQUEST_MAX_RETRIES),
-                extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_EXCEED"}
-            )
+            if requests_reties < REQUEST_MAX_RETRIES:
+                save_check_receipt_task_info(
+                    tender_id, task_id, has_called_new_check_receipt_task=True
+                )
+                prepare_receipt_request.delay(
+                    supplier=supplier,
+                    requests_reties=requests_reties + 1
+                )
+                logger.warning(
+                    "Request retry scheduled for {} days".format(number_of_working_days_for_check),
+                    extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_SCHEDULED"}
+                )
+            else:
+                logger.warning(
+                    "Additional requests number {} exceeded".format(REQUEST_MAX_RETRIES),
+                    extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_EXCEED"}
+                )
 
-    else:
+    if days_passed <= number_of_working_days_for_check:
         try:
             response = requests.post(
                 '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
@@ -351,6 +396,12 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                 else:
                     for kvt in data["kvtList"]:
                         if kvt["finalKvt"]:
+                            save_check_receipt_task_info(
+                                tender_id, task_id,
+                                has_called_new_check_receipt_task=has_called_new_check_receipt_task,
+                                receipt_file_successfully_saved=True
+                            )
+
                             decode_and_save_data.delay(
                                 kvt["kvtFname"],
                                 kvt["kvtBase64"],
@@ -363,3 +414,10 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                                 ),
                                 extra={"MESSAGE_ID": "FISCAL_API_KVT_FOUND"}
                             )
+    else:
+        logger.warning(
+            "{}/{} number of working days exceed for receipt request retry №{}. Stop checking.".format(
+                days_passed, number_of_working_days_for_check, requests_reties+1),
+            extra={"MESSAGE_ID": "FISCAL_REQUEST_WORKING_DAYS_RETRY_EXCEED"}
+        )
+
