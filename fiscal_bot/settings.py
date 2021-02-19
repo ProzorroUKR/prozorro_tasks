@@ -7,6 +7,7 @@ procedures = (
     'competitiveDialogueUA.stage2', 'competitiveDialogueEU.stage2',
     'esco',
     'closeFrameworkAgreementUA',
+    'simple.defense',
 )
 
 WORKING_DAYS_BEFORE_REQUEST_AGAIN = 2
