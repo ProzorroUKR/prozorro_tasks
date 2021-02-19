@@ -66,6 +66,9 @@ FISCAL_SENDER_STI = os.environ.get("FISCAL_SENDER_STI", "ДПI у Шевченк
 # we've decided to use the counter first sign to distinct our requests from different environments
 # for prod the will be 0000001, 0000002, ..., for sandbox -  9000001, 9000002, ...
 FISCAL_BOT_ENV_NUMBER = int(os.environ.get("FISCAL_BOT_ENV_NUMBER", 0))
+FISCAL_BOT_CHECK_RECEIPT_TASKS_COLLECTION = os.environ.get(
+    "FISCAL_BOT_CHECK_RECEIPT_TASKS_COLLECTION", "fiscal_bot_check_receipt_tasks"
+)
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", None)
