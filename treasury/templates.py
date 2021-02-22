@@ -188,8 +188,7 @@ def _build_tender_xml(maker, context):
         maker.startDateCfaua(None),  # will be added later
         maker.ContractsContractID(tender_contract["id"]),  # will be added later
         maker.lotsTitle(get_value(lot, "title") if lot else None),
-        maker.procuringEntityKind(secondary_data["procuring_entity_kind"]),
-        maker.tendersTitle(tender.get("title"))
+        maker.procuringEntityKind(secondary_data["procuring_entity_kind"])
     )
     return result
 
