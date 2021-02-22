@@ -18,6 +18,7 @@ qualification_procedures = (
     'competitiveDialogueEU.stage2',
     'esco',
     'closeFrameworkAgreementUA',
+    'simple.defense',
 )
 qualification_procedures_limited = (
     'reporting',

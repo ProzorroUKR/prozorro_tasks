@@ -101,7 +101,6 @@ test_plan = dict(
 )
 test_tender = dict(
     id="55555",
-    title="Distribution of natural gas for SZRU",
     tenderID="UA-2020-55555",
     date=datetime(2006, 5, 7),
     procuringEntity=dict(
@@ -431,7 +430,6 @@ class TemplatesTestCase(unittest.TestCase):
             b'<ContractsContractID>123</ContractsContractID>'
             b'<lotsTitle>Lot 1, Some lot information</lotsTitle>'
             b'<procuringEntityKind>general</procuringEntityKind>'
-            b'<tendersTitle>Distribution of natural gas for SZRU</tendersTitle>'
             b'</report>'
             b'</root>'
         )
@@ -453,7 +451,6 @@ class TemplatesTestCase(unittest.TestCase):
         context["contract"]["changes"] = []
         del context["plan"]["additionalClassifications"]
         del context["plan"]["budget"]
-        del context["tender"]["title"]
         context["tender"]["items"] = []
         context["tender"]["milestones"] = []
         context["tender"]["bids"] = []
