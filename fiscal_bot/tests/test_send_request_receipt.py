@@ -88,11 +88,74 @@ class ReceiptTestCase(unittest.TestCase):
             status_code=200,
             json=lambda: {"status": "ERROR"}
         )
+        with self.assertRaises(Retry):
+            send_request_receipt(
+                request_data=request_data, filename=filename,
+                supplier=supplier, requests_reties=0
+            )
+        save_sfs_data_mock.apply_async.assert_not_called()
+        check_request_mock.apply_async.assert_not_called()
 
-        send_request_receipt(
+    @patch("fiscal_bot.tasks.get_task_result")
+    @patch("fiscal_bot.tasks.prepare_check_request")
+    @patch("fiscal_bot.tasks.decode_and_save_data")
+    @patch("fiscal_bot.tasks.requests")
+    def test_request_error_db_sql_message_response(self, requests_mock, save_sfs_data_mock,
+                                    check_request_mock, get_result_mock):
+        get_result_mock.return_value = None
+        filename = "test.xml"
+        request_data = "Y29udGVudA=="
+
+        supplier = dict(
+            name="Python Monty Иванович",
+            identifier="AA426097",
+            tender_id="f" * 32,
+            award_id="c" * 32,
+            tenderID="UA-2019-01-31-000147-a",
+        )
+        requests_mock.post.return_value = Mock(
+            status_code=200,
+            json=lambda: {"status": "ERROR_DB",
+                          "message": "CallableStatementCallback; uncategorized SQLException for SQL"}
+        )
+        with self.assertRaises(Retry):
+            send_request_receipt(
+                request_data=request_data, filename=filename,
+                supplier=supplier, requests_reties=0
+            )
+        save_sfs_data_mock.apply_async.assert_not_called()
+        check_request_mock.apply_async.assert_not_called()
+
+    @patch("fiscal_bot.tasks.get_task_result")
+    @patch("fiscal_bot.tasks.prepare_check_request")
+    @patch("fiscal_bot.tasks.decode_and_save_data")
+    @patch("fiscal_bot.tasks.requests")
+    def test_request_error_db_document_duplicate_response(self, requests_mock, save_sfs_data_mock,
+                                                  check_request_mock, get_result_mock):
+        get_result_mock.return_value = None
+        filename = "test.xml"
+        request_data = "Y29udGVudA=="
+
+        supplier = dict(
+            name="Python Monty Иванович",
+            identifier="AA426097",
+            tender_id="f" * 32,
+            award_id="c" * 32,
+            tenderID="UA-2019-01-31-000147-a",
+        )
+        requests_mock.post.return_value = Mock(
+            status_code=200,
+            json=lambda: {
+                "status": "ERROR_DB",
+                "message": "Документ 26590002426097J1603102100000058310120212659.XML вже було надіслано,"
+                           " можливо вказано не вірній номер документа в періоді."
+                }
+        )
+        res = send_request_receipt(
             request_data=request_data, filename=filename,
             supplier=supplier, requests_reties=0
         )
+        self.assertEqual(res, None)
         save_sfs_data_mock.apply_async.assert_not_called()
         check_request_mock.apply_async.assert_not_called()
 

@@ -7,9 +7,13 @@ import unittest
 HOLIDAYS = {
     "2019-03-08",
     "2019-05-01",
+    "2021-01-01",
+    "2021-01-07",
+    "2021-01-08",
+    "2021-03-08"
 }
 
-WORKING_WEEKENDS = {"2019-06-08"}
+WORKING_WEEKENDS = {"2019-06-08", "2021-01-16", "2021-08-28", "2021-10-23"}
 
 
 @patch("tasks_utils.datetime.HOLIDAYS", new=HOLIDAYS)
@@ -110,6 +114,22 @@ class GetWorkingTimeCase(unittest.TestCase):
             TIMEZONE.localize(datetime(2019, 6, 8, 9))
         )
 
+    def test_christmas_2021_working_weekends_enabled(self):
+        now = TIMEZONE.localize(datetime(2021, 1, 6, 18, 30))
+        result = get_working_datetime(now, working_weekends_enabled=True)
+        self.assertEqual(
+            result,
+            TIMEZONE.localize(datetime(2021, 1, 11, 9))
+        )
+
+    def test_new_year_2021_working_weekends_enabled(self):
+        now = TIMEZONE.localize(datetime(2020, 12, 31, 18, 30))
+        result = get_working_datetime(now, working_weekends_enabled=True)
+        self.assertEqual(
+            result,
+            TIMEZONE.localize(datetime(2021, 1, 4, 9))
+        )
+
 
 @patch("tasks_utils.datetime.HOLIDAYS", new=HOLIDAYS)
 @patch("tasks_utils.datetime.WORKING_WEEKENDS", new=WORKING_WEEKENDS)
@@ -206,6 +226,18 @@ class WorkingDaysCountSinceCase(unittest.TestCase):
     def test_ww_enabled_from_ww(self):
         dt = TIMEZONE.localize(datetime(2019, 6, 8, 9, 1))
         now = TIMEZONE.localize(datetime(2019, 6, 10, 18))
+        result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
+        self.assertEqual(result, 2)
+
+    def test_christmas_2021_enabled_from_ww(self):
+        dt = TIMEZONE.localize(datetime(2021, 1, 5, 9, 1))
+        now = TIMEZONE.localize(datetime(2021, 1, 11, 9))
+        result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
+        self.assertEqual(result, 3)
+
+    def test_new_year_2021_enabled_from_ww(self):
+        dt = TIMEZONE.localize(datetime(2020, 12, 31, 9, 1))
+        now = TIMEZONE.localize(datetime(2021, 1, 4, 9))
         result = working_days_count_since(dt, now=now, working_weekends_enabled=True)
         self.assertEqual(result, 2)
 
