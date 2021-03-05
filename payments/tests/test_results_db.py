@@ -177,5 +177,5 @@ class ResultsDBTestCase(unittest.TestCase):
 
         self.assertEqual(result, collection.find_one.return_value)
         collection.find_one.assert_called_once_with(
-            {"$and": [{"params": params}]}
+            {'$and': [{'params.test_param': 'test_value'}]}
         )
