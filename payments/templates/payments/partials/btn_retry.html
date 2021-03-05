@@ -1,5 +1,20 @@
 {% with path='/payments/' + data.id.value + '/retry' %}
-    <a href="{{ path }}" class="btn btn-sm btn-primary btn-payment btn-block mb-2" data-toggle="modal" data-target="#modalRetry">
+    <a href="{{ path }}"
+       class="btn btn-sm btn-primary btn-payment btn-block mb-2"
+       data-title="Повторити обробку операції"
+       data-text="Виконати спробу обробки даних операції"
+       data-toggle="modal"
+       data-target="#modalRetry">
         <i class="fas fa-play-circle mr-2"></i> Повторити обробку операції
+    </a>
+{% endwith %}
+{% with path='/payments/' + data.id.value + '/recheck' %}
+    <a href="{{ path }}"
+       class="btn btn-sm btn-primary btn-payment btn-block mb-2"
+       data-title="Повторити перевірку тендеру"
+       data-text="Виконати спробу перевірки скарг тендера"
+       data-toggle="modal"
+       data-target="#modalLinkConfirm">
+        <i class="fas fa-play-circle mr-2"></i> Повторити перевірку тендеру
     </a>
 {% endwith %}

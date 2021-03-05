@@ -11,6 +11,7 @@ from payments.message_ids import (
     PAYMENTS_SEARCH_INVALID_CODE,
 )
 from liqpay_int.tasks import process_payment_data
+from payments.tasks import process_tender
 from payments.results_db import (
     get_payment_item,
     query_combined_or,
@@ -269,6 +270,21 @@ def payment_retry(uid):
     if payment.get("type") == "credit":
         process_payment_data.apply_async(kwargs=dict(
             payment_data=payment
+        ))
+    return redirect(url_for("payments_views.payment_detail", uid=uid))
+
+
+@bp.route("/<uid>/recheck", methods=["GET"])
+@login_groups_required(["admins"])
+def payment_recheck(uid):
+    data = get_payment_item(uid)
+    if not data:
+        abort(404)
+    params = data.get("params", {})
+    tender_id = params.get("tender_id")
+    if tender_id:
+        process_tender.apply_async(kwargs=dict(
+            tender_id=tender_id
         ))
     return redirect(url_for("payments_views.payment_detail", uid=uid))
 

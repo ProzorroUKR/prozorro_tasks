@@ -1,9 +1,9 @@
-<div class="modal modal-payment fade" id="modalRetry" tabindex="-1" role="dialog" aria-labelledby="modalRetryTitle"
+<div class="modal modal-payment fade" id="modalLinkConfirm" tabindex="-1" role="dialog" aria-labelledby="modalLinkConfirmTitle"
      aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalRetryTitle"></h5>
+                <h5 class="modal-title" id="modalLinkConfirmTitle"></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -19,9 +19,10 @@
     </div>
 </div>
 <script type="text/javascript">
-    $('#modalRetry').on('show.bs.modal', function (event) {
+    $('#modalLinkConfirm').on('show.bs.modal', function (event) {
         var modal = $(this);
-        modal.find('.modal-title').text('Повторити обробку операції');
+        modal.find('.modal-title').text($(event.relatedTarget).data('title'));
+        modal.find('.modal-body').text($(event.relatedTarget).data('text'));
         modal.find('.modal-footer a').attr('href', $(event.relatedTarget).attr('href'));
     })
 </script>
