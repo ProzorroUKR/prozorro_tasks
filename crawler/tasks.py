@@ -1,6 +1,7 @@
 import requests
 
 from celery.utils.log import get_task_logger
+
 from celery_worker.celery import app
 from celery_worker.locks import unique_lock
 from crawler.settings import (
@@ -9,6 +10,11 @@ from crawler.settings import (
     API_LIMIT,
     FEED_URL_TEMPLATE,
     WAIT_MORE_RESULTS_COUNTDOWN,
+)
+from crawler.utils import (
+    put_date_modified_lock,
+    update_date_modified_lock,
+    handle_date_modified_lock,
 )
 from environment_settings import (
     PUBLIC_API_HOST,
@@ -28,36 +34,17 @@ RETRY_REQUESTS_EXCEPTIONS = (
 )
 
 
-@app.task(bind=True)
-@unique_lock
-def echo_task(self, v=0):  # pragma: no cover
-    """
-    DEBUG Task
-    :param self:
-    :param v:
-    :return:
-    """
-    from time import sleep
-    for i in reversed(range(10)):
-        logger.info((v, i), extra={"MESSAGE_ID": "COUNTDOWN"})
-        sleep(3)
-    logger.info("Add new task",  extra={"MESSAGE_ID": "Hi"})
-    echo_task.delay(v+1)
-    logger.info("#$" * 10,  extra={"MESSAGE_ID": "Bye"})
-
-
 @app.task(bind=True, acks_late=True, lazy=False, max_retries=None)
 @unique_lock(omit=("cookies",))
 def process_feed(self, resource="tenders", offset=None, descending=None, mode="_all_", cookies=None, try_count=0):
-    logger.info("Start task {}".format(self.request.id),
-                extra={"MESSAGE_ID": "START_TASK_MSG", "TASK_ID": self.request.id})
-
     config = resources.configs.get(resource)
 
     cookies = cookies or {}
 
-    if not offset:  # initialization
+    # for initialization: start with backward feed request
+    if not offset:
         descending = "1"
+        put_date_modified_lock(resource)
 
     url = FEED_URL_TEMPLATE.format(
         host=PUBLIC_API_HOST,
@@ -96,30 +83,46 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
 
             # get response data
             response_json = response.json()
+            data = response_json["data"]
+            next_page_offset = response_json["next_page"]["offset"]
+            prev_page_offset = response_json.get("prev_page", {}).get("offset")
 
-            # call handlers (TENDER_HANDLERS, CONTRACT_HANDLERS, FRAMEWORK_HANDLERS
+            # call handlers
             item_handlers = config.handlers
-            for item in response_json["data"]:
+            for item in data:
                 for handler in item_handlers:
                     try:
                         handler(item)
                     except Exception as e:
                         logger.exception(e, extra={"MESSAGE_ID": "FEED_HANDLER_EXCEPTION"})
 
+            # handle reinitialization with lock by dateModified
+            date_modified_list = [item["dateModified"] for item in data if "dateModified" in item]
+            if not descending:
+                # save dateModified on forward crawling
+                max_date_modified = max(date_modified_list) if date_modified_list else None
+                update_date_modified_lock(resource, max_date_modified)
+            elif descending and offset:
+                # stop backward crawling when reach saved dateModified
+                min_date_modified = min(date_modified_list) if date_modified_list else None
+                if handle_date_modified_lock(resource, min_date_modified):
+                    logger.info("Stopping backward crawling early", extra={"MESSAGE_ID": "FEED_BACKWARD_EARLY_FINISH"})
+                    return
+
             # schedule getting the next page
             next_page_kwargs = dict(
                 resource=resource,
                 mode=mode,
-                offset=response_json["next_page"]["offset"],
+                offset=next_page_offset,
                 cookies=cookies,
             )
             if descending:
                 next_page_kwargs["descending"] = descending
-            if len(response_json["data"]) < API_LIMIT:
+            if len(data) < API_LIMIT:
                 if descending:
                     logger.info("Stopping backward crawling", extra={"MESSAGE_ID": "FEED_BACKWARD_FINISH"})
                 else:
-                    if offset == next_page_kwargs["offset"]:
+                    if offset == next_page_offset:
                         # increase try_count so task won't be stopped by unique_lock decorator
                         next_page_kwargs["try_count"] = try_count + 1
                     else:
@@ -133,15 +136,15 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             else:
                 process_feed.apply_async(kwargs=next_page_kwargs)
 
-            # if it's initialization, add forward crawling task
+            # for initialization: add forward crawling task
             if not offset:
                 process_kwargs = dict(
                     resource=resource,
                     mode=mode,
                     cookies=cookies,
                 )
-                if response_json.get("prev_page", {}).get("offset"):
-                    process_kwargs["offset"] = response_json["prev_page"]["offset"]
+                if prev_page_offset:
+                    process_kwargs["offset"] = prev_page_offset
                 else:
                     logger.debug("Initialization on an empty feed result", extra={"MESSAGE_ID": "FEED_INIT_EMPTY"})
                     process_kwargs["try_count"] = try_count + 1
@@ -153,6 +156,7 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
         elif response.status_code == 412:  # Precondition failed
             logger.warning("Precondition failed with cookies {}".format(cookies),
                            extra={"MESSAGE_ID": "FEED_PRECONDITION_FAILED"})
+            # retry with new cookies that have updated SERVER_ID cookie
             retry_kwargs = dict(**self.request.kwargs)
             retry_kwargs["cookies"] = response.cookies.get_dict()
             raise self.retry(kwargs=retry_kwargs)
@@ -161,11 +165,12 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
             logger.warning("Offset {} failed with cookies {}".format(offset, cookies),
                            extra={"MESSAGE_ID": "FEED_OFFSET_FAILED"})
 
-            if not descending or not offset:  # for forward process only
+            # for forward or initialization: start new initialization (empty offset)
+            if not descending or not offset:
                 logger.info("Feed process reinitialization",
                             extra={"MESSAGE_ID": "FEED_REINITIALIZATION"})
-                retry_kwargs = {k: v for k, v in self.request.kwargs.items()
-                                if k != "offset"}
+                retry_kwargs = dict(**self.request.kwargs)
+                retry_kwargs.pop("offset", None)
                 raise self.retry(kwargs=retry_kwargs)
 
         else:
@@ -173,4 +178,4 @@ def process_feed(self, resource="tenders", offset=None, descending=None, mode="_
                            extra={"MESSAGE_ID": "FEED_UNEXPECTED_STATUS"})
             raise self.retry(countdown=get_request_retry_countdown(response))
 
-        return response.status_code
+
