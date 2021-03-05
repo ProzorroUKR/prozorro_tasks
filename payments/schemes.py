@@ -12,6 +12,7 @@ from payments.data import (
     complainant_name,
     complainant_telephone,
     value_amount_representation,
+    complainant_status,
 )
 
 PAYMENT_DESCRIPTION_SCHEME_ITEM = {
@@ -193,6 +194,13 @@ EXTRA_COMPLAINANT_TELEPHONE = {
     "method": complainant_telephone,
 }
 
+EXTRA_COMPLAINANT_STATUS = {
+    "type": "object",
+    "title": "Статус скарги",
+    "path": ".",
+    "method": complainant_status,
+}
+
 EXTRA_SCHEME = {
     "user": EXTRA_USER_SCHEME_ITEM,
     "created": EXTRA_CREATED_SCHEME_ITEM,
@@ -202,6 +210,7 @@ EXTRA_SCHEME = {
     "complainant_id": EXTRA_COMPLAINANT_ID,
     "complainant_name": EXTRA_COMPLAINANT_NAME,
     "complainant_telephone": EXTRA_COMPLAINANT_TELEPHONE,
+    "complainant_status": EXTRA_COMPLAINANT_STATUS,
 }
 
 ROOT_ID_SCHEME_ITEM = {
