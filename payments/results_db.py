@@ -368,7 +368,9 @@ def set_payment_resolution(data, resolution):
 @log_exc(logger, PyMongoError, "PAYMENTS_GET_BY_PARAMS_MONGODB_EXCEPTION")
 def get_payment_item_by_params(params, message_ids=None):
     collection = get_mongodb_collection()
-    filters = [{"params": params}]
+    filters = []
+    for param_key, param_value in params.items():
+        filters.append({"params.{}".format(param_key): param_value})
     if message_ids:
         filters.append({"messages.message_id": {"$in": message_ids}})
     return collection.find_one(query_combined_and(filters))

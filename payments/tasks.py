@@ -122,7 +122,7 @@ def process_complaint_params(self, complaint_params, complaint_data):
                 )
             )
     else:
-        logger.warning("Payment not found for complaint {} with params".format(
+        logger.warning("Payment not found for complaint {} with params: {}".format(
             complaint_data["id"], complaint_params
         ), extra={
             "MESSAGE_ID": "PAYMENTS_CRAWLER_PAYMENT_NOT_FOUND"
