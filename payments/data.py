@@ -174,6 +174,19 @@ def complainant_telephone(data):
     return telephone
 
 
+def complainant_status(data):
+    status = None
+    resolution = data.get("resolution")
+    if resolution:
+        status = resolution.get("status")
+    from payments.cached import get_complaint
+    complaint_data = get_complaint(data.get("params"))
+    if complaint_data:
+        status = complaint_data.get("status")
+    if status:
+        return status
+
+
 def payment_primary_message(messages):
     for priority in MESSAGE_ID_PRIORITY:
         for message in messages or []:
