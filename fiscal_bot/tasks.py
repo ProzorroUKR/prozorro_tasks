@@ -318,10 +318,13 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
 
     task_id = self.request.id
     tender_id = supplier["tender_id"]
+    if self.request.retries == 0:
+        save_check_receipt_task_info(tender_id, task_id)
+
     tender_check_receipts_tasks = get_check_receipt_tasks_info_by_tender_id(tender_id)
 
     if any([record["receiptFileSuccessfullySaved"] for record in tender_check_receipts_tasks]):
-        logger.warning(
+        logger.info(
             "Receipt file for {} tender has been already obtained by another task. Stop checking.".format(tender_id),
             extra={"MESSAGE_ID": "FISCAL_API_STOP_CHECKING_DUE_TO_ANOTHER_SUCCESSFUL_TASK"}
         )
@@ -352,7 +355,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                     supplier=supplier,
                     requests_reties=requests_reties + 1
                 )
-                logger.warning(
+                logger.info(
                     "Request retry scheduled for {} days".format(number_of_working_days_for_check),
                     extra={"MESSAGE_ID": "FISCAL_REQUEST_RETRY_SCHEDULED"}
                 )

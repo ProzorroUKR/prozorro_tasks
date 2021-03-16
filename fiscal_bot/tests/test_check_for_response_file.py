@@ -57,8 +57,10 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_request(
-            self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock, requests_mock,
+            self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
+            get_check_receipt_task_info_by_id_mock, requests_mock,
             decode_and_save_data_mock, retry_mock, get_wt_mock
     ):
         get_wt_mock.return_value = datetime(2007, 1, 2, 13, 30)
@@ -66,9 +68,10 @@ class CheckResponseTestCase(unittest.TestCase):
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
+        _tender_id = "f" * 32
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": "f" * 32,
+            "tender_id": _tender_id,
             "award_id": "c" * 32,
         }
         request_time = TIMEZONE.localize(datetime(2019, 3, 29, 15, 47))
@@ -87,6 +90,10 @@ class CheckResponseTestCase(unittest.TestCase):
             request_time, working_weekends_enabled=True
         )
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
+        save_check_receipt_task_info_mock.assert_called_once_with(
+            _tender_id, None
+        )
+
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
@@ -96,24 +103,30 @@ class CheckResponseTestCase(unittest.TestCase):
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.get_working_datetime")
     @patch("fiscal_bot.tasks.check_for_response_file.retry")
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_status(
-            self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock, requests_mock,
-            decode_and_save_data_mock, retry_mock, get_wt_mock
+            self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
+            get_check_receipt_task_info_by_id_mock, requests_mock,
+            decode_and_save_data_mock, retry_mock, get_wt_mock, task_request_mock
     ):
+        task_mock_id = task_request_mock.id = "k" * 32
+        task_request_mock.retries = 0
         get_wt_mock.return_value = datetime(2007, 1, 2, 13, 30)
         retry_mock.side_effect = Retry
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
+        _tender_id = "f" * 32,
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": "f" * 32,
+            "tender_id": _tender_id,
             "award_id": "c" * 32,
         }
 
@@ -135,6 +148,9 @@ class CheckResponseTestCase(unittest.TestCase):
         retry_mock.assert_called_once_with(
             countdown=10
         )
+        save_check_receipt_task_info_mock.assert_called_once_with(
+            _tender_id, task_mock_id
+        )
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
@@ -144,6 +160,7 @@ class CheckResponseTestCase(unittest.TestCase):
         )
         decode_and_save_data_mock.delay.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.get_now")
     @patch("fiscal_bot.tasks.check_for_response_file.retry")
     @patch("fiscal_bot.tasks.decode_and_save_data")
@@ -151,18 +168,24 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.prepare_receipt_request")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_no_report(
-            self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
-            prepare_receipt_request_mock, requests_mock, decode_and_save_data_mock, retry_mock, get_now_mock
+            self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
+            get_check_receipt_task_info_by_id_mock, prepare_receipt_request_mock, requests_mock,
+            decode_and_save_data_mock, retry_mock, get_now_mock, task_request_mock
     ):
+        task_mock_id = task_request_mock.id = "k" * 32
+        task_request_mock.retries = 0
+
         get_now_mock.return_value = TIMEZONE.localize(datetime(2007, 1, 2, 20, 30))
         retry_mock.side_effect = Retry
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
+        _tender_id = "f" * 32
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": "f" * 32,
+            "tender_id": _tender_id,
             "award_id": "c" * 32,
         }
 
@@ -184,6 +207,9 @@ class CheckResponseTestCase(unittest.TestCase):
         retry_mock.assert_called_once_with(
             eta=TIMEZONE.localize(datetime(2007, 1, 3, 9))
         )
+        save_check_receipt_task_info_mock.assert_called_once_with(
+            _tender_id, task_mock_id
+        )
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
@@ -194,6 +220,7 @@ class CheckResponseTestCase(unittest.TestCase):
         prepare_receipt_request_mock.delay.assert_not_called()
         decode_and_save_data_mock.delay.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.requests")
@@ -202,11 +229,16 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
     def test_check_request_success(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
-            prepare_receipt_request_mock, requests_mock, save_check_receipt_task_info_mock, decode_and_save_data_mock
+            prepare_receipt_request_mock, requests_mock, save_check_receipt_task_info_mock, decode_and_save_data_mock,
+            task_request_mock
     ):
+        task_mock_id = task_request_mock.id = "k" * 32
+        task_request_mock.retries = 0
+
         request_data = "aGVsbG8="
+        _tender_id = "f" * 32
         supplier = {
-            "tender_id": "f" * 32,
+            "tender_id": _tender_id,
             "award_id": "c" * 32,
         }
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
@@ -216,7 +248,6 @@ class CheckResponseTestCase(unittest.TestCase):
             status_code=200,
             json=lambda: self.response,
         )
-        save_check_receipt_task_info_mock.return_value = None
 
         with patch("fiscal_bot.tasks.working_days_count_since", lambda *_, **k: 0):
             check_for_response_file(
@@ -226,6 +257,16 @@ class CheckResponseTestCase(unittest.TestCase):
                 requests_reties=0
             )
 
+        save_check_receipt_task_info_mock.assert_has_calls(
+            [
+                call(_tender_id, task_mock_id),
+                call(
+                    _tender_id, task_mock_id, has_called_new_check_receipt_task=False,
+                    receipt_file_successfully_saved=True
+                )
+            ]
+
+        )
         self.assertEqual(
             requests_mock.post.call_args_list,
             [
@@ -315,6 +356,7 @@ class CheckResponseTestCase(unittest.TestCase):
         )
         decode_and_save_data_mock.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.prepare_receipt_request")
     @patch("fiscal_bot.tasks.requests")
@@ -323,9 +365,10 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
     def test_check_on_3rd_wd_2nd_request_retry_and_than_success_check_for_1st(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
-            save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock
+            save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock,
+            task_request_mock
     ):
-
+        task_request_mock.retries = 20
         request_data = "aGVsbG8="
         supplier = {
             "tender_id": "f" * 32,
@@ -334,7 +377,6 @@ class CheckResponseTestCase(unittest.TestCase):
 
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
-        save_check_receipt_task_info_mock.return_value = None
 
         requests_mock.post.return_value = Mock(
             status_code=200,
@@ -380,6 +422,7 @@ class CheckResponseTestCase(unittest.TestCase):
             ]
         )
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.get_now")
     @patch("fiscal_bot.tasks.check_for_response_file.retry")
     @patch("fiscal_bot.tasks.decode_and_save_data")
@@ -391,8 +434,10 @@ class CheckResponseTestCase(unittest.TestCase):
     def test_check_on_3rd_wd_3rd_request_retry(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock,
-            retry_mock, get_now_mock
+            retry_mock, get_now_mock, task_request_mock
+
     ):
+        task_request_mock.retries = 20
         get_now_mock.return_value = TIMEZONE.localize(datetime(2020, 1, 2, 20, 30))
         request_data = "aGVsbG8="
         supplier = {
@@ -401,7 +446,6 @@ class CheckResponseTestCase(unittest.TestCase):
         }
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
-        save_check_receipt_task_info_mock.return_value = None
 
         retry_mock.side_effect = Retry
         requests_mock.post.return_value = Mock(
@@ -434,13 +478,16 @@ class CheckResponseTestCase(unittest.TestCase):
         decode_and_save_data_mock.assert_not_called()
         save_check_receipt_task_info_mock.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.working_days_count_since")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_another_successful_task_for_tender_existed(
-            self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
-            working_days_mock
+            self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
+            get_check_receipt_task_info_by_id_mock, working_days_mock, task_request_mock
     ):
+        task_request_mock.retries = 10
         request_data = "aGVsbG8="
         supplier = {
             "tender_id": "f" * 32,
@@ -468,9 +515,11 @@ class CheckResponseTestCase(unittest.TestCase):
             requests_reties=REQUEST_MAX_RETRIES
         )
 
+        save_check_receipt_task_info_mock.assert_not_called()
         working_days_mock.assert_not_called()
         get_check_receipt_task_info_by_id_mock.assert_not_called()
 
+    @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.prepare_receipt_request")
@@ -478,8 +527,9 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
     def test_current_check_task_has_called_new_check_receipt_task_and_working_days_for_check_passed(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
-            prepare_receipt_request_mock, save_check_receipt_task_info_mock, requests_mock
+            prepare_receipt_request_mock, save_check_receipt_task_info_mock, requests_mock, task_request_mock
     ):
+        task_request_mock.retries = 10
         request_data = "aGVsbG8="
         supplier = {
             "tender_id": "f" * 32,
