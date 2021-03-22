@@ -56,7 +56,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_request(
             self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
@@ -68,10 +68,9 @@ class CheckResponseTestCase(unittest.TestCase):
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
-        _tender_id = "f" * 32
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": _tender_id,
+            "tender_id": "f" * 32,
             "award_id": "c" * 32,
         }
         request_time = TIMEZONE.localize(datetime(2019, 3, 29, 15, 47))
@@ -91,7 +90,7 @@ class CheckResponseTestCase(unittest.TestCase):
         )
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
         save_check_receipt_task_info_mock.assert_called_once_with(
-            _tender_id, None
+            supplier['tender_id'], None, supplier['award_id']
         )
 
         requests_mock.post.assert_called_once_with(
@@ -109,7 +108,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.decode_and_save_data")
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_status(
             self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
@@ -123,10 +122,9 @@ class CheckResponseTestCase(unittest.TestCase):
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
-        _tender_id = "f" * 32,
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": _tender_id,
+            "tender_id": "f" * 32,
             "award_id": "c" * 32,
         }
 
@@ -149,7 +147,7 @@ class CheckResponseTestCase(unittest.TestCase):
             countdown=10
         )
         save_check_receipt_task_info_mock.assert_called_once_with(
-            _tender_id, task_mock_id
+            supplier["tender_id"], task_mock_id, supplier["award_id"]
         )
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
@@ -167,7 +165,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.prepare_receipt_request")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_request_fail_no_report(
             self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
@@ -182,10 +180,9 @@ class CheckResponseTestCase(unittest.TestCase):
         get_check_receipt_tasks_by_tender_id_mock.return_value = []
         get_check_receipt_task_info_by_id_mock.return_value = None
 
-        _tender_id = "f" * 32
         request_data = "aGVsbG8="
         supplier = {
-            "tender_id": _tender_id,
+            "tender_id": "f" * 32,
             "award_id": "c" * 32,
         }
 
@@ -208,7 +205,7 @@ class CheckResponseTestCase(unittest.TestCase):
             eta=TIMEZONE.localize(datetime(2007, 1, 3, 9))
         )
         save_check_receipt_task_info_mock.assert_called_once_with(
-            _tender_id, task_mock_id
+            supplier["tender_id"], task_mock_id, supplier["award_id"]
         )
         requests_mock.post.assert_called_once_with(
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
@@ -226,7 +223,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.prepare_receipt_request")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     def test_check_request_success(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             prepare_receipt_request_mock, requests_mock, save_check_receipt_task_info_mock, decode_and_save_data_mock,
@@ -259,9 +256,9 @@ class CheckResponseTestCase(unittest.TestCase):
 
         save_check_receipt_task_info_mock.assert_has_calls(
             [
-                call(_tender_id, task_mock_id),
+                call(_tender_id, task_mock_id, supplier["award_id"]),
                 call(
-                    _tender_id, task_mock_id, has_called_new_check_receipt_task=False,
+                    _tender_id, task_mock_id, supplier["award_id"], has_called_new_check_receipt_task=False,
                     receipt_file_successfully_saved=True
                 )
             ]
@@ -301,7 +298,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     def test_check_on_3rd_wd_1st_request_retry(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock,
@@ -336,6 +333,7 @@ class CheckResponseTestCase(unittest.TestCase):
         save_check_receipt_task_info_mock.assert_called_once_with(
             supplier["tender_id"],
             task_mock_id,
+            supplier["award_id"],
             has_called_new_check_receipt_task=True
         )
         prepare_receipt_request_mock.delay.assert_called_once_with(
@@ -362,7 +360,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     def test_check_on_3rd_wd_2nd_request_retry_and_than_success_check_for_1st(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock,
@@ -430,7 +428,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.requests")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     def test_check_on_3rd_wd_3rd_request_retry(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             save_check_receipt_task_info_mock, requests_mock, prepare_receipt_request_mock, decode_and_save_data_mock,
@@ -481,7 +479,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("celery.app.task.Task.request")
     @patch("fiscal_bot.tasks.working_days_count_since")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     def test_check_another_successful_task_for_tender_existed(
             self, save_check_receipt_task_info_mock, get_check_receipt_tasks_by_tender_id_mock,
@@ -524,7 +522,7 @@ class CheckResponseTestCase(unittest.TestCase):
     @patch("fiscal_bot.tasks.save_check_receipt_task_info")
     @patch("fiscal_bot.tasks.prepare_receipt_request")
     @patch("fiscal_bot.tasks.get_check_receipt_task_info_by_id")
-    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id")
+    @patch("fiscal_bot.tasks.get_check_receipt_tasks_info_by_tender_id_award_id")
     def test_current_check_task_has_called_new_check_receipt_task_and_working_days_for_check_passed(
             self, get_check_receipt_tasks_by_tender_id_mock, get_check_receipt_task_info_by_id_mock,
             prepare_receipt_request_mock, save_check_receipt_task_info_mock, requests_mock, task_request_mock

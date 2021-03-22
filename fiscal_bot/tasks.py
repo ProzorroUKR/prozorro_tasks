@@ -16,7 +16,7 @@ from fiscal_bot.fiscal_api import build_receipt_request
 from fiscal_bot.settings import FISCAL_BOT_START_DATE
 from fiscal_bot.utils import (
     save_check_receipt_task_info,
-    get_check_receipt_tasks_info_by_tender_id,
+    get_check_receipt_tasks_info_by_tender_id_award_id,
     get_check_receipt_task_info_by_id,
 )
 from tasks_utils.datetime import get_now, get_working_datetime, working_days_count_since
@@ -318,14 +318,17 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
 
     task_id = self.request.id
     tender_id = supplier["tender_id"]
+    award_id = supplier["award_id"]
     if self.request.retries == 0:
-        save_check_receipt_task_info(tender_id, task_id)
+        save_check_receipt_task_info(tender_id, task_id, award_id)
 
-    tender_check_receipts_tasks = get_check_receipt_tasks_info_by_tender_id(tender_id)
+    tender_check_receipts_tasks = get_check_receipt_tasks_info_by_tender_id_award_id(tender_id, award_id)
 
     if any([record["receiptFileSuccessfullySaved"] for record in tender_check_receipts_tasks]):
         logger.info(
-            "Receipt file for {} tender has been already obtained by another task. Stop checking.".format(tender_id),
+            "Receipt file for {} tender, {} award has been already obtained by another task. Stop checking.".format(
+                tender_id, award_id
+            ),
             extra={"MESSAGE_ID": "FISCAL_API_STOP_CHECKING_DUE_TO_ANOTHER_SUCCESSFUL_TASK"}
         )
         return
@@ -349,7 +352,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
 
             if requests_reties < REQUEST_MAX_RETRIES:
                 save_check_receipt_task_info(
-                    tender_id, task_id, has_called_new_check_receipt_task=True
+                    tender_id, task_id, award_id, has_called_new_check_receipt_task=True
                 )
                 prepare_receipt_request.delay(
                     supplier=supplier,
@@ -406,7 +409,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
                     for kvt in data["kvtList"]:
                         if kvt["finalKvt"]:
                             save_check_receipt_task_info(
-                                tender_id, task_id,
+                                tender_id, task_id, award_id,
                                 has_called_new_check_receipt_task=has_called_new_check_receipt_task,
                                 receipt_file_successfully_saved=True
                             )
