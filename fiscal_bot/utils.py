@@ -64,14 +64,15 @@ def get_monthly_increment_id(task, date):
 
 
 def save_check_receipt_task_info(
-        tender_id, task_id, has_called_new_check_receipt_task=False, receipt_file_successfully_saved=False
+        tender_id, task_id, award_id, has_called_new_check_receipt_task=False, receipt_file_successfully_saved=False
 ):
     collection = get_mongodb_collection(FISCAL_BOT_CHECK_RECEIPT_TASKS_COLLECTION)
 
     collection.update_one(
         {
             "tenderId": tender_id,
-            "checkForResponseFileTaskId": task_id
+            "checkForResponseFileTaskId": task_id,
+            "awardId": award_id
         },
         {
             "$set": {
@@ -84,10 +85,10 @@ def save_check_receipt_task_info(
     )
 
 
-def get_check_receipt_tasks_info_by_tender_id(tender_id):
+def get_check_receipt_tasks_info_by_tender_id_award_id(tender_id, award_id):
 
     collection = get_mongodb_collection(FISCAL_BOT_CHECK_RECEIPT_TASKS_COLLECTION)
-    return collection.find({"tenderId": tender_id})
+    return collection.find({"tenderId": tender_id, "awardId": award_id})
 
 
 def get_check_receipt_task_info_by_id(task_id):
