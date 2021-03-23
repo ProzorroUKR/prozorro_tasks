@@ -35,6 +35,74 @@ import base64
 
 logger = get_task_logger(__name__)
 
+@app.task(bind=True)
+def manual_process_tender(self, tender_id, *args, **kwargs):
+    url = "{host}/api/{version}/tenders/{tender_id}".format(
+        host=PUBLIC_API_HOST,
+        version=API_VERSION,
+        tender_id=tender_id,
+    )
+    try:
+        response = requests.get(
+            url,
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            headers=DEFAULT_HEADERS,
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "FISCAL_GET_TENDER_EXCEPTION"})
+        raise self.retry(exc=exc)
+    else:
+        if response.status_code != 200:
+            logger_method = get_task_retry_logger_method(self, logger)
+            logger_method("Unexpected status code {} while getting tender {}: {}".format(
+                response.status_code, tender_id, response.text
+            ), extra={
+                "MESSAGE_ID": "FISCAL_GET_TENDER_UNSUCCESSFUL_CODE",
+                "STATUS_CODE": response.status_code,
+            })
+            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+        tender = response.json()["data"]
+        if tender["status"] not in ("active.awarded", "active.qualification"):
+            logger.info("Manual receipt query: Tender not in active status {}".format(tender["id"]))
+            return
+        awards = tender.get('awards', [])
+        if len(awards) >= 2:
+            for award in tender.get('awards', []):
+                if award["status"] == "active" and award["date"] > FISCAL_BOT_START_DATE:
+                    if not any(
+                            doc.get('documentType') == DOC_TYPE and
+                            doc.get('title', '').endswith('.XML.p7s')
+                            for doc in award.get('documents', [])
+                    ):
+                        lot_ids = [l.get("id") for l in tender.get('lots', [])]
+                        for supplier in award['suppliers']:
+                            identifier = str(supplier['identifier']['id'])
+                            if len(identifier) in (8, 10) and supplier['identifier']['scheme'] == IDENTIFICATION_SCHEME:
+                                if 'legalName' in supplier['identifier']:
+                                    name = supplier['identifier']['legalName']
+                                else:
+                                    name = supplier['name']
+                                logger.info("Manual receipt query. Start preparing receipt {} {}".format(tender["id"], award["id"]))
+                                prepare_receipt_request.delay(
+                                    supplier=dict(
+                                        tender_id=tender['id'],
+                                        tenderID=tender['tenderID'],
+                                        lot_index=lot_ids.index(award['lotID']) if "lotID" in award else None,
+                                        award_id=award['id'],
+                                        identifier=identifier,
+                                        name=name,
+                                    )
+                                )
+                            else:
+                                logger.warning("Invalid supplier identifier",
+                                               extra={"MESSAGE_ID": "FISCAL_IDENTIFIER_VALIDATION_ERROR"})
+                    else:
+                        logger.info("Manual receipt query: There is XML p7s  tender {} award {}".format(tender["id"], award['id']))
+                else:
+                    logger.info("Manual receipt query: Not active lot tender {} award {}".format(tender["id"], award['id']))
+        else:
+            logger.info("Manual receipt query: Single lot {}".format(tender["id"]))
+
 
 @app.task(bind=True)
 def process_tender(self, tender_id, *args, **kwargs):
