@@ -23,7 +23,6 @@ MONGODB_UID_LENGTH = 24
 
 DUPLICATE_COLLECTION_NAME = "celery_worker_locks"
 LOCK_COLLECTION_NAME = "celery_worker_concurrency_locks"
-FEED_DATE_MODIFIED_LOCK_COLLECTION_NAME = "celery_feed_locks"
 
 
 mongodb = None
@@ -67,21 +66,7 @@ def init_duplicate_index(self):
 @app.task(bind=True, max_retries=20)
 def init_concurrency_lock_index(self):
     try:
-        get_mongodb_collection(LOCK_COLLECTION_NAME).create_index(
-            "expireAt",
-            expireAfterSeconds=0
-        )
-    except PyMongoError as e:
-        logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
-        raise self.retry()
-
-
-@app.task(bind=True, max_retries=20)
-def init_feed_lock_index(self):
-    try:
-        get_mongodb_collection(
-            FEED_DATE_MODIFIED_LOCK_COLLECTION_NAME
-        )
+        get_mongodb_collection(LOCK_COLLECTION_NAME).create_index("expireAt", expireAfterSeconds=0)
     except PyMongoError as e:
         logger.exception(e,  extra={"MESSAGE_ID": "MONGODB_INDEX_CREATION_ERROR"})
         raise self.retry()
@@ -95,10 +80,6 @@ if "test" not in sys.argv[0]:  # pragma: no cover
     @celeryd_init.connect
     def task_sent_handler(*args, **kwargs):
         init_concurrency_lock_index.delay()
-
-    @celeryd_init.connect
-    def task_sent_handler(*args, **kwargs):
-        init_feed_lock_index.delay()
 
 
 def hash_string_to_uid(input_string):
