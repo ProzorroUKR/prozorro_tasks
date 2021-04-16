@@ -39,7 +39,7 @@
             {{ row.get("updated")|date_representation }}
             {% endif %}
         </td>
-        {% if not row.get("item") and row.get("status") == "success" %}
+        {% if not row.get("item") and row.get("status") in ["success", "failure"] %}
         <td class="text-white cell-action cell-lg bg-success">
             {% with href_add=url_for("payments_views.payment_add") %}
             <form method="POST" action="{{ href_add }}">

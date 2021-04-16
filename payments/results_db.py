@@ -310,7 +310,7 @@ def get_payment_item(uid):
 @log_exc(logger, PyMongoError, "PAYMENTS_SAVE_RESULTS_MONGODB_EXCEPTION")
 def save_payment_item(data, user):
     status = data.get("status")
-    if status and status != "success":
+    if status and status not in ["success", "failure"]:
         return
     collection = get_mongodb_collection()
     uid = data_to_uid(data, keys=UID_KEYS_3)
