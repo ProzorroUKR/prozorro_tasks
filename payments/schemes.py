@@ -196,7 +196,7 @@ EXTRA_COMPLAINANT_TELEPHONE = {
 
 EXTRA_COMPLAINANT_STATUS = {
     "type": "object",
-    "title": "Статус скарги",
+    "title": "Статус скарги (оновлюється раз у декілька хвилин)",
     "path": ".",
     "method": complainant_status,
 }

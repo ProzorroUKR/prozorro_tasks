@@ -32,6 +32,10 @@ DESC_FUNDS_STATE = "Перерахунок до держбюджету"
 DESC_FUNDS_COMPLAINANT = "Повернення коштів скаржнику"
 DESC_FUNDS_UNKNOWN = "Помилкові платежі"
 
+DESC_COMPLAINT_STATUS_NOT_PENDING = "Є рішення"
+
+DESC_COMPLAINT_STATUS_DRAFT = "Чернетка"
+DESC_COMPLAINT_STATUS_PENDING = "Оплачено"
 DESC_COMPLAINT_STATUS_MISTAKEN = "Скасовано"
 DESC_COMPLAINT_STATUS_RESOLVED = "Рішення виконано замовником"
 DESC_COMPLAINT_STATUS_INVALID = "Залишено без розгляду"

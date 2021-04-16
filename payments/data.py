@@ -46,6 +46,8 @@ from payments.messages import (
     DESC_REJECT_REASON_INCORRECT_PAYMENT,
     DESC_FUNDS_STATE,
     DESC_FUNDS_COMPLAINANT,
+    DESC_COMPLAINT_STATUS_DRAFT,
+    DESC_COMPLAINT_STATUS_PENDING,
     DESC_COMPLAINT_STATUS_MISTAKEN,
     DESC_COMPLAINT_STATUS_RESOLVED,
     DESC_COMPLAINT_STATUS_INVALID,
@@ -61,7 +63,7 @@ from payments.messages import (
     DESC_FUNDS_UNKNOWN,
     DESC_PROCESSING_DEFAULT,
     DESC_PROCESSING_NEUTRAL,
-    DESC_FUNDS_ALL,
+    DESC_FUNDS_ALL, DESC_COMPLAINT_STATUS_NOT_PENDING,
 )
 
 
@@ -178,13 +180,13 @@ def complainant_status(data):
     status = None
     resolution = data.get("resolution")
     if resolution:
-        status = resolution.get("status")
+        return DESC_COMPLAINT_STATUS_NOT_PENDING
     from payments.cached import get_complaint
     complaint_data = get_complaint(data.get("params"))
     if complaint_data:
         status = complaint_data.get("status")
     if status:
-        return status
+        return complaint_status_description(status)
 
 
 def payment_primary_message(messages):
@@ -253,6 +255,8 @@ STATUS_COMPLAINT_STOPPED = "stopped"
 STATUS_COMPLAINT_DECLINED = "declined"
 
 COMPLAINT_STATUS_DICT = {
+    STATUS_COMPLAINT_DRAFT: DESC_COMPLAINT_STATUS_DRAFT,
+    STATUS_COMPLAINT_PENDING: DESC_COMPLAINT_STATUS_PENDING,
     STATUS_COMPLAINT_MISTAKEN: DESC_COMPLAINT_STATUS_MISTAKEN,
     STATUS_COMPLAINT_RESOLVED: DESC_COMPLAINT_STATUS_RESOLVED,
     STATUS_COMPLAINT_INVALID: DESC_COMPLAINT_STATUS_INVALID,
