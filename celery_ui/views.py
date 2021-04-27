@@ -60,7 +60,7 @@ def feeds():
     else:
         tasks_list = retrieve_tasks(task_type=task_type)
     resources = {}
-    resource_names = ("tenders", "contracts", "frameworks")
+    resource_names = ("tenders", "contracts", "frameworks", "agreements")
     feed_events_states = ('PENDING', 'RECEIVED', 'RETRY', 'STARTED')
     feed_inspect_states = ('ACTIVE', 'SCHEDULED', 'RESERVED')
     for resource_name in resource_names:
