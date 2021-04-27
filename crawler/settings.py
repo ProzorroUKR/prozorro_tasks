@@ -1,4 +1,4 @@
-from chronograph.handlers import chronograph_framework_handler
+from chronograph.handlers import chronograph_framework_handler, chronograph_agreement_handler
 from edr_bot.handlers import edr_bot_tender_handler
 from fiscal_bot.handlers import fiscal_bot_tender_handler
 from payments.handlers import payments_tender_handler
@@ -25,6 +25,10 @@ FRAMEWORK_HANDLERS = [
     chronograph_framework_handler,
 ]
 
+AGREEMENT_HANDLERS = [
+    chronograph_agreement_handler,
+]
+
 TENDER_OPT_FIELDS = [
     'auctionPeriod',
     'status',
@@ -45,6 +49,14 @@ FRAMEWORK_OPT_FIELDS = [
     'status',
     'frameworkID',
     'frameworkType',
+    'next_check',
+    'dateModified',
+]
+
+AGREEMENT_OPT_FIELDS = [
+    'status',
+    'agreementID',
+    'agreementType',
     'next_check',
     'dateModified',
 ]
