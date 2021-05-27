@@ -11,6 +11,10 @@ import jinja2
 logger = get_task_logger(__name__)
 TEMPLATES = jinja2.Environment(
     loader=jinja2.PackageLoader('fiscal_bot', 'templates', encoding='windows-1251'),
+    autoescape=jinja2.select_autoescape(
+        enabled_extensions=('xml', ),
+        default_for_string=True,
+    )
 )
 
 
