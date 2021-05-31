@@ -171,23 +171,12 @@ def pipeline_payments_counts_total():
 
 
 def pipeline_payments_results(page=None, limit=None):
-    return [
-        {
-            "$group": {
-                "_id": None,
-                "results": {'$push': '$$ROOT'}
-            }
-        },
-        {
-            "$project": {
-                "results": {
-                    "$slice": ["$results", page * limit - limit, limit]
-                } if page and limit else "$results",
-            }
-        },
-        {"$unwind": "$results"},
-        {"$replaceRoot": {"newRoot": "$results"}}
-    ]
+    pipeline = []
+    if page and limit:
+        pipeline.append({"$skip": page * limit - limit})
+    if limit:
+        pipeline.append({"$limit": limit})
+    return pipeline
 
 
 def project_payments_results_counts_total():
@@ -233,7 +222,7 @@ def get_payment_results(filters=None, page=None, limit=None, **kwargs):
             }
         }
     ]
-    cursor = collection.aggregate(pipeline, allowDiskUse=True)
+    cursor = collection.aggregate(pipeline)
     return list(cursor)[0]
 
 
