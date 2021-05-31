@@ -171,7 +171,9 @@ def pipeline_payments_counts_total():
 
 
 def pipeline_payments_results(page=None, limit=None):
-    pipeline = []
+    pipeline = [
+        {"$sort": {"createdAt": DESCENDING}},
+    ]
     if page and limit:
         pipeline.append({"$skip": page * limit - limit})
     if limit:
@@ -200,7 +202,6 @@ def get_payment_results(filters=None, page=None, limit=None, **kwargs):
     collection = get_mongodb_collection()
     pipeline = [
         {"$match": filters},
-        {"$sort": {"createdAt": DESCENDING}},
         {
             "$facet": {
                 "results": pipeline_payments_results(page, limit),
