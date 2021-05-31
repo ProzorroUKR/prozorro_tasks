@@ -233,7 +233,7 @@ def get_payment_results(filters=None, page=None, limit=None, **kwargs):
             }
         }
     ]
-    cursor = collection.aggregate(pipeline)
+    cursor = collection.aggregate(pipeline, {"allowDiskUse": True })
     return list(cursor)[0]
 
 
