@@ -643,9 +643,11 @@ class CheckTestCase(unittest.TestCase):
 
     @patch("treasury.tasks.send_transactions_results")
     @patch("treasury.tasks.save_transaction_xml")
+    @patch("treasury.tasks.get_contracts_server_id_cookies")
     @patch("treasury.tasks.put_transaction")
     @patch("treasury.tasks.attach_doc_to_transaction")
-    def test_process_transaction(self, attach_doc_mock, put_mock, save_xml_mock, send_results_mock):
+    def test_process_transaction(self, attach_doc_mock, put_mock, server_id_cookie_mock,
+                                 save_xml_mock, send_results_mock):
         transactions_data = [
             {
                 "ref": 123,
@@ -666,10 +668,13 @@ class CheckTestCase(unittest.TestCase):
         save_xml_mock.return_value = {
             "data": "test_save_xml_data"
         }
+        server_id_cookie_mock.return_value = {
+            "SERVER_ID": "12345"
+        }
         put_mock.side_effect = [
-            (PUT_TRANSACTION_SUCCESSFUL_STATUS, 'cookies'),
-            (PUT_TRANSACTION_SUCCESSFUL_STATUS, 'cookies'),
-            (404, 'cookies'),
+            PUT_TRANSACTION_SUCCESSFUL_STATUS,
+            PUT_TRANSACTION_SUCCESSFUL_STATUS,
+            404,
         ]
         attach_doc_mock.side_effect = [ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS, 400]
 

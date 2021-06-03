@@ -6,13 +6,16 @@ from unittest.mock import patch, MagicMock, Mock, call
 from celery_worker.celery import app
 from celery.exceptions import Retry
 from treasury.domain.prtrans import save_transaction_xml
-from treasury.domain.prtrans import put_transaction, ds_upload, attach_doc_to_transaction
+from treasury.domain.prtrans import (
+    put_transaction, ds_upload, attach_doc_to_transaction, get_contracts_server_id_cookies,
+)
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
     ATTACH_DOCUMENT_TO_TRANSACTION_SUCCESSFUL_STATUS,
     DOCUMENT_ATTACH_FAILED_REQUESTS_EXCEPTIONS,
     PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS,
 )
+from tasks_utils.settings import RETRY_REQUESTS_EXCEPTIONS
 
 
 @app.task
@@ -50,11 +53,28 @@ class TestCase(BaseTestCase):
         )
 
     @patch('requests.Session')
+    def test_get_contracts_server_id_cookies(self, mock_session):
+
+        mock_session.side_effect = requests.exceptions.ConnectionError()
+        with self.assertRaises(RETRY_REQUESTS_EXCEPTIONS):
+            actual_result = get_contracts_server_id_cookies()
+            self.assertEqual(actual_result, {"SERVER_ID": None})
+
+        mock_session.side_effect = None
+        mock_head_response_class = type(
+            "HeadResponse", (object,),
+            {"status_code": 200, "cookies": {"SERVER_ID": "12345", "another_cookie": "abc123"}},
+        )
+        mock_session.return_value.head.return_value = mock_head_response_class
+        actual_result = get_contracts_server_id_cookies()
+        self.assertEqual(actual_result, {"SERVER_ID": "12345"})
+
+    @patch('requests.Session')
     def test_put_transaction(self, mock_session):
 
         mock_get_response_class = type(
             "GetResponse", (object,),
-            {"status_code": 400, "text": "get_response_text", "cookies": {"SERVER_ID": "123_ID"}},
+            {"status_code": 400, "text": "get_response_text", "cookies":  {"SERVER_ID": "123_ID"}},
         )
 
         transaction = {
@@ -76,39 +96,38 @@ class TestCase(BaseTestCase):
 
         mock_session.return_value.get.side_effect = requests.exceptions.ConnectionError()
 
-        actual_result = put_transaction(transaction)
-        expected_result = (PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None)
+        actual_result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        expected_result = PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS
         self.assertEqual(actual_result, expected_result)
 
         mock_session.return_value.get.side_effect = None
         mock_session.return_value.get.return_value = mock_get_response_class
 
-        result = put_transaction(transaction)
-        self.assertEqual(result, (400, {"SERVER_ID": "123_ID"}))
+        result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        self.assertEqual(result, 400)
 
         mock_get_response_class.status_code = 200
 
         mock_put_response = type(
             "PutResponse", (object,),
-            {"status_code": 422, "text": "put_response_text", "cookies": {"SERVER_ID": "123_ID"}}
+            {"status_code": 422, "text": "put_response_text", "cookies": {"some_cookies": "aaaaa"}}
         )
         mock_session.return_value.put.return_value = mock_put_response
 
-        result = put_transaction(transaction)
-        self.assertEqual(result, (422, {"SERVER_ID": "123_ID"}))
+        result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        self.assertEqual(result, 422)
 
         mock_put_response.status_code = 301
-        result = put_transaction(transaction)
-        self.assertEqual(result, (301, {"SERVER_ID": "123_ID"}))
+        result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        self.assertEqual(result, 301)
 
         mock_put_response.status_code = 201
-        result = put_transaction(transaction)
-        self.assertEqual(result, (PUT_TRANSACTION_SUCCESSFUL_STATUS, {"SERVER_ID": "123_ID"}))
+        result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        self.assertEqual(result, PUT_TRANSACTION_SUCCESSFUL_STATUS)
 
         mock_session.return_value.put.side_effect = requests.exceptions.ConnectionError()
-        actual_result = put_transaction(transaction)
-        expected_result = (PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None)
-        self.assertEqual(actual_result, expected_result)
+        actual_result = put_transaction(transaction, {"SERVER_ID": "123_ID"})
+        self.assertEqual(actual_result, PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS)
 
         mock_session.return_value.get.side_effect = None
 

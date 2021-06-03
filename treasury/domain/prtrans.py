@@ -65,7 +65,25 @@ def ds_upload(task, file_name, file_content):
             return response.json()
 
 
-def put_transaction(transaction):
+def get_contracts_server_id_cookies():
+    session = requests.Session()
+    session.headers.update(DEFAULT_HEADERS)
+    mount_retries_for_request(session, status_forcelist=(404, 408, 409, 412, 429, 500, 502, 503, 504))
+
+    try:
+        get_response = session.head(
+            f"{API_HOST}/api/{API_VERSION}/contracts",
+            headers=DEFAULT_HEADERS,
+        )
+        server_id = get_response.cookies.get("SERVER_ID", None)
+        return {"SERVER_ID": server_id}
+
+    except RETRY_REQUESTS_EXCEPTIONS as exc:
+        logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_GET_CONTRACTS_REQUESTS_EXCEPTIONS"})
+        return {"SERVER_ID": None}
+
+
+def put_transaction(transaction, server_id_cookie):
     contract_id = transaction["id_contract"]
     transaction_id = transaction["ref"]
 
@@ -108,12 +126,10 @@ def put_transaction(transaction):
             f"{API_HOST}/api/{API_VERSION}/contracts/{contract_id}",
             headers=DEFAULT_HEADERS,
         )
-        server_id = get_response.cookies.get("SERVER_ID", None)
-        server_id_cookie = {"SERVER_ID": server_id}
-
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_GET_CONTRACT_REQUESTS_EXCEPTIONS"})
-        return PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None
+        return PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS
+
     if get_response.status_code != 200:
         logger.error(
             "Can not find contract in API for treasury",
@@ -124,7 +140,7 @@ def put_transaction(transaction):
                 **log_context
             }
         )
-        return get_response.status_code, server_id_cookie
+        return get_response.status_code
 
     logger.info(
         f"Cookies before put transaction: {get_response.cookies}",
@@ -142,7 +158,7 @@ def put_transaction(transaction):
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "TREASURY_PUT_TRANSACTION_REQUESTS_EXCEPTIONS"})
-        return PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS, None
+        return PUT_TRANSACTION_FAILED_REQUESTS_EXCEPTIONS
 
     log_context["RESPONSE_STATUS"] = response.status_code
 
@@ -156,13 +172,13 @@ def put_transaction(transaction):
                 **log_context
             }
         )
-        return response.status_code, server_id_cookie
+        return response.status_code
     else:
         logger.info(
             "Transaction successfully saved",
             extra={"MESSAGE_ID": "TREASURY_TRANS_SUCCESSFUL", **log_context}
         )
-        return PUT_TRANSACTION_SUCCESSFUL_STATUS, server_id_cookie
+        return PUT_TRANSACTION_SUCCESSFUL_STATUS
 
 
 def attach_doc_to_transaction(data, contract_id, transaction_id, server_id_cookie):
@@ -206,6 +222,7 @@ def attach_doc_to_transaction(data, contract_id, transaction_id, server_id_cooki
             f"Can not find {transaction_id} transaction id during attaching document to contract",
             extra={
                 "MESSAGE_ID": "TREASURY_TRANS_PRECONDITION_ERROR",
+                "STATUS_CODE": get_response.status_code,
                 "RESPONSE_TEXT": get_response.text
             }
         )
