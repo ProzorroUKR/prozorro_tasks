@@ -20,7 +20,12 @@ from tasks_utils.datetime import get_now
 from datetime import timedelta
 from uuid import uuid4
 from treasury.exceptions import TransactionsQuantityServerErrorHTTPException
-from treasury.domain.prtrans import save_transaction_xml, put_transaction, attach_doc_to_transaction
+from treasury.domain.prtrans import (
+    save_transaction_xml,
+    put_transaction,
+    attach_doc_to_transaction,
+    get_contracts_server_id_cookies,
+)
 from treasury.domain.prcontract import (
     get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date,
 )
@@ -227,9 +232,10 @@ def process_transaction(self, transactions_data, source, message_id):
     saved_document = save_transaction_xml(self, transactions_ids, source)
     transactions_statuses = []
     TransactionStatus = namedtuple('TransactionStatus', 'put attach final')
+    server_id_cookie = get_contracts_server_id_cookies()
 
     for trans in transactions_data:
-        put_transaction_status, server_id_cookie = put_transaction(trans)
+        put_transaction_status = put_transaction(trans, server_id_cookie)
         # cookies needed for correct attaching doc to the same replica(SERVER_ID) where transaction is
 
         if put_transaction_status == PUT_TRANSACTION_SUCCESSFUL_STATUS:
