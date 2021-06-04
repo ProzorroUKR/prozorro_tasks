@@ -143,7 +143,7 @@ def put_transaction(transaction, server_id_cookie):
         return get_response.status_code
 
     logger.info(
-        f"Cookies before put transaction: {get_response.cookies}",
+        f"Cookies before put transaction: {server_id_cookie}",
         extra={"MESSAGE_ID": "TREASURY_TRANSACTION_COOKIES"}
     )
 
