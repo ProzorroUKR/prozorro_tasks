@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from chronograph.handlers import chronograph_framework_handler
+from chronograph.handlers import chronograph_handler
 import unittest
 
 from tasks_utils.datetime import get_now
@@ -7,25 +7,28 @@ from tasks_utils.datetime import get_now
 
 class TestChronographFrameworkHandlerCase(unittest.TestCase):
 
-    @patch("chronograph.handlers.recheck_framework")
-    def test_no_next_check(self, recheck_framework):
+    @patch("chronograph.handlers.recheck")
+    def test_no_next_check(self, recheck):
         framework = {
             "id": "qwerty",
         }
-        chronograph_framework_handler(framework)
-        recheck_framework.apply_async.assert_not_called()
+        handler = chronograph_handler("framework")
+        handler(framework)
+        recheck.apply_async.assert_not_called()
 
-    @patch("chronograph.handlers.recheck_framework")
-    def test_next_check(self, recheck_framework):
+    @patch("chronograph.handlers.recheck")
+    def test_next_check(self, recheck):
         next_check = get_now()
         framework = {
             "id": "qwerty",
             "next_check": next_check.isoformat(),
         }
-        chronograph_framework_handler(framework)
-        recheck_framework.apply_async.assert_called_with(
+        handler = chronograph_handler("framework")
+        handler(framework)
+        recheck.apply_async.assert_called_with(
             kwargs=dict(
-                framework_id="qwerty",
+                obj_name="framework",
+                obj_id="qwerty",
             ),
             eta=next_check
         )

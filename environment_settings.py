@@ -20,6 +20,7 @@ USER_AGENT = os.environ.get("USER_AGENT", "prozorro_tasks")
 CRAWLER_TENDER_HANDLERS = set(environ_list("CRAWLER_TENDER_HANDLERS"))
 CRAWLER_CONTRACT_HANDLERS = set(environ_list("CRAWLER_CONTRACT_HANDLERS"))
 CRAWLER_FRAMEWORK_HANDLERS = set(environ_list("CRAWLER_FRAMEWORK_HANDLERS"))
+CRAWLER_AGREEMENT_HANDLERS = set(environ_list("CRAWLER_AGREEMENT_HANDLERS"))
 
 MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://root:example@mongo:27017")
 MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "tasks")

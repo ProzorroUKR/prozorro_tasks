@@ -19,12 +19,14 @@ CHRONOGRAPH_CHECK_MAX_RETRIES_404 = 10
 
 
 @app.task(bind=True, max_retries=CHRONOGRAPH_CHECK_MAX_RETRIES)
-def recheck_framework(self, framework_id, cookies=None):
-    url = "{host}/api/{version}/frameworks/{framework_id}".format(
+def recheck(self, obj_name, obj_id, cookies=None):
+    url = "{host}/api/{version}/{object_name}s/{object_id}".format(
         host=API_HOST,
         version=API_VERSION,
-        framework_id=framework_id,
+        object_name=obj_name,
+        object_id=obj_id,
     )
+    obj_name_upper = obj_name.upper()
 
     try:
         response = requests.get(
@@ -34,15 +36,15 @@ def recheck_framework(self, framework_id, cookies=None):
             headers=DEFAULT_HEADERS,
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_GET_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_{}_GET_EXCEPTION".format(obj_name_upper)})
         raise self.retry(exc=exc)
     else:
         if response.status_code != 200:
             logger_method = get_task_retry_logger_method(self, logger)
-            logger_method("Unexpected status code {} while getting framework {}".format(
-                response.status_code, framework_id
+            logger_method("Unexpected status code {} while getting {} {}".format(
+                response.status_code, obj_name, obj_id
             ), extra={
-                "MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_GET_CODE_ERROR",
+                "MESSAGE_ID": "CHRONOGRAPH_{}_GET_CODE_ERROR".format(obj_name_upper),
                 "STATUS_CODE": response.status_code,
             })
             if response.status_code == 412:  # Precondition failed
@@ -57,10 +59,10 @@ def recheck_framework(self, framework_id, cookies=None):
     cookies = response.cookies.get_dict()
 
     if "next_check" not in response.json()["data"]:
-        logger.warning("Skip framework {} without next_check".format(
-            framework_id
+        logger.warning("Skip {} {} without next_check".format(
+            obj_name, obj_id
         ), extra={
-            "MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_SKIP",
+            "MESSAGE_ID": "CHRONOGRAPH_{}_SKIP".format(obj_name_upper),
         })
         return
 
@@ -77,15 +79,15 @@ def recheck_framework(self, framework_id, cookies=None):
             cookies=cookies
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_CHECK_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_{}_CHECK_EXCEPTION".format(obj_name_upper)})
         raise self.retry(exc=exc)
     else:
         if response.status_code != 200:
             logger_method = get_task_retry_logger_method(self, logger)
-            logger_method("Unexpected status code {} while checking framework {}".format(
-                response.status_code, framework_id
+            logger_method("Unexpected status code {} while checking {} {}".format(
+                response.status_code, obj_name, obj_id
             ), extra={
-                "MESSAGE_ID": "CHRONOGRAPH_FRAMEWORK_CHECK_CODE_ERROR",
+                "MESSAGE_ID": "CHRONOGRAPH_{}_CHECK_CODE_ERROR".format(obj_name_upper),
                 "STATUS_CODE": response.status_code,
             })
             if response.status_code == 412:  # Precondition failed
