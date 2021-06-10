@@ -7,11 +7,14 @@ from crawler.settings import (
     CONTRACT_OPT_FIELDS,
     FRAMEWORK_HANDLERS,
     FRAMEWORK_OPT_FIELDS,
+    AGREEMENT_HANDLERS,
+    AGREEMENT_OPT_FIELDS,
 )
 from environment_settings import (
     CRAWLER_TENDER_HANDLERS,
     CRAWLER_CONTRACT_HANDLERS,
     CRAWLER_FRAMEWORK_HANDLERS,
+    CRAWLER_AGREEMENT_HANDLERS,
 )
 
 logger = get_task_logger(__name__)
@@ -87,6 +90,12 @@ class FrameworksResourceConfigBuilder(ResourceConfigBuilder):
     opt_fields = FRAMEWORK_OPT_FIELDS
 
 
+class AgreementResourceConfigBuilder(ResourceConfigBuilder):
+    handlers = AGREEMENT_HANDLERS
+    enabled_handlers_names = CRAWLER_AGREEMENT_HANDLERS
+    opt_fields = AGREEMENT_OPT_FIELDS
+
+
 class ResourceConfigFactory:
     builders = None
 
@@ -110,3 +119,4 @@ configs = ResourceConfigProvider()
 configs.register_builder("tenders", TendersResourceConfigBuilder())
 configs.register_builder("contracts", ContractsResourceConfigBuilder())
 configs.register_builder("frameworks", FrameworksResourceConfigBuilder())
+configs.register_builder("agreements", AgreementResourceConfigBuilder())
