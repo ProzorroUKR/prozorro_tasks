@@ -247,8 +247,8 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
                 if len(resp_json['meta']['detailsSourceDate']) >= i + 1:
                     source_date = resp_json['meta']['detailsSourceDate'][i]
 
-                if obj.get("founders"):
-                    obj["founders"]["identification"]["id"] = str(obj["founders"]["identification"]["id"])
+                if obj.get("identification"):
+                    obj["identification"]["id"] = str(obj["identification"]["id"])
 
                 file_content = {
                     'meta': {
