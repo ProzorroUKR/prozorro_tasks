@@ -51,7 +51,6 @@ retry_policy = {
 }
 
 task_modules = [
-    'crawler',
     'edr_bot',
     'fiscal_bot',
     'tasks_utils',
