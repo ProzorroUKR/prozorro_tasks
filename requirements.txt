@@ -31,7 +31,7 @@ asgiref==3.3.4
 aio-pika==6.8.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
-git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.2#egg=prozorro_crawler
+git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.3#egg=prozorro_crawler
 
 ############
 ### On standards version update you should consider
