@@ -2,12 +2,19 @@ import os
 
 DOC_TYPE = 'registerFiscal'
 IDENTIFICATION_SCHEME = 'UA-EDR'
-procedures = (
-    'aboveThresholdUA', 'aboveThresholdUA.defense', 'aboveThresholdEU',
-    'competitiveDialogueUA.stage2', 'competitiveDialogueEU.stage2',
+fiscal_procedures = (
+    'aboveThresholdUA',
+    'aboveThresholdUA.defense',
+    'aboveThresholdEU',
+    'competitiveDialogueUA.stage2',
+    'competitiveDialogueEU.stage2',
     'esco',
     'closeFrameworkAgreementUA',
     'simple.defense',
+)
+fiscal_statuses = (
+    "active.awarded",
+    "active.qualification",
 )
 
 WORKING_DAYS_BEFORE_REQUEST_AGAIN = 2

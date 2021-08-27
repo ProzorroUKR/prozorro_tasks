@@ -109,6 +109,9 @@ class ResourceConfigFactory:
         builder = self.builders[resource]
         return builder(resource, **kwargs)
 
+    def choices(self):
+        return self.builders.keys()
+
 
 class ResourceConfigProvider(ResourceConfigFactory):
     def get(self, resource, **kwargs):

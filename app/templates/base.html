@@ -62,11 +62,6 @@
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        {% with url=url_for("celery_views.celery") %}
-                        <a class="nav-link" href="{{ url }}">Celery</a>
-                        {% endwith %}
-                    </li>
-                    <li class="nav-item">
                         {% with url=url_for("payments_views.payment_list") %}
                         <a class="nav-link" href="{{ url }}">Payments</a>
                         {% endwith %}

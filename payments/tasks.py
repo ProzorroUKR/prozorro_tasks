@@ -23,7 +23,10 @@ from payments.utils import (
     request_cdb_tender_data,
     get_resolution,
 )
-from tasks_utils.requests import get_exponential_request_retry_countdown, get_task_retry_logger_method
+from tasks_utils.requests import (
+    get_exponential_request_retry_countdown,
+    get_task_retry_logger_method,
+)
 
 logger = get_task_logger(__name__)
 

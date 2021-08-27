@@ -87,6 +87,105 @@ services:
   #rabbitmqctl start_app
   #rabbitmqctl set_policy ha-all "" '{"ha-mode":"all","ha-sync-mode":"automatic"}'
 
+  tenders:
+    image: prozorro/tasks
+    build:
+      context: tasks
+      dockerfile: Dockerfile
+    command:
+      - "python"
+      - "-m"
+      - "crawler.main"
+      - "tenders"
+    environment:
+      LOCK_ENABLED=yep
+      API_LIMIT=5
+      API_OPT_FIELDS=status,procurementMethodType
+      MONGODB_URL=mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED=1
+      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME=tasks-crawler-tenders
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+
+  contracts:
+    image: prozorro/tasks
+    build:
+      context: tasks
+      dockerfile: Dockerfile
+    command:
+      - "python"
+      - "-m"
+      - "crawler.main"
+      - "contracts"
+    environment:
+      LOCK_ENABLED=yep
+      API_LIMIT=5
+      API_OPT_FIELDS=status,procurementMethodType
+      MONGODB_URL=mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED=1
+      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME=tasks-crawler-contracts
+      API_RESOURCE=contracts
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+
+  frameworks:
+    image: prozorro/tasks
+    build:
+      context: tasks
+      dockerfile: Dockerfile
+    command:
+      - "python"
+      - "-m"
+      - "crawler.main"
+      - "frameworks"
+    environment:
+      LOCK_ENABLED=yep
+      API_LIMIT=5
+      API_OPT_FIELDS=status,procurementMethodType
+      MONGODB_URL=mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED=1
+      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME=tasks-crawler-frameworks
+      API_RESOURCE=frameworks
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+
+  agreements:
+    image: prozorro/tasks
+    build:
+      context: tasks
+      dockerfile: Dockerfile
+    command:
+      - "python"
+      - "-m"
+      - "crawler.main"
+      - "agreements"
+    environment:
+      LOCK_ENABLED=yep
+      API_LIMIT=5
+      API_OPT_FIELDS=status,procurementMethodType
+      MONGODB_URL=mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED=1
+      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME=tasks-crawler-agreements
+      API_RESOURCE=agreements
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+
   worker:
 #    hostname: worker
 #    image: prozorro/prozorro_tasks:latest
@@ -96,7 +195,7 @@ services:
       - CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
       - C_FORCE_ROOT=1
       - PYTHONUNBUFFERED=1
-      - PUBLIC_API_HOST=https://public.api.openprocurement.org
+      - PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
       - API_VERSION=0
       - API_HOST=https://lb-api-sandbox.prozorro.gov.ua
       - API_TOKEN=
