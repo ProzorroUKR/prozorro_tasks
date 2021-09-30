@@ -147,12 +147,12 @@ def send_request_receipt(self, request_data, filename, supplier, requests_reties
             )
         except RETRY_REQUESTS_EXCEPTIONS as e:
             logger.exception(e, extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_ERROR"})
-            raise self.retry(exc=e)
+            raise self.retry(exc=e, countdown=get_exponential_request_retry_countdown(self))
         else:
             if response.status_code != 200:
                 logger.error("Unsuccessful status code: {} {}".format(response.status_code, response.text),
                              extra={"MESSAGE_ID": "FISCAL_API_POST_INVALID_STATUS_CODE_RESPONSE_ERROR"})
-                self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
             else:
                 data = response.json()
 
@@ -385,7 +385,7 @@ def check_for_response_file(self, request_data, supplier, request_time, requests
             if response.status_code != 200:
                 logger.error("Unsuccessful status code: {} {}".format(response.status_code, response.text),
                              extra={"MESSAGE_ID": "FISCAL_API_CHECK_RESPONSE_ERROR"})
-                self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+                raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
             else:
                 data = response.json()
 
