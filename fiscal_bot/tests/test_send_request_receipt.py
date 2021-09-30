@@ -35,7 +35,50 @@ class ReceiptTestCase(unittest.TestCase):
                 supplier=supplier, requests_reties=0
             )
 
-        retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
+        retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect, countdown=5)
+
+    retry_count_to_timeout_in_sec_test_cases = [
+        {"attempt": 0, "timeout": 5},
+        {"attempt": 1, "timeout": 10},
+        {"attempt": 10, "timeout": 3600},
+    ]
+
+    @patch("fiscal_bot.tasks.get_task_result")
+    @patch("fiscal_bot.tasks.send_request_receipt.request_stack")
+    @patch("fiscal_bot.tasks.send_request_receipt.retry")
+    @patch("fiscal_bot.tasks.requests")
+    def test_request_exception(self, requests_mock, retry_mock, task_request_mock, get_result_mock):
+        get_result_mock.return_value = None
+        retry_mock.side_effect = Retry
+        filename = "test.xml"
+        request_data = "Y29udGVudA=="
+
+        supplier = dict(
+            name="Python Monty Иванович",
+            identifier="AA426097",
+            tender_id="f" * 32,
+            award_id="c" * 32,
+            tenderID="UA-2019-01-31-000147-a",
+        )
+
+        requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
+
+        for test_case in self.retry_count_to_timeout_in_sec_test_cases:
+            attempt_count = test_case["attempt"]
+            timeout_in_sec = test_case["timeout"]
+            with self.subTest():
+                task_request_mock.top = Mock(retries=attempt_count)
+                with self.assertRaises(Retry):
+
+                    send_request_receipt(
+                        request_data=request_data, filename=filename,
+                        supplier=supplier, requests_reties=0
+                    )
+
+                retry_mock.assert_called_with(
+                    exc=requests_mock.post.side_effect,
+                    countdown=timeout_in_sec
+                )
 
     @patch("fiscal_bot.tasks.get_task_result")
     @patch("fiscal_bot.tasks.send_request_receipt.retry")
