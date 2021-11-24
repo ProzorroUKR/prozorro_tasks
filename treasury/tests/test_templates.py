@@ -64,11 +64,9 @@ test_plan = dict(
     id="999",
     procuringEntity=dict(
         name="My name",
-        identifier=dict(
-            id="99999-99",
-        )
     ),
     procuring_entity_name='My name',
+    procuring_identifier_id='99999-99',
     classification=test_classification,
     additionalClassifications=test_add_classifications,
     budget=dict(

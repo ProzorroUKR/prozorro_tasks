@@ -47,7 +47,7 @@ def prepare_contract_context(contract):
     contract["documents"] = filtered_documents
 
 
-def prepare_context(task, contract, tender, plan):
+def prepare_context(task, contract, tender, plan, buyer):
     prepare_contract_context(contract)
     # additional global context variables
     tender_contract = [
@@ -113,8 +113,12 @@ def prepare_context(task, contract, tender, plan):
     for item in tender["items"]:
         item["item_delivery_address"] = get_custom_address_string(item.get("deliveryAddress"))
 
-    if plan:
-        plan["procuring_entity_name"] = get_name_from_organization(plan.get("procuringEntity"))
+    data_organization = plan.get("procuringEntity")
+    if buyer:
+        data_organization = buyer
+
+    plan["procuring_entity_name"] = get_name_from_organization(data_organization)
+    plan["procuring_identifier_id"] = get_name_from_organization(data_organization)
 
     for bid in tender["bids"]:
         bid["bid_suppliers_identifier_name"] = get_name_from_organization(bid["tenderers"][0])
@@ -266,6 +270,15 @@ def get_name_from_organization(_object):
 
     if "legalName" in _object["identifier"]:
         return _object["identifier"]["legalName"]
+    return _object["name"]
+
+
+def get_identifier_id_from_organization(_object):
+    if not _object:
+        return None
+
+    if "id" in _object["identifier"]:
+        return _object["identifier"]["id"]
     return _object["name"]
 
 

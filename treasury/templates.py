@@ -83,7 +83,7 @@ def _build_plan_xml(maker, context):
         result = maker.plan(
             maker.planId(plan["id"]),
             maker.procuringEntityName(get_value(plan, "procuring_entity_name")),
-            maker.procuringEntityIdentifierId(get_value(plan, "procuringEntity", "identifier", "id")),
+            maker.procuringEntityIdentifierId(get_value(plan, "procuring_identifier_id")),
             maker.classificationId(get_value(plan, "classification", "id")),
             maker.classificationDescription(get_value(plan, "classification", "description")),
             maker.additionalClassifications(
@@ -113,6 +113,10 @@ def _build_plan_xml(maker, context):
             ),
         )
         return result
+
+
+def _build_items_tender_xml(maker, context):
+    pass
 
 
 def _build_tender_xml(maker, context):
