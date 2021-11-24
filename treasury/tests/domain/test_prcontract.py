@@ -145,9 +145,13 @@ class TestCase(BaseTestCase):
         subcontracting_details = "Київ, вул. Островського, 3"
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
+        buyer = dict()
         tender = dict(
             procurementMethodType="negotiation",
             id="45677",
+            buyers=[
+                buyer,
+            ],
             contracts=[
                 dict(id="111"),
                 dict(
@@ -278,7 +282,7 @@ class TestCase(BaseTestCase):
         with patch("treasury.domain.prcontract.prepare_contract_context") as prepare_contract_mock:
             with patch("treasury.domain.prcontract.download_file") as download_file_mock:
                 download_file_mock.return_value = None, audit_content
-                result = prepare_context(task, contract, deepcopy(tender), plan)
+                result = prepare_context(task, contract, deepcopy(tender), plan, buyer)
 
         prepare_contract_mock.assert_called_once_with(contract)
         self.assertIs(result["contract"], contract)
