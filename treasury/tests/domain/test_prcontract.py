@@ -361,8 +361,11 @@ class TestCase(BaseTestCase):
         suppliers_identifier_name = 'some_name222'
         contract = dict(id="222", awardID="22")
         plan = dict(id="1243455")
-
+        buyer = dict()
         tender = dict(
+            buyers=[
+              buyer
+            ],
             procurementMethodType="aboveThresholdUA",
             procuringEntity=dict(
                 kind="general",
@@ -426,7 +429,7 @@ class TestCase(BaseTestCase):
         )
 
         with patch("treasury.domain.prcontract.prepare_contract_context") as prepare_contract_mock:
-            result = prepare_context(task, contract, deepcopy(tender), plan)
+            result = prepare_context(task, contract, deepcopy(tender), plan, buyer)
 
         prepare_contract_mock.assert_called_once_with(contract)
         self.assertIs(result["contract"], contract)
