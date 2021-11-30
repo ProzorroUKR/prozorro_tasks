@@ -304,3 +304,27 @@ def get_procuring_entity_kind(tender_start_date, tender):
     if not tender_start_date or tender_start_date < RELEASE_2020_04_19:
         return None
     return tender["procuringEntity"].get("kind")
+
+
+def get_buyer(contract_id, tender):
+    contracts = tender["contacts"]
+    buyers = tender["buyers"]
+    buyer_id = ""
+    for contract in contracts:
+        if contract["id"] == contract_id:
+            buyer_id = contract["buyerID"]
+            break
+    for buyer in buyers:
+        if buyer["id"] == buyer_id:
+            return buyer
+    return {}
+
+
+def get_plan_by_buyer(task, tender, buyer):
+    plans = tender["plans"]
+    for plan in plans:
+        plan = get_public_api_data(task, plan["id"], "plan")
+        plan_identifier_id = plan["procuringEntity"]["identifier"]["id"]
+        if buyer["identifier"]["id"] == plan_identifier_id:
+            return plan
+    return {}

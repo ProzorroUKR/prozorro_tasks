@@ -117,8 +117,7 @@ def _build_plan_xml(maker, context):
 
 def _build_items_tender_xml(maker, context):
     tender = context["tender"]
-    buyer = context["buyer"]
-    items = []
+    buyer = context.get("buyer", {})
     if buyer:
         items = [item for contract in tender["contracts"] if contract["buyerID"] == buyer["id"] for item in contract['items']]
     else:

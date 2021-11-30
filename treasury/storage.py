@@ -2,9 +2,6 @@ from celery_worker.locks import get_mongodb_collection
 from environment_settings import (
     TREASURY_CONTEXT_COLLECTION, TREASURY_DB_NAME, TREASURY_ORG_COLLECTION, TREASURY_XML_TEMPLATES_COLLECTION,
 )
-from tasks_utils.requests import (
-    get_public_api_data
-)
 from pymongo.errors import PyMongoError
 from pymongo import UpdateOne, DeleteMany
 from celery.signals import celeryd_init
@@ -136,27 +133,3 @@ def insert_many(collection_name, data: List[Dict]):
     else:
         logger.info(f"{data} has been inserted")
         return {"status": HTTPStatus.CREATED}
-
-
-def get_buyer(contract_id, tender):
-    contracts = tender["contacts"]
-    buyers = tender["buyers"]
-    buyer_id = ""
-    for contract in contracts:
-        if contract["id"] == contract_id:
-            buyer_id = contract["buyerID"]
-            break
-    for buyer in buyers:
-        if buyer["id"] == buyer_id:
-            return buyer
-    return {}
-
-
-def get_plan_by_buyer(task, tender, buyer):
-    plans = tender["plans"]
-    for plan in plans:
-        plan = get_public_api_data(task, plan["id"], "plan")
-        plan_identifier_id = plan["procuringEntity"]["identifier"]["id"]
-        if buyer["identifier"]["id"] == plan_identifier_id:
-            return plan
-    return {}

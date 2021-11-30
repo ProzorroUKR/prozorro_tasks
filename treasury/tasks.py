@@ -1,8 +1,7 @@
 from celery_worker.celery import app, formatter
 from celery_worker.locks import concurrency_lock, unique_lock
 from treasury.storage import (
-    get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template,
-    get_buyer, get_plan_by_buyer
+    get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template
 )
 from treasury.documents import prepare_documents
 from treasury.templates import (
@@ -28,7 +27,7 @@ from treasury.domain.prtrans import (
     get_contracts_server_id_cookies,
 )
 from treasury.domain.prcontract import (
-    get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date,
+    get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date, get_plan_by_buyer, get_buyer
 )
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
