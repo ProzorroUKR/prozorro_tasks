@@ -36,7 +36,7 @@ docker build:
 review:
   stage: deploy
   dependencies:
-    - push image
+    - docker build
   tags:
     - shell
   environment:
@@ -70,7 +70,7 @@ review:
 review_manual_ver_API:
   stage: deploy
   dependencies:
-    - push image
+    - docker build
   tags:
     - shell
   environment:
