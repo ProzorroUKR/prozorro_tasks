@@ -1,6 +1,7 @@
 stages:
   - test
   - push image
+  - deploy
 
 test:
   image: python:3.7
@@ -31,3 +32,87 @@ docker build:
     - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG $EXTRA_TAGS .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     - if [ "$LATEST_MASTER_COMMIT" = "$CI_COMMIT_SHA" ]; then docker push $CI_REGISTRY_IMAGE:latest; fi
+
+review:
+  stage: deploy
+  dependencies:
+    - build
+  tags:
+    - shell
+  environment:
+    name: review/${CI_COMMIT_REF_SLUG}
+    action: start
+    url: http://api.${CI_COMMIT_REF_SLUG}.${K8S_DOMAIN}/api/2.5/tenders
+    on_stop: stop_review
+    auto_stop_in: 5 day
+  variables:
+    API_TAG: "latest"
+    TAG: $CI_COMMIT_REF_SLUG
+    API_HOST: http://api.${CI_COMMIT_REF_SLUG}.${K8S_DOMAIN}
+  script:
+    - helm3 repo add prozorro $REPO_URL
+    - helm3 repo update
+    - helm3 --debug upgrade $CI_COMMIT_REF_SLUG --install prozorro/prozorro --namespace dev-prozorro
+          --set prozorro-api.image.tag=$API_TAG
+          --set deployAuctions=false
+          --set deployAuction=false
+          --wait
+    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-pq --install prozorro/prozorro-bridge-pricequotation --namespace dev-prozorro
+          --set pricequotation.container.environment.CDB_PUBLIC_API_HOST=$API_HOST
+          --set pricequotation.container.environment.PUBLIC_API_HOST=$API_HOST
+          --wait
+  only:
+    - branches
+  except:
+    - master
+  when: manual
+
+review_manual_ver_API:
+  stage: deploy
+  dependencies:
+    - build
+  tags:
+    - shell
+  environment:
+    name: review/${CI_COMMIT_REF_SLUG}
+    action: start
+    url: http://api.${CI_COMMIT_REF_SLUG}.${K8S_DOMAIN}/api/2.5/tenders
+    on_stop: stop_review
+    auto_stop_in: 5 day
+  variables:
+    TAG: $CI_COMMIT_REF_SLUG
+    API_HOST: http://api.${CI_COMMIT_REF_SLUG}.${K8S_DOMAIN}
+  script:
+    - echo "Deploy env with API - $API_TAG"
+    - helm3 repo add prozorro $REPO_URL
+    - helm3 repo update
+    - helm3 --debug upgrade $CI_COMMIT_REF_SLUG --install prozorro/prozorro --namespace dev-prozorro
+          --set prozorro-api.image.tag=$API_TAG
+          --set deployAuctions=false
+          --set deployAuction=false
+          --wait
+    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-pq --install prozorro/prozorro-bridge-pricequotation --namespace dev-prozorro
+          --set pricequotation.container.environment.CDB_PUBLIC_API_HOST=$API_HOST
+          --set pricequotation.container.environment.PUBLIC_API_HOST=$API_HOST
+          --wait
+  only:
+    - branches
+    - tags
+  when: manual
+
+stop_review:
+  stage: deploy
+  script:
+    - helm3 delete $CI_COMMIT_REF_SLUG
+    - helm3 delete $CI_COMMIT_REF_SLUG-pq
+  environment:
+    name: review/${CI_COMMIT_REF_SLUG}
+    action: stop
+  tags:
+    - shell
+  only:
+    - branches
+  except:
+    - master
+  when: manual
+
