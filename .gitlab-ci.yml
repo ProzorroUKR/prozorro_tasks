@@ -57,9 +57,8 @@ review:
           --set deployAuctions=false
           --set deployAuction=false
           --wait
-    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-pq --install prozorro/prozorro-bridge-pricequotation --namespace dev-prozorro
-          --set pricequotation.container.environment.CDB_PUBLIC_API_HOST=$API_HOST
-          --set pricequotation.container.environment.PUBLIC_API_HOST=$API_HOST
+    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-t --install prozorro/prozorro_tasks --namespace dev-prozorro
+          --set tasks.container.environment.PUBLIC_API_HOST=$API_HOST
           --wait
   only:
     - branches
@@ -91,9 +90,8 @@ review_manual_ver_API:
           --set deployAuctions=false
           --set deployAuction=false
           --wait
-    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-pq --install prozorro/prozorro-bridge-pricequotation --namespace dev-prozorro
-          --set pricequotation.container.environment.CDB_PUBLIC_API_HOST=$API_HOST
-          --set pricequotation.container.environment.PUBLIC_API_HOST=$API_HOST
+    - helm3 --debug upgrade ${CI_COMMIT_REF_SLUG}-t --install prozorro/prozorro_tasks --namespace dev-prozorro
+          --set tasks.container.environment.PUBLIC_API_HOST=$API_HOST
           --wait
   only:
     - branches
