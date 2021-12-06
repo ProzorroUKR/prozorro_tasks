@@ -307,8 +307,8 @@ def get_procuring_entity_kind(tender_start_date, tender):
 
 
 def get_buyer(contract_id, tender):
-    contracts = tender["contacts"]
-    buyers = tender["buyers"]
+    contracts = tender.get("contracts", [])
+    buyers = tender.get("buyers", [])
     buyer_id = ""
     for contract in contracts:
         if contract["id"] == contract_id:
