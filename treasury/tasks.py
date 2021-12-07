@@ -108,15 +108,18 @@ def check_contract(self, contract_id, ignore_date_signed=False):
     else:
         first_stage_tender = get_first_stage_tender(self, tender)
 
+        plan = {}
         if buyer:
             plan = get_plan_by_buyer(self, tender, buyer)
         elif "plans" in first_stage_tender:
             plan = get_public_api_data(self, first_stage_tender["plans"][0]["id"], "plan")
-        else:
+
+        if not plan:
             return logger.warning(
                 f"Cannot find plan for {contract['id']} and tender {first_stage_tender['id']}",
                 extra={"MESSAGE_ID": "TREASURY_PLAN_LINK_MISSED"}
             )
+
         context = prepare_context(self, contract, tender, plan, buyer)
         save_contract_context(self, contract["id"], context)
         send_contract_xml.delay(contract["id"])

@@ -324,7 +324,9 @@ def get_plan_by_buyer(task, tender, buyer):
     plans = tender["plans"]
     for plan in plans:
         plan = get_public_api_data(task, plan["id"], "plan")
-        plan_identifier_id = plan["procuringEntity"]["identifier"]["id"]
-        if buyer["identifier"]["id"] == plan_identifier_id:
-            return plan
+        plan_buyers = plan.get('buyers')
+        for plan_buyer in plan_buyers:
+            plan_buyer_identifier_id = plan_buyer["identifier"]["id"]
+            if buyer["identifier"]["id"] == plan_buyer_identifier_id:
+                return plan
     return {}
