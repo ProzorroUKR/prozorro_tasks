@@ -40,4 +40,4 @@ git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.5#egg=prozorro_crawler
 ### https://github.com/ProzorroUKR/openprocurement.audit.api
 ### https://github.com/ProzorroUKR/prozorro_tasks
 ############
-git+git://github.com/ProzorroUKR/standards.git@1.0.4
+git+git://github.com/ProzorroUKR/standards.git@1.0.22
