@@ -47,7 +47,7 @@ def prepare_contract_context(contract):
     contract["documents"] = filtered_documents
 
 
-def prepare_context(task, contract, tender, plan):
+def prepare_context(task, contract, tender, plan, buyer):
     prepare_contract_context(contract)
     # additional global context variables
     tender_contract = [
@@ -113,8 +113,17 @@ def prepare_context(task, contract, tender, plan):
     for item in tender["items"]:
         item["item_delivery_address"] = get_custom_address_string(item.get("deliveryAddress"))
 
-    if plan:
-        plan["procuring_entity_name"] = get_name_from_organization(plan.get("procuringEntity"))
+    data_organization = plan.get("procuringEntity")
+    tender_organization = tender.get("procuringEntity")
+    if buyer:
+        data_organization = buyer
+        tender_organization = data_organization
+
+    tender_procuring_entity_name = get_name_from_organization(tender_organization)
+    tender_procuring_entity_identifier_id = get_identifier_id_from_organization(tender_organization)
+
+    plan["procuring_entity_name"] = get_name_from_organization(data_organization)
+    plan["procuring_identifier_id"] = get_identifier_id_from_organization(data_organization)
 
     for bid in tender["bids"]:
         bid["bid_suppliers_identifier_name"] = get_name_from_organization(bid["tenderers"][0])
@@ -126,7 +135,8 @@ def prepare_context(task, contract, tender, plan):
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
         contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
         contracts_suppliers_identifier_name=get_name_from_organization(tender_contract["suppliers"][0]),
-        tender_procuring_entity_name=get_name_from_organization(tender.get("procuringEntity")),
+        tender_procuring_entity_name=tender_procuring_entity_name,
+        tender_procuring_entity_identifier_id=tender_procuring_entity_identifier_id,
         bid_subcontracting_details=get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender),
         procuring_entity_kind=get_procuring_entity_kind(tender_start_date, tender)
     )
@@ -141,6 +151,7 @@ def prepare_context(task, contract, tender, plan):
         plan=plan,
         initial_bids=initial_bids,
         secondary_data=secondary_data,
+        buyer=buyer,
     )
     return context
 
@@ -269,6 +280,15 @@ def get_name_from_organization(_object):
     return _object["name"]
 
 
+def get_identifier_id_from_organization(_object):
+    if not _object:
+        return None
+
+    if "id" in _object["identifier"]:
+        return _object["identifier"]["id"]
+    return _object["name"]
+
+
 def get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender):
     if 'lots' in tender:
         lot_value = [lot_val for lot_val in tender_bid.get("lotValues", "")
@@ -284,3 +304,29 @@ def get_procuring_entity_kind(tender_start_date, tender):
     if not tender_start_date or tender_start_date < RELEASE_2020_04_19:
         return None
     return tender["procuringEntity"].get("kind")
+
+
+def get_buyer(contract_id, tender):
+    contracts = tender.get("contracts", [])
+    buyers = tender.get("buyers", [])
+    buyer_id = ""
+    for contract in contracts:
+        if contract["id"] == contract_id:
+            buyer_id = contract["buyerID"]
+            break
+    for buyer in buyers:
+        if buyer["id"] == buyer_id:
+            return buyer
+    return {}
+
+
+def get_plan_by_buyer(task, tender, buyer):
+    plans = tender["plans"]
+    for plan in plans:
+        plan = get_public_api_data(task, plan["id"], "plan")
+        plan_buyers = plan.get('buyers')
+        for plan_buyer in plan_buyers:
+            plan_buyer_identifier_id = plan_buyer["identifier"]["id"]
+            if buyer["identifier"]["id"] == plan_buyer_identifier_id:
+                return plan
+    return {}

@@ -83,7 +83,7 @@ def _build_plan_xml(maker, context):
         result = maker.plan(
             maker.planId(plan["id"]),
             maker.procuringEntityName(get_value(plan, "procuring_entity_name")),
-            maker.procuringEntityIdentifierId(get_value(plan, "procuringEntity", "identifier", "id")),
+            maker.procuringEntityIdentifierId(get_value(plan, "procuring_identifier_id")),
             maker.classificationId(get_value(plan, "classification", "id")),
             maker.classificationDescription(get_value(plan, "classification", "description")),
             maker.additionalClassifications(
@@ -115,6 +115,34 @@ def _build_plan_xml(maker, context):
         return result
 
 
+def _build_items_tender_xml(maker, context):
+    tender = context["tender"]
+    buyer = context.get("buyer", {})
+    if buyer:
+        items = [item for contract in tender["contracts"] if contract["buyerID"] == buyer["id"] for item in contract['items']]
+    else:
+        items = [item for contract in tender["contracts"] for item in contract['items']]
+    return ((maker.item(
+            maker.itemsId(item["id"]),
+            maker.itemsDescription(get_value(item, "description")),
+            maker.itemsClassificationScheme(get_value(item, "classification", "scheme")),
+            maker.itemsClassificationId(get_value(item, "classification", "id")),
+            maker.itemsClassificationDescription(get_value(item, "classification", "description")),
+            maker.itemsAdditionalClassifications(
+                *(maker.itemsAdditionalClassification(
+                    maker.itemsAdditionalClassificationsScheme(get_value(classification, "scheme")),
+                    maker.itemsAdditionalClassificationsId(get_value(classification, "id")),
+                    maker.itemsAdditionalClassificationsDescription(get_value(classification, "description")),
+                ) for classification in item.get("additionalClassifications", ""))
+            ),
+            maker.itemsQuantity(get_value(item, "quantity")),
+            maker.itemsUnitName(get_value(item, "unit", "name")),
+            maker.itemsDeliveryAddress(get_value(item, "item_delivery_address")),
+            maker.itemsDeliveryDateEndDate(get_date_value(item, "deliveryDate", "endDate")),
+        ) for item in items)
+    )
+
+
 def _build_tender_xml(maker, context):
     tender = context["tender"]
     tender_contract = context["tender_contract"]
@@ -130,28 +158,9 @@ def _build_tender_xml(maker, context):
             "date"
         )),
         maker.procuringEntityName(secondary_data["tender_procuring_entity_name"]),
-        maker.procuringEntityIdentifierId(get_value(tender, "procuringEntity", "identifier", "id")),
+        maker.procuringEntityIdentifierId(secondary_data["tender_procuring_entity_identifier_id"]),
         maker.mainProcurementCategory(get_value(tender, "mainProcurementCategory")),
-        maker.items(
-            * (maker.item(
-                maker.itemsId(item["id"]),
-                maker.itemsDescription(get_value(item, "description")),
-                maker.itemsClassificationScheme(get_value(item, "classification", "scheme")),
-                maker.itemsClassificationId(get_value(item, "classification", "id")),
-                maker.itemsClassificationDescription(get_value(item, "classification", "description")),
-                maker.itemsAdditionalClassifications(
-                    *(maker.itemsAdditionalClassification(
-                        maker.itemsAdditionalClassificationsScheme(get_value(classification, "scheme")),
-                        maker.itemsAdditionalClassificationsId(get_value(classification, "id")),
-                        maker.itemsAdditionalClassificationsDescription(get_value(classification, "description")),
-                    ) for classification in item.get("additionalClassifications", ""))
-                ),
-                maker.itemsQuantity(get_value(item, "quantity")),
-                maker.itemsUnitName(get_value(item, "unit", "name")),
-                maker.itemsDeliveryAddress(get_value(item, "item_delivery_address")),
-                maker.itemsDeliveryDateEndDate(get_date_value(item, "deliveryDate", "endDate")),
-            ) for item in tender['items'])
-        ),
+        maker.items(*_build_items_tender_xml(maker, context)),
         maker.milestones(
             * (maker.milestone(
                 maker.milestonesId(milestone["id"]),

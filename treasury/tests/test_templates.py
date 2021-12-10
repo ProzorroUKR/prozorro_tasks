@@ -64,11 +64,9 @@ test_plan = dict(
     id="999",
     procuringEntity=dict(
         name="My name",
-        identifier=dict(
-            id="99999-99",
-        )
     ),
     procuring_entity_name='My name',
+    procuring_identifier_id='99999-99',
     classification=test_classification,
     additionalClassifications=test_add_classifications,
     budget=dict(
@@ -169,6 +167,31 @@ test_tender = dict(
             bid_suppliers_identifier_name='Bid_Suppliers_Identifier_Name67890'
         )
     ],
+    contracts=[
+        dict(
+            items=[
+                dict(
+                    id="11",
+                    description="bla",
+                    classification=test_classification,
+                    additionalClassifications=test_add_classifications,
+                    quantity=2,
+                    unit=dict(name="FF"),
+                    deliveryAddress=dict(city="Kharkiv", street="Turbo-atom"),
+                    deliveryDate=dict(endDate=datetime(1999, 12, 12)),
+                    item_delivery_address="Kiev, Shevchenko Street, 5"
+                ),
+                dict(
+                    id="222",
+                    description="bla bla",
+                    classification=test_classification,
+                    additionalClassifications=[],
+                    quantity=3,
+                    unit=dict(name="FFA"),
+                )
+            ]
+        )
+    ]
 )
 test_initial_bids = {"1": 333, "2": 555}
 test_tender_contract = dict(
@@ -197,6 +220,7 @@ test_secondary_data = dict(
     contracts_suppliers_address="Ukraine, Dnipro, Shevchenko Street, 4",
     contracts_suppliers_identifier_name="contractSupplierName12345",
     tender_procuring_entity_name="TenderProcurementEntityName555555",
+    tender_procuring_entity_identifier_id="99999-99",
     bid_subcontracting_details="DKP Book, Ukraine Lviv",
     procuring_entity_kind="general"
 )
@@ -279,6 +303,7 @@ class TemplatesTestCase(unittest.TestCase):
             initial_bids=test_initial_bids,
             lot=test_lot,
             secondary_data=test_secondary_data,
+            buyer={},
         )
         result = render_contract_xml(context)
         self.assertEqual(
@@ -444,6 +469,7 @@ class TemplatesTestCase(unittest.TestCase):
             cancellation={},
             initial_bids={},
             secondary_data=test_secondary_data,
+            buyer={}
         )
         context = deepcopy(context)
         del context["contract"]["period"]
@@ -451,7 +477,8 @@ class TemplatesTestCase(unittest.TestCase):
         context["contract"]["changes"] = []
         del context["plan"]["additionalClassifications"]
         del context["plan"]["budget"]
-        context["tender"]["items"] = []
+        for contract in context["tender"]['contracts']:
+            contract["items"] = []
         context["tender"]["milestones"] = []
         context["tender"]["bids"] = []
         context["secondary_data"]["procuring_entity_kind"] = None

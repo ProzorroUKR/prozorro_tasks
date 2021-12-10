@@ -1,7 +1,7 @@
 from celery_worker.celery import app, formatter
 from celery_worker.locks import concurrency_lock, unique_lock
 from treasury.storage import (
-    get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template,
+    get_contract_context, save_contract_context, update_organisations, get_organisation, save_xml_template
 )
 from treasury.documents import prepare_documents
 from treasury.templates import (
@@ -27,7 +27,7 @@ from treasury.domain.prtrans import (
     get_contracts_server_id_cookies,
 )
 from treasury.domain.prcontract import (
-    get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date,
+    get_first_stage_tender, prepare_context, prepare_contract_context, get_contract_date, get_plan_by_buyer, get_buyer
 )
 from treasury.settings import (
     PUT_TRANSACTION_SUCCESSFUL_STATUS,
@@ -57,6 +57,8 @@ def check_contract(self, contract_id, ignore_date_signed=False):
     :return:
     """
     contract = get_public_api_data(self, contract_id, "contract")
+    tender = get_public_api_data(self, contract["tender_id"], "tender")
+    buyer = {}
 
     if contract['status'] != 'active':
         return logger.debug(f"Skipping contract {contract['id']} not in active status",
@@ -73,7 +75,12 @@ def check_contract(self, contract_id, ignore_date_signed=False):
         return logger.debug(f"Skipping {contract['status']} contract {contract['id']} with identifier {identifier}",
                             extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
-    org = get_organisation(self, identifier["id"])
+    code = identifier["id"]
+    if "buyers" in tender:
+        buyer = get_buyer(contract["id"], tender)
+        code = buyer["identifier"]["id"]
+
+    org = get_organisation(self, code)
     if org is None:
         return logger.debug(f"Skipping contract {contract['id']} with identifier {identifier} not on the list",
                             extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
@@ -99,17 +106,21 @@ def check_contract(self, contract_id, ignore_date_signed=False):
         for change_id in sorted(new_change_ids):
             send_change_xml.delay(contract["id"], change_id)
     else:
-        tender = get_public_api_data(self, contract["tender_id"], "tender")
         first_stage_tender = get_first_stage_tender(self, tender)
 
-        if "plans" in first_stage_tender:
+        plan = {}
+        if buyer:
+            plan = get_plan_by_buyer(self, tender, buyer)
+        elif "plans" in first_stage_tender:
             plan = get_public_api_data(self, first_stage_tender["plans"][0]["id"], "plan")
-        else:
+
+        if not plan:
             return logger.warning(
                 f"Cannot find plan for {contract['id']} and tender {first_stage_tender['id']}",
                 extra={"MESSAGE_ID": "TREASURY_PLAN_LINK_MISSED"}
             )
-        context = prepare_context(self, contract, tender, plan)
+
+        context = prepare_context(self, contract, tender, plan, buyer)
         save_contract_context(self, contract["id"], context)
         send_contract_xml.delay(contract["id"])
 

@@ -137,9 +137,6 @@ class CheckTestCase(unittest.TestCase):
                 call(check_contract, tender_data_first_stage["plans"][0]["id"], "plan")
             ]
         )
-        prepare_context_mock.assert_called_once_with(
-            check_contract, contract_data, tender_data_first_stage, plan_data
-        )
         save_context_mock.assert_called_once_with(
             check_contract,
             contract_id,
@@ -180,7 +177,7 @@ class CheckTestCase(unittest.TestCase):
             check_contract(contract_id, ignore_date_signed=True)
 
         # checks
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_called_once_with(check_contract, procuring_entity_id)
         get_context_mock.assert_called_once_with(check_contract, contract_data["id"])
         prepare_context_mock.assert_not_called()
@@ -218,12 +215,7 @@ class CheckTestCase(unittest.TestCase):
         check_contract(contract_id)
 
         # checks
-        self.assertEqual(
-            get_data_mock.mock_calls,
-            [
-                call(check_contract, contract_id, "contract"),
-            ]
-        )
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_not_called()
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -322,7 +314,7 @@ class CheckTestCase(unittest.TestCase):
             check_contract(contract_id)
 
         # checks
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_not_called()
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -357,7 +349,7 @@ class CheckTestCase(unittest.TestCase):
         check_contract(contract_id)
 
         # checks
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_not_called()
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -393,7 +385,7 @@ class CheckTestCase(unittest.TestCase):
         check_contract(contract_id)
 
         # checks
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         get_context_mock.assert_not_called()
         prepare_context_mock.assert_not_called()
@@ -441,7 +433,7 @@ class CheckTestCase(unittest.TestCase):
             check_contract,
             contract_id
         )
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         prepare_context_mock.assert_called_once_with(contract_data)
         save_context_mock.assert_called_once_with(
@@ -507,7 +499,7 @@ class CheckTestCase(unittest.TestCase):
         check_contract(contract_id)
 
         # checks
-        get_data_mock.assert_called_once_with(check_contract, contract_data["id"], "contract")
+        self.assertEqual(get_data_mock.call_count, 2)
         get_data_mock_prcontract.assert_called_once_with(check_contract, contract_data["tender_id"], "tender")
         get_org_mock.assert_called_once_with(check_contract, contract_data["procuringEntity"]["identifier"]["id"])
         prepare_context_mock.assert_not_called()
