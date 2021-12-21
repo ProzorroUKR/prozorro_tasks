@@ -48,6 +48,7 @@ def get_contract_context(task, contract_id):
         raise task.retry()
     else:
         if doc:
+            logger.info(f"Get contract context from {TREASURY_DB_NAME}:{TREASURY_CONTEXT_COLLECTION}", extra={"CONTRACT_ID": contract_id})
             return doc.get("context")
 
 
@@ -61,6 +62,8 @@ def save_contract_context(task, contract_id, data):
     except PyMongoError as e:
         logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_ERROR"})
         raise task.retry()
+    else:
+        logger.info(f"Contract context was update in {TREASURY_DB_NAME}:{TREASURY_CONTEXT_COLLECTION}", extra={"CONTRACT_ID": contract_id})
 
 
 def save_xml_template(task, contract_id, data, xml_was_changed=False):
@@ -75,6 +78,8 @@ def save_xml_template(task, contract_id, data, xml_was_changed=False):
     except PyMongoError as e:
         logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_ERROR"})
         raise task.retry()
+    else:
+        logger.info(f"Contract xml was update in {TREASURY_DB_NAME}:{TREASURY_XML_TEMPLATES_COLLECTION}", extra={"CONTRACT_ID": contract_id})
 
 
 def update_organisations(task, records):
