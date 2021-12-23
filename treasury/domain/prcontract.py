@@ -214,7 +214,7 @@ def get_award_qualified_eligible(tender, bid):
     tender_procurement_method_type = tender["procurementMethodType"]
     if tender_procurement_method_type in (
             "aboveThresholdUA", "aboveThresholdUA.defense",
-            "competitiveDialogueUA.stage2",
+            "competitiveDialogueUA.stage2", "simple.defense"
     ):
         _award = [
             a for a in tender["awards"]
