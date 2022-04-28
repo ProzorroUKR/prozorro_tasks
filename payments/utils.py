@@ -153,7 +153,10 @@ def find_replace(string, dictionary):
 def get_payment_params(description):
     match = PAYMENT_RE.search(find_replace(description, PAYMENT_REPLACE_MAPPING))
     if match:
-        return match.groupdict()
+        params = match.groupdict()
+        params["complaint"] = params["complaint"][:2].upper() + params["complaint"][2:].lower()
+        params["code"] = params["code"].upper()
+        return params
 
 
 def get_item_data(data, items_name, item_id):
