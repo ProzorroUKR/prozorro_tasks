@@ -10,6 +10,8 @@ pytz
 pyyaml
 python-json-logger==0.1.10
 Jinja2==2.10.1
+MarkupSafe==1.1.1
+itsdangerous==1.1.0
 tornado>=4.2.0,<6.0.0
 sentry-sdk==0.10.2
 gunicorn==20.0.4
@@ -31,7 +33,7 @@ asgiref==3.3.4
 aio-pika==6.8.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
-git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.5#egg=prozorro_crawler
+git+https://github.com/ProzorroUKR/prozorro_crawler.git@1.1.5#egg=prozorro_crawler
 
 ############
 ### On standards version update you should consider
@@ -40,4 +42,4 @@ git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.5#egg=prozorro_crawler
 ### https://github.com/ProzorroUKR/openprocurement.audit.api
 ### https://github.com/ProzorroUKR/prozorro_tasks
 ############
-git+git://github.com/ProzorroUKR/standards.git@1.0.22
+git+https://github.com/ProzorroUKR/standards.git@1.0.22

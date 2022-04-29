@@ -73,12 +73,12 @@ class GetPaymentParamsTestCase(unittest.TestCase):
             self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
-                    "complaint": params["complaint"].lower(),
-                    "code": params["code"].lower(),
+                    "complaint": params["complaint"],
+                    "code": params["code"],
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.c2".lower(),
-                    "code": "12ABCDEF".lower(),
+                    "complaint": "UA-2020-03-17-000090-a.c2",
+                    "code": "12ABCDEF",
                 },
                 "Failed: {}, {}".format(info, complaint_str)
             )
@@ -91,12 +91,12 @@ class GetPaymentParamsTestCase(unittest.TestCase):
             self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
-                    "complaint": params["complaint"].lower(),
-                    "code": params["code"].lower(),
+                    "complaint": params["complaint"],
+                    "code": params["code"],
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.c112".lower(),
-                    "code": "12ABCDEF".lower(),
+                    "complaint": "UA-2020-03-17-000090-a.c112",
+                    "code": "12ABCDEF",
                 },
                 "Failed: {}, {}".format(info, complaint_str)
             )
@@ -109,12 +109,12 @@ class GetPaymentParamsTestCase(unittest.TestCase):
             self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
-                    "complaint": params["complaint"].lower(),
-                    "code": params["code"].lower(),
+                    "complaint": params["complaint"],
+                    "code": params["code"],
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090-a.2.c2".lower(),
-                    "code": "12ABCDEF".lower(),
+                    "complaint": "UA-2020-03-17-000090-a.2.c2",
+                    "code": "12ABCDEF",
                 },
                 "Failed: {}, {}".format(info, complaint_str)
             )
@@ -127,12 +127,12 @@ class GetPaymentParamsTestCase(unittest.TestCase):
             self.assertIn("code", params, complaint_str)
             self.assertEqual(
                 {
-                    "complaint": params["complaint"].lower(),
-                    "code": params["code"].lower(),
+                    "complaint": params["complaint"],
+                    "code": params["code"],
                 },
                 {
-                    "complaint": "UA-2020-03-17-000090.2".lower(),
-                    "code": "12ABCDEF".lower(),
+                    "complaint": "UA-2020-03-17-000090.2",
+                    "code": "12ABCDEF",
                 },
                 "Failed: {}, {}".format(info, complaint_str)
             )
