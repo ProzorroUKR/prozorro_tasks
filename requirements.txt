@@ -9,7 +9,7 @@ python-dateutil==2.7.5
 pytz
 pyyaml
 python-json-logger==0.1.10
-Jinja2==2.10.1
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 itsdangerous==1.1.0
 tornado>=4.2.0,<6.0.0
