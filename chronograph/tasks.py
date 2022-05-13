@@ -94,4 +94,4 @@ def recheck(self, obj_name, obj_id, cookies=None):
                 retry_kwargs = dict(**self.request.kwargs)
                 retry_kwargs["cookies"] = response.cookies.get_dict()
                 raise self.retry(countdown=0, kwargs=retry_kwargs)
-            raise self.retry(countdown=get_exponential_request_retry_countdown(response))
+            raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
