@@ -4,7 +4,7 @@ flower==0.9.2
 requests
 pymongo==3.11.4
 flower==0.9.2
-lxml==4.5.0
+lxml==4.9.1
 aiohttp==3.6.2
 python-dateutil==2.7.5
 pytz
