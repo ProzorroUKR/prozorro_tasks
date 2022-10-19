@@ -11,6 +11,7 @@ pre_qualification_procedures = (
     'closeFrameworkAgreementUA',
 )
 qualification_procedures = (
+    'aboveThreshold',
     'aboveThresholdUA',
     'aboveThresholdUA.defense',
     'aboveThresholdEU',
