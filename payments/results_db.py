@@ -48,7 +48,7 @@ UID_KEYS_3 = UID_KEYS_2 + [
 
 def init_indexes():
     collection = get_mongodb_collection()
-    drop_indexes(collection)
+    # drop_indexes(collection)
     indexes = [
         dict(keys="createdAt", name="created_at"),
         dict(keys=[("payment.description", pymongo.TEXT)], name="payment_description_text"),
