@@ -61,8 +61,8 @@ class TaskJsonFormatter(jsonlogger.JsonFormatter):
                 extra = dict(
                     TASK_ID=request.id,
                     TASK_NAME=task.name,
-                    TASK_ARGS=task_args,
-                    TASK_KWARGS=task_kwargs,
+                    TASK_ARGS=str(task_args),
+                    TASK_KWARGS=str(task_kwargs),
                     TASK_RETRIES=request.retries,
                 )
                 return extra
