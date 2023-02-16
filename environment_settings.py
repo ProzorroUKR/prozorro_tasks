@@ -1,6 +1,11 @@
 import pytz
 import os
 
+import pathlib
+
+
+BASE_DIR = pathlib.Path().absolute()
+
 TRUE_VARS =  (True, 'True', 'true', 'yes', '1', 1)
 
 TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
@@ -46,6 +51,9 @@ EDR_API_VERSION = os.environ.get("EDR_API_VERSION", "1.0")
 EDR_API_USER = os.environ.get("EDR_API_USER", "robot")
 EDR_API_PASSWORD = os.environ.get("EDR_API_PASSWORD", "robot")
 SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS_INTERVAL", "30"))
+
+NAZK_API_HOST = os.environ.get("NAZK_API_HOST", "https://corruptinfo.nazk.gov.ua")
+NAZK_API_VERSION = os.environ.get("NAZK_API_VERSION", "1.0")
 
 
 API_SIGN_HOST = os.environ.get("API_SIGN_HOST", "http://host.docker.internal:6543")
@@ -116,6 +124,5 @@ TREASURY_XML_TEMPLATES_COLLECTION = os.environ.get("TREASURY_XML_TEMPLATES_COLLE
 TREASURY_OBLIGATION_COLLECTION = os.environ.get("TREASURY_OBLIGATION_COLLECTION", "obligations")
 TREASURY_DATETIME_FMT = os.environ.get("TREASURY_DATETIME_FMT", "%Y-%m-%dT%H:%M:%S")
 
-
-
+CERTIFICATES_DIR = os.environ.get("CERTIFICATE_DIR", os.path.join(BASE_DIR, "certificates"))
 NAZK_PROZORRO_OPEN_CERTIFICATE_NAME = os.environ.get("NAZK_PROZORRO_OPEN_CERTIFICATE_NAME", "Тест_Прозорро-7973142.cer")

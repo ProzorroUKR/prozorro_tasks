@@ -9,8 +9,13 @@ from base64 import b64encode, b64decode
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
+    NAZK_API_HOST, NAZK_API_VERSION,
     NAZK_PROZORRO_OPEN_CERTIFICATE_NAME
 )
+from app.utils import get_certificate_path
+
+from nazk_bot.api.exceptions import NAZKRequestErrorException
+
 logger = getLogger()
 
 
@@ -30,13 +35,13 @@ def get_entity_data_from_nazk(request_data):
 
 def encrypt_data(data: dict) -> bytes:
     response = requests.post(
-        url="http://localhost:6543/encrypt_nazk_data",  # TODO HOST
+        url="{}/encrypt_nazk_data".format(API_SIGN_HOST),
         json=data,
         auth=(API_SIGN_USER, API_SIGN_PASSWORD),
     )
     if response.status_code != 200:
         print("ENCRYPT DATA FAILED")
-        logger.info("ENCRYPT DATA FAILED")
+        logger.warning("Encrypt data failed", extra={"MESSAGE_ID": "NAZK_ENCRYPT_DATA_EXCEPTION"})
     return response.content
 
 
@@ -47,44 +52,50 @@ def encode_to_base64_str(data: bytes) -> str:
 def get_base64_prozorro_open_cert() -> str:
     _working_dir = pathlib.Path().absolute()
     try:
-        with io.open(f'{_working_dir}/../certificates/{NAZK_PROZORRO_OPEN_CERTIFICATE_NAME}', 'rb') as _file:
+        with io.open(get_certificate_path(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME), 'rb') as _file:
             prozorro_cert_encoded = encode_to_base64_str(_file.read())
             return prozorro_cert_encoded
     except FileNotFoundError:
-        logger.info('{} file not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME))
+        logger.warning(
+            '{} file not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),
+            extra={"MESSAGE_ID": "NAZK_CERTIFICATE_NOT_FOUND_EXCEPTION"},
+        )
 
 
 def send_request_to_nazk(cert: str, content: str) -> str:
     response = requests.post(
-        url="https://corruptinfo.nazk.gov.ua/ep_test/1.0/corrupt/getEntityInfo",
+        url="{host}/ep_test/{version}/corrupt/getEntityInfo".format(host=NAZK_API_HOST, version=NAZK_API_VERSION),
         json={"certificate": cert, "data": content}
     )
     if response.status_code != 200:
         print(f"Request to Nazk failed {response.status_code}")
-        logger.info("Request to Nazk failed. Status: {}".format(response.status_code))
+        logger.warning("Request to Nazk failed. Status: {}".format(response.status_code))
+        raise NAZKRequestErrorException
     else:
         return response.text
 
 
 def decrypt_data(data: str) -> dict:
     response = requests.post(
-        url="http://localhost:6543/decrypt_nazk_data",  # TODO HOST
+        url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
         json={"data": data},
         auth=(API_SIGN_USER, API_SIGN_PASSWORD),
     )
     if response.status_code != 200:
-        logger.info("DECRYPT DATA FAILED")
+        print("DECRYPT DATA FAILED")
+        logger.warning("Decrypt data failed", extra={"MESSAGE_ID": "NAZK_DECRYPT_DATA_EXCEPTION"})
     else:
         res = json.loads(response.content)
         return res
 
 
-entity_data = get_entity_data_from_nazk({
-    "entityType": "individual",
-    "entityRegCode": "1111111111",
-    "indLastName": "Тест",
-    "indFirstName": "Тест",
-    "indPatronymic": "Тест"
-})
+if __name__ == "__main__":
+    entity_data = get_entity_data_from_nazk({
+        "entityType": "individual",
+        "entityRegCode": "1111111111",
+        "indLastName": "Тест",
+        "indFirstName": "Тест",
+        "indPatronymic": "Тест"
+    })
 
-print(entity_data)
+    print(entity_data)
