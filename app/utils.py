@@ -1,10 +1,11 @@
 import typing
 import uuid
 from ipaddress import ip_network
+import os
 
 from flask import request, url_for
 
-from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST
+from environment_settings import PUBLIC_API_HOST, API_VERSION, PORTAL_HOST, CERTIFICATES_DIR
 
 DEFAULT_CONFIG_VALUE_SEPARATOR = ","
 DEFAULT_AUTH_ID_SEPARATOR = "_"
@@ -116,3 +117,7 @@ def prozorro_portal_url(path):
 
 def generate_request_id():
     return 'req-' + str(uuid.uuid4())
+
+
+def get_certificate_path(cert_name):
+    return os.path.join(CERTIFICATES_DIR, cert_name)
