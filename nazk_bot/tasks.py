@@ -198,14 +198,6 @@ def send_request_nazk(self, request_data, supplier, requests_reties):
         else:
             data = response.json()
 
-            uid = save_task_result(self, data, task_args)
-            logger.info(
-                "Receipt requested successfully: {} {} {}; saved result: {}".format(
-                    response.status_code, data["id"], data["kvt1Fname"], uid
-                ),
-                extra={"MESSAGE_ID": "FISCAL_API_POST_REQUEST_SUCCESS"}
-            )
-
     decode_and_save_data.apply_async(
         kwargs=dict(
             name=data["kvt1Fname"],
@@ -240,6 +232,39 @@ def send_request_nazk(self, request_data, supplier, requests_reties):
         ),
         extra={"MESSAGE_ID": "FISCAL_API_CHECK_SCHEDULE"}
     )
+
+
+@app.task(bind=True, max_retries=10)
+@formatter.omit(["data"])
+def decode_and_save_data(self, data, tender_id, award_id):
+    try:
+        response = requests.post(
+            url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
+            json={"data": data},
+            auth=(API_SIGN_USER, API_SIGN_PASSWORD),
+            headers=DEFAULT_HEADERS
+        )
+    except RETRY_REQUESTS_EXCEPTIONS as e:
+        logger.exception(e, extra={"MESSAGE_ID": "NAZK_DECRYPT_API_ERROR"})
+        raise self.retry(exc=e)
+    else:
+        if response.status_code != 200:
+            logger.error(
+                "Signing has failed: {} {}".format(response.status_code, response.text),
+                extra={"MESSAGE_ID": "FISCAL_DECRYPT_API_ERROR"}
+            )
+            if response.status_code != 422:
+                self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+        else:
+            filename = get_filename_from_response(response)
+            upload_to_doc_service.delay(
+                name=filename or name,
+                content=base64.b64encode(response.content).decode(),
+                doc_type=DOC_TYPE,
+                tender_id=tender_id,
+                item_name="award",
+                item_id=award_id
+            )
 
 # ------- GET NAZK DATA
 @app.task(bind=True, max_retries=20)
