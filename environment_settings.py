@@ -4,9 +4,9 @@ import os
 import pathlib
 
 
-BASE_DIR = pathlib.Path().absolute()
+BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
-TRUE_VARS =  (True, 'True', 'true', 'yes', '1', 1)
+TRUE_VARS = (True, 'True', 'true', 'yes', '1', 1)
 
 TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
