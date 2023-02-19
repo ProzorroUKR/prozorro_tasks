@@ -1,3 +1,5 @@
+import json
+
 from celery_worker.celery import app, formatter
 from celery_worker.locks import unique_lock, concurrency_lock
 from celery.utils.log import get_task_logger
@@ -10,7 +12,7 @@ from tasks_utils.requests import (
 )
 from tasks_utils.tasks import upload_to_doc_service
 
-from nazk_bot.settings import DOC_TYPE
+from nazk_bot.settings import DOC_TYPE, DOC_NAME
 from nazk_bot.api.controllers import get_entity_data_from_nazk, get_base64_prozorro_open_cert
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
@@ -19,7 +21,6 @@ from environment_settings import (
     SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT,
     DEFAULT_RETRY_AFTER,
 )
-from uuid import uuid4
 import requests
 
 from tasks_utils.settings import DEFAULT_HEADERS
@@ -43,10 +44,7 @@ def process_tender(self, tender_id, *args, **kwargs):
     try:
         response = requests.get(
             url,
-            headers={
-                "X-Client-Request-ID": uuid4().hex,
-                **DEFAULT_HEADERS,
-            },
+            headers=DEFAULT_HEADERS,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
@@ -63,43 +61,31 @@ def process_tender(self, tender_id, *args, **kwargs):
             })
             raise self.retry(countdown=get_request_retry_countdown(response))
 
-        tender_data = response.json()["data"]
+        tender = response.json()["data"]
 
-        # --------
-        i = 0  # spread in time tasks that belongs to a single tender CS-3854
-        if 'awards' in tender_data:
-            for award in tender_data['awards']:
-                if should_process_item(award):
+        if 'awards' in tender:
+            for award in tender['awards']:
+                if should_process_award(award):
                     for supplier in award['suppliers']:
-                        process_award_supplier(response, tender_data, award, supplier, i)
-                        i += 1
+                        identifier = supplier['identifier']['id']
+                        if is_valid_identifier(identifier):
+                            prepare_nazk_request.delay(
+                                kwargs=dict(
+                                    supplier=supplier,
+                                    tender_id=tender['id'],
+                                    award_id=award['id'],
+                                )
+                            )
+                        else:
+                            logger.warning('Tender {} award {} identifier {} is not valid.'.format(
+                                tender['id'], award["id"], identifier
+                            ), extra={"MESSAGE_ID": "NAZK_INVALID_IDENTIFIER"})
 
 
-def process_award_supplier(response, tender, award, supplier, item_number):
-    identifier = supplier['identifier']
-    if not is_valid_identifier(identifier):
-        logger.warning('Tender {} award {} identifier {} is not valid.'.format(
-            tender['id'], award["id"], identifier
-        ), extra={"MESSAGE_ID": "NAZK_INVALID_IDENTIFIER"})
-    elif not check_related_lot_status(tender, award):
-        logger.warning("Tender {} bid {} award {} related lot has been cancelled".format(
-            tender['id'], award['bid_id'], award['id']
-        ), extra={"MESSAGE_ID": "NAZK_CANCELLED_LOT"})
-    else:
-        prepare_nazk_request.apply_async(
-            countdown=SPREAD_TENDER_TASKS_INTERVAL * item_number,
-            kwargs=dict(
-                supplier=supplier,
-                tender_id=tender['id'],
-                award_id=award['id'],
-            )
-        )
-
-
-def should_process_item(item):
-    return (item['status'] == 'pending' and
+def should_process_award(award):
+    return (award['status'] == 'active' and
             not any(document.get('documentType') == DOC_TYPE
-                    for document in item.get('documents', [])))
+                    for document in award.get('documents', [])))
 
 
 def check_related_lot_status(tender, award):
@@ -115,8 +101,8 @@ def check_related_lot_status(tender, award):
     return True
 
 
-def is_valid_identifier(identifier):
-    idf = str(identifier["id"])
+def is_valid_identifier(idf):
+    idf = str(idf)
     return (
         (idf.isdigit() and 8 <= len(idf) <= 10)
         or (idf[:2].isalpha() and len(idf[2:]) == 6 and idf[2:].isdigit())
@@ -155,7 +141,7 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
             )
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            request_data = b64encode(response.content).decode()
+            request_data = response.content
             send_request_nazk.apply_async(
                 kwargs=dict(
                     request_data=request_data,
@@ -191,6 +177,7 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
     decode_and_save_data.apply_async(
         kwargs=dict(
             data=data,
+            supplier=supplier,
             tender_id=tender_id,
             award_id=award_id,
         )
@@ -199,12 +186,13 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
 
 @app.task(bind=True, max_retries=10)
 @formatter.omit(["data"])
-def decode_and_save_data(self, data, tender_id, award_id):
+def decode_and_save_data(self, data, supplier, tender_id, award_id):
     try:
         response = requests.post(
             url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
             json={"data": data},
             auth=(API_SIGN_USER, API_SIGN_PASSWORD),
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             headers=DEFAULT_HEADERS
         )
     except RETRY_REQUESTS_EXCEPTIONS as e:
@@ -219,10 +207,10 @@ def decode_and_save_data(self, data, tender_id, award_id):
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            filename = get_filename_from_response(response)
+            data = json.loads(response.content)
             upload_to_doc_service.delay(
-                name=filename,
-                content=b64encode(response.content).decode(),
+                name="{doc_name}_{idf}".format(doc_name=DOC_NAME, idf=supplier["identifier"]["id"]),
+                content=data,
                 doc_type=DOC_TYPE,
                 tender_id=tender_id,
                 item_name="award",

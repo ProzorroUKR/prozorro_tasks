@@ -13,4 +13,5 @@ nazk_procedures = (
 EDRPOU_LEN = 8
 ID_PASSPORT_LEN = 9
 IPN_LEN = 10
-DOC_TYPE = 'registerFiscal'
+DOC_NAME = 'nazk'
+DOC_TYPE = 'register'
