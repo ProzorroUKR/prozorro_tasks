@@ -50,7 +50,6 @@ def encode_to_base64_str(data: bytes) -> str:
 
 
 def get_base64_prozorro_open_cert() -> str:
-    _working_dir = pathlib.Path().absolute()
     try:
         with io.open(get_certificate_path(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME), 'rb') as _file:
             prozorro_cert_encoded = encode_to_base64_str(_file.read())
