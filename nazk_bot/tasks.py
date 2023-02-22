@@ -141,7 +141,7 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
             )
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            request_data = response.content
+            request_data = b64encode(response.content).decode()
             send_request_nazk.apply_async(
                 kwargs=dict(
                     request_data=request_data,
@@ -207,7 +207,7 @@ def decode_and_save_data(self, data, supplier, tender_id, award_id):
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            data = json.loads(response.content)
+            data = json.loads(b64decode(response.content))
             upload_to_doc_service.delay(
                 name="{doc_name}_{idf}".format(doc_name=DOC_NAME, idf=supplier["identifier"]["id"]),
                 content=data,
