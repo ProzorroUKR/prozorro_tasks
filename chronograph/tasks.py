@@ -33,7 +33,11 @@ def recheck(self, obj_name, obj_id, cookies=None):
             url,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             cookies=cookies or {},
-            headers=DEFAULT_HEADERS,
+            headers={
+                "Authorization": "Bearer {}".format(CHRONOGRAPH_API_TOKEN),
+                "X-Client-Request-ID": uuid4().hex,
+                **DEFAULT_HEADERS,
+            },
         )
     except RETRY_REQUESTS_EXCEPTIONS as exc:
         logger.exception(exc, extra={"MESSAGE_ID": "CHRONOGRAPH_{}_GET_EXCEPTION".format(obj_name_upper)})
