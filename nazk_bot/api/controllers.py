@@ -9,12 +9,10 @@ from base64 import b64encode, b64decode
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
-    NAZK_API_HOST, NAZK_API_VERSION,
+    NAZK_API_HOST, NAZK_API_INFO_URI,
     NAZK_PROZORRO_OPEN_CERTIFICATE_NAME
 )
 from app.utils import get_certificate_path
-
-from nazk_bot.api.exceptions import NAZKRequestErrorException
 
 logger = getLogger()
 
@@ -63,13 +61,11 @@ def get_base64_prozorro_open_cert() -> str:
 
 def send_request_to_nazk(cert: str, content: str) -> str:
     response = requests.post(
-        url="{host}/ep_test/{version}/corrupt/getEntityInfo".format(host=NAZK_API_HOST, version=NAZK_API_VERSION),
+        url="{host}/{uri}".format(host=NAZK_API_HOST, uri=NAZK_API_INFO_URI),
         json={"certificate": cert, "data": content}
     )
     if response.status_code != 200:
-        print(f"Request to Nazk failed {response.status_code}")
         logger.warning("Request to Nazk failed. Status: {}".format(response.status_code))
-        raise NAZKRequestErrorException
     else:
         return response.text
 
@@ -81,8 +77,10 @@ def decrypt_data(data: str) -> dict:
         auth=(API_SIGN_USER, API_SIGN_PASSWORD),
     )
     if response.status_code != 200:
-        print("DECRYPT DATA FAILED")
-        logger.warning("Decrypt data failed", extra={"MESSAGE_ID": "NAZK_DECRYPT_DATA_EXCEPTION"})
+        logger.warning(
+            "Decrypt data failed. Status {}".format(response.status_code),
+            extra={"MESSAGE_ID": "NAZK_DECRYPT_DATA_EXCEPTION"},
+        )
     else:
         res = json.loads(response.content)
         return res
