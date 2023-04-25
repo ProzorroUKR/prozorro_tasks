@@ -1,4 +1,4 @@
-from environment_settings import TIMEZONE, NAZK_API_HOST, NAZK_API_VERSION
+from environment_settings import TIMEZONE, NAZK_API_HOST, NAZK_API_INFO_URI
 from datetime import datetime, timedelta
 from nazk_bot.tasks import send_request_nazk
 from tasks_utils.settings import DEFAULT_HEADERS
@@ -149,7 +149,7 @@ class NazkTestCase(unittest.TestCase):
             send_request_nazk(**data)
 
         requests_mock.post.assert_called_once_with(
-            url="{host}/ep_test/{version}/corrupt/getEntityInfo".format(host=NAZK_API_HOST, version=NAZK_API_VERSION),
+            url="{host}/{uri}".format(host=NAZK_API_HOST, uri=NAZK_API_INFO_URI),
             json={"certificate": cert, "data": request_data},
             headers=DEFAULT_HEADERS,
         )
