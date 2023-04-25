@@ -17,7 +17,7 @@ from nazk_bot.api.controllers import get_entity_data_from_nazk, get_base64_prozo
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
-    NAZK_API_HOST, NAZK_API_VERSION,
+    NAZK_API_HOST, NAZK_API_INFO_URI,
     SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT,
     DEFAULT_RETRY_AFTER,
 )
@@ -159,7 +159,7 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
     cert = get_base64_prozorro_open_cert()
     try:
         response = requests.post(
-            url="{host}/ep_test/{version}/corrupt/getEntityInfo".format(host=NAZK_API_HOST, version=NAZK_API_VERSION),
+            url="{host}/{uri}".format(host=NAZK_API_HOST, uri=NAZK_API_INFO_URI),
             json={"certificate": cert, "data": request_data},
             headers=DEFAULT_HEADERS,
         )
@@ -207,7 +207,7 @@ def decode_and_save_data(self, data, supplier, tender_id, award_id):
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            data = json.loads(b64decode(response.content))
+            data = json.loads(response.content)
             upload_to_doc_service.delay(
                 name="{doc_name}_{idf}".format(doc_name=DOC_NAME, idf=supplier["identifier"]["id"]),
                 content=data,
