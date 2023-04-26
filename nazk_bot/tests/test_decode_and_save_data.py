@@ -111,7 +111,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             item_name='award',
             item_id='f' * 32,
             content=json.loads(data),
-            name="{}_{}".format(DOC_NAME, supplier["identifier"]["id"]),
+            name=DOC_NAME,
             doc_type=DOC_TYPE,
             tender_id='a' * 32
         )
@@ -153,7 +153,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
             item_name='award',
             item_id='f' * 32,
             content=json.loads(data),
-            name="{}_{}".format(DOC_NAME, supplier["identifier"]["id"]),
+            name=DOC_NAME,
             doc_type=DOC_TYPE,
             tender_id='a' * 32
         )

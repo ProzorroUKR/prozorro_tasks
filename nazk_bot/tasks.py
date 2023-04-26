@@ -209,7 +209,7 @@ def decode_and_save_data(self, data, supplier, tender_id, award_id):
         else:
             data = json.loads(response.content)
             upload_to_doc_service.delay(
-                name="{doc_name}_{idf}".format(doc_name=DOC_NAME, idf=supplier["identifier"]["id"]),
+                name=DOC_NAME,
                 content=data,
                 doc_type=DOC_TYPE,
                 tender_id=tender_id,
