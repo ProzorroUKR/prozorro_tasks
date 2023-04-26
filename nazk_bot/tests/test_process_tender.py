@@ -131,43 +131,37 @@ class TenderTestCase(unittest.TestCase):
                 prepare_nazk_request.delay.call_args_list,
                 [
                     call(
-                        kwargs=dict(
-                            supplier={
-                                "identifier": {
-                                    "scheme": "UA-EDR",
-                                    "legalName": 'Wow',
-                                    "id": code_1,
-                                },
+                        supplier={
+                            "identifier": {
+                                "scheme": "UA-EDR",
+                                "legalName": 'Wow',
+                                "id": code_1,
                             },
-                            award_id=item_id,
-                            tender_id=tender_id,
-                        )
+                        },
+                        award_id=item_id,
+                        tender_id=tender_id,
                     ),
                     call(
-                        kwargs=dict(
-                            supplier={
-                                "identifier": {
-                                    "scheme": "UA-EDR",
-                                    "legalName": 'OOO "Моя оборона"',
-                                    "id": code_1,
-                                },
+                        supplier={
+                            "identifier": {
+                                "scheme": "UA-EDR",
+                                "legalName": 'OOO "Моя оборона"',
+                                "id": code_1,
                             },
-                            award_id=item_id,
-                            tender_id=tender_id,
-                        )
+                        },
+                        award_id=item_id,
+                        tender_id=tender_id,
                     ),
                     call(
-                        kwargs=dict(
-                            supplier={
-                                "identifier": {
-                                    "scheme": "UA-EDR",
-                                    "id": code_2,
-                                },
-                                "name": "Monty",
+                        supplier={
+                            "identifier": {
+                                "scheme": "UA-EDR",
+                                "id": code_2,
                             },
-                            award_id=item_id,
-                            tender_id=tender_id,
-                        )
+                            "name": "Monty",
+                        },
+                        award_id=item_id,
+                        tender_id=tender_id
                     )
                 ]
             )

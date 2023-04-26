@@ -70,11 +70,9 @@ def process_tender(self, tender_id, *args, **kwargs):
                         identifier = supplier['identifier']['id']
                         if is_valid_identifier(identifier):
                             prepare_nazk_request.delay(
-                                kwargs=dict(
-                                    supplier=supplier,
-                                    tender_id=tender['id'],
-                                    award_id=award['id'],
-                                )
+                                supplier=supplier,
+                                tender_id=tender['id'],
+                                award_id=award['id'],
                             )
                         else:
                             logger.warning('Tender {} award {} identifier {} is not valid.'.format(
