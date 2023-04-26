@@ -41,6 +41,8 @@ def process_tender(self, tender_id, *args, **kwargs):
         tender_id=tender_id,
     )
 
+    logger.exception("Process tender {}".format(tender_id), extra={"MESSAGE_ID": "NAZK_PROCESS_TENDER"})
+
     try:
         response = requests.get(
             url,
@@ -120,6 +122,8 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
         req_data = {"entityType": "individual", "entityRegCode": code, "indLastName": legal_name,
                     "indFirstName": "", "indPatronymic": ""}
 
+    logger.exception("Prepare NAZK request: {}".format(req_data), extra={"MESSAGE_ID": "NAZK_PREPARE_REQ"})
+
     try:
         response = requests.post(
             "{}/encrypt_nazk_data".format(API_SIGN_HOST),
@@ -140,6 +144,7 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
             self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
             request_data = b64encode(response.content).decode()
+            logger.exception("Prepare NAZK request: {}".format(request_data), extra={"MESSAGE_ID": "NAZK_PREPARE_REQ"})
             send_request_nazk.apply_async(
                 kwargs=dict(
                     request_data=request_data,
@@ -156,6 +161,7 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
 def send_request_nazk(self, request_data, supplier, tender_id, award_id, requests_reties):
     cert = get_base64_prozorro_open_cert()
     try:
+        logger.exception("Prepare NAZK request: {}".format(request_data), extra={"MESSAGE_ID": "NAZK_SEND_REQ"})
         response = requests.post(
             url="{host}/{uri}".format(host=NAZK_API_HOST, uri=NAZK_API_INFO_URI),
             json={"certificate": cert, "data": request_data},
@@ -185,6 +191,7 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
 @app.task(bind=True, max_retries=10)
 @formatter.omit(["data"])
 def decode_and_save_data(self, data, supplier, tender_id, award_id):
+    logger.exception("Decode NAZK request: {}".format(data), extra={"MESSAGE_ID": "NAZK_DECODE_AND_SAVE_DATA"})
     try:
         response = requests.post(
             url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
