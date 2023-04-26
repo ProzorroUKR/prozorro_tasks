@@ -115,7 +115,7 @@ def is_valid_identifier(idf):
 def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0):
     identifier = supplier["identifier"]
     code = str(identifier["id"])
-    legal_name = identifier["legalName"]
+    legal_name = identifier.get("legalName", "") or supplier.get("name", "")
     if code.isdigit() and len(code) == 8:
         req_data = {"entityType": "le", "entityRegCode": code, "leFullName": legal_name}
     else:
