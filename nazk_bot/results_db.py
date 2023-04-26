@@ -47,7 +47,7 @@ def get_upload_results(self, *args):
             {'_id': uid}
         )
     except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "EDR_GET_RESULTS_MONGODB_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "NAZK_GET_RESULTS_MONGODB_EXCEPTION"})
         raise self.retry()
     else:
         return doc
@@ -63,7 +63,7 @@ def save_upload_results(response_json, *args):
             'createdAt': datetime.utcnow(),
         })
     except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "EDR_POST_RESULTS_MONGODB_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "NAZK_POST_RESULTS_MONGODB_EXCEPTION"})
     else:
         return uid
 
@@ -77,6 +77,6 @@ def set_upload_results_attached(*args):
             {"$set": {'attached': True}}
         )
     except PyMongoError as exc:
-        logger.exception(exc, extra={"MESSAGE_ID": "EDR_UPDATE_RESULTS_MONGODB_EXCEPTION"})
+        logger.exception(exc, extra={"MESSAGE_ID": "NAZK_UPDATE_RESULTS_MONGODB_EXCEPTION"})
     else:
         return uid
