@@ -95,7 +95,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         data_enc = base64.b64encode(data)
 
         with patch("nazk_bot.tasks.requests") as requests_mock:
-            requests_mock.post.return_value = MagicMock(status_code=200, content=data, headers={})
+            requests_mock.post.return_value = MagicMock(status_code=200, text=data, headers={})
 
             decode_and_save_data(data_enc, supplier, tender_id, award_id)
 
@@ -134,7 +134,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         with patch("nazk_bot.tasks.requests") as requests_mock:
             requests_mock.post.return_value = MagicMock(
                 status_code=200,
-                content=data,
+                text=data,
                 headers={
                     "User-agent": "prozorro_tasks",
                 },
