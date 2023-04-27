@@ -143,7 +143,7 @@ class NazkTestCase(unittest.TestCase):
             requests_mock.post.side_effect = [
                 Mock(
                     status_code=200,
-                    json=lambda: response,
+                    text=response,
                 ),
             ]
             send_request_nazk(**data)
