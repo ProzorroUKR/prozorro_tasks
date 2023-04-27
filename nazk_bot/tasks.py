@@ -212,12 +212,13 @@ def decode_and_save_data(self, data, supplier, tender_id, award_id):
             if response.status_code != 422:
                 self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
-            data = json.loads(response.content)
+            data = response.content
             upload_to_doc_service.delay(
                 name=DOC_NAME,
                 content=data,
                 doc_type=DOC_TYPE,
                 tender_id=tender_id,
                 item_name="award",
-                item_id=award_id
+                item_id=award_id,
+                decode_data=False
             )
