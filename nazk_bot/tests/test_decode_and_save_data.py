@@ -110,10 +110,11 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         upload_to_doc_service_mock.delay.assert_called_once_with(
             item_name='award',
             item_id='f' * 32,
-            content=json.loads(data),
+            content=data,
             name=DOC_NAME,
             doc_type=DOC_TYPE,
-            tender_id='a' * 32
+            tender_id='a' * 32,
+            decode_data=False,
         )
 
     @patch("nazk_bot.tasks.upload_to_doc_service")
@@ -152,8 +153,9 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         upload_to_doc_service_mock.delay.assert_called_once_with(
             item_name='award',
             item_id='f' * 32,
-            content=json.loads(data),
+            content=data,
             name=DOC_NAME,
             doc_type=DOC_TYPE,
-            tender_id='a' * 32
+            tender_id='a' * 32,
+            decode_data=False
         )
