@@ -176,7 +176,7 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
                          extra={"MESSAGE_ID": "NAZK_API_POST_INVALID_STATUS_CODE_RESPONSE_ERROR"})
             raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
         else:
-            data = response.json()
+            data = response.text
 
     decode_and_save_data.apply_async(
         kwargs=dict(
