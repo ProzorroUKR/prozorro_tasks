@@ -129,7 +129,7 @@ def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
                     ), extra={"MESSAGE_ID": "ATTACH_DOC_DATA_ERROR"})
                 elif response.status_code == 403:
                     logger.warning(
-                        "Can't upload document: {}".format(response.json),
+                        "Can't upload document: {}".format(response.text),
                         extra={
                             "MESSAGE_ID": "ATTACH_DOC_UNSUCCESSFUL_STATUS",
                             "STATUS_CODE": response.status_code,
