@@ -1,0 +1,2 @@
+class NAZKRequestErrorException(Exception):
+    pass

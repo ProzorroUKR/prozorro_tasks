@@ -53,6 +53,7 @@ retry_policy = {
 task_modules = [
     'edr_bot',
     'fiscal_bot',
+    'nazk_bot',
     'tasks_utils',
     'liqpay_int',
     'payments',

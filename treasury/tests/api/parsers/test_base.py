@@ -17,7 +17,7 @@ class BaseParserTestCase(BaseTestCase):
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b"<Body><Response>"
             b"<ResultCode>80</ResultCode>"
-            b"<ResultMessage>Invalid request xml: EndTag: '&lt;/' not found, line 1,"
+            b"<ResultMessage>Invalid request xml: Premature end of data in tag test line 1, line 1,"
             b" column 24 (&lt;string&gt;, line 1)</ResultMessage>"
             b"</Response></Body>"
         )
