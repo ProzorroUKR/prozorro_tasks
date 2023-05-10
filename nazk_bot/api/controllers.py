@@ -87,12 +87,6 @@ def decrypt_data(data: str) -> dict:
 
 
 if __name__ == "__main__":
-    entity_data = get_entity_data_from_nazk({
-        "entityType": "individual",
-        "entityRegCode": "1111111111",
-        "indLastName": "Тест",
-        "indFirstName": "Тест",
-        "indPatronymic": "Тест"
-    })
+    entity_data = get_entity_data_from_nazk({"entityRegCode": "88888888","entityType": "le","leFullName": "Повне найменування юрособи на момент вчинення"})
 
     print(entity_data)
