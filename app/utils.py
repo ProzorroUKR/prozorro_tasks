@@ -2,6 +2,7 @@ import typing
 import uuid
 from ipaddress import ip_network
 import os
+import io
 
 from flask import request, url_for
 
@@ -121,3 +122,8 @@ def generate_request_id():
 
 def get_certificate_path(cert_name):
     return os.path.join(CERTIFICATES_DIR, cert_name)
+
+
+def get_cert(cert_name) -> str:
+    with io.open(get_certificate_path(cert_name), 'rb') as _file:
+        return _file.read().decode()

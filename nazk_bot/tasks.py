@@ -3,22 +3,22 @@ import json
 from celery_worker.celery import app, formatter
 from celery_worker.locks import unique_lock, concurrency_lock
 from celery.utils.log import get_task_logger
-from base64 import b64encode, b64decode
+from base64 import b64encode
 from tasks_utils.requests import (
     get_request_retry_countdown,
     get_exponential_request_retry_countdown,
     get_task_retry_logger_method,
-    get_filename_from_response,
 )
 from tasks_utils.tasks import upload_to_doc_service
+from app.utils import get_cert
 
 from nazk_bot.settings import DOC_TYPE, DOC_NAME
-from nazk_bot.api.controllers import get_entity_data_from_nazk, get_base64_prozorro_open_cert
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
     NAZK_API_HOST, NAZK_API_INFO_URI,
-    SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT,
+    NAZK_PROZORRO_OPEN_CERTIFICATE_NAME,
+    CONNECT_TIMEOUT, READ_TIMEOUT,
     DEFAULT_RETRY_AFTER,
 )
 import requests
@@ -154,7 +154,14 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
 @app.task(bind=True, max_retries=50)
 @formatter.omit(["request_data"])
 def send_request_nazk(self, request_data, supplier, tender_id, award_id, requests_reties):
-    cert = get_base64_prozorro_open_cert()
+    try:
+        cert = get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
+    except FileNotFoundError:
+        logger.warning(
+            'Certificate {} not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),
+            extra={"MESSAGE_ID": "NAZK_CERTIFICATE_NOT_FOUND_EXCEPTION"},
+        )
+
     try:
         response = requests.post(
             url="{host}/{uri}".format(host=NAZK_API_HOST, uri=NAZK_API_INFO_URI),
