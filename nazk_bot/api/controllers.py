@@ -12,7 +12,7 @@ from environment_settings import (
     NAZK_API_HOST, NAZK_API_INFO_URI,
     NAZK_PROZORRO_OPEN_CERTIFICATE_NAME
 )
-from app.utils import get_certificate_path
+from app.utils import get_cert
 
 logger = getLogger()
 
@@ -49,9 +49,7 @@ def encode_to_base64_str(data: bytes) -> str:
 
 def get_base64_prozorro_open_cert() -> str:
     try:
-        with io.open(get_certificate_path(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME), 'rb') as _file:
-            prozorro_cert_encoded = encode_to_base64_str(_file.read())
-            return prozorro_cert_encoded
+        return get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)
     except FileNotFoundError:
         logger.warning(
             '{} file not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),

@@ -154,13 +154,7 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
 @app.task(bind=True, max_retries=50)
 @formatter.omit(["request_data"])
 def send_request_nazk(self, request_data, supplier, tender_id, award_id, requests_reties):
-    try:
-        cert = get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
-    except FileNotFoundError:
-        logger.warning(
-            'Certificate {} not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),
-            extra={"MESSAGE_ID": "NAZK_CERTIFICATE_NOT_FOUND_EXCEPTION"},
-        )
+    cert = get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
 
     try:
         response = requests.post(

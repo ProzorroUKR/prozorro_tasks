@@ -126,4 +126,5 @@ def get_certificate_path(cert_name):
 
 def get_cert(cert_name) -> str:
     with io.open(get_certificate_path(cert_name), 'rb') as _file:
-        return _file.read().decode()
+        data = _file.read()
+    return data.decode()

@@ -111,7 +111,7 @@ class NazkTestCase(unittest.TestCase):
 
         retry_mock.assert_called_once_with(countdown=13)
 
-    @patch("nazk_bot.tasks.get_base64_prozorro_open_cert")
+    @patch("nazk_bot.tasks.get_cert")
     @patch("nazk_bot.tasks.decode_and_save_data")
     def test_request_success(self, decode_and_save_mock, get_open_cert_mock):
         request_data = "whatever"
