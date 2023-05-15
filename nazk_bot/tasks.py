@@ -10,7 +10,7 @@ from tasks_utils.requests import (
     get_task_retry_logger_method,
 )
 from tasks_utils.tasks import upload_to_doc_service
-from app.utils import get_cert
+from app.utils import get_cert_base64
 
 from nazk_bot.settings import DOC_TYPE, DOC_NAME
 from environment_settings import (
@@ -154,7 +154,14 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
 @app.task(bind=True, max_retries=50)
 @formatter.omit(["request_data"])
 def send_request_nazk(self, request_data, supplier, tender_id, award_id, requests_reties):
-    cert = get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
+    try:
+        cert = get_cert_base64(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
+    except FileNotFoundError as e:
+        logger.warning(
+            '{} file not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),
+            extra={"MESSAGE_ID": "NAZK_CERTIFICATE_NOT_FOUND_EXCEPTION"},
+        )
+        raise e
 
     try:
         response = requests.post(

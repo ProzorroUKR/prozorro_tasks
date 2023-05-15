@@ -3,6 +3,7 @@ import uuid
 from ipaddress import ip_network
 import os
 import io
+from base64 import b64encode
 
 from flask import request, url_for
 
@@ -120,11 +121,20 @@ def generate_request_id():
     return 'req-' + str(uuid.uuid4())
 
 
+def encode_to_base64_str(data: bytes) -> str:
+    return b64encode(data).decode()
+
+
 def get_certificate_path(cert_name):
     return os.path.join(CERTIFICATES_DIR, cert_name)
 
 
-def get_cert(cert_name) -> str:
+def get_cert(cert_name: str) -> bytes:
     with io.open(get_certificate_path(cert_name), 'rb') as _file:
         data = _file.read()
-    return data.decode()
+    return data
+
+
+def get_cert_base64(cert_name: str) -> str:
+    cert_data = get_cert(cert_name)
+    return encode_to_base64_str(cert_data)

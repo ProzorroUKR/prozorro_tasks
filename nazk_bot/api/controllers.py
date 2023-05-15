@@ -12,7 +12,7 @@ from environment_settings import (
     NAZK_API_HOST, NAZK_API_INFO_URI,
     NAZK_PROZORRO_OPEN_CERTIFICATE_NAME
 )
-from app.utils import get_cert
+from app.utils import encode_to_base64_str, get_cert_base64
 
 logger = getLogger()
 
@@ -43,13 +43,9 @@ def encrypt_data(data: dict) -> bytes:
     return response.content
 
 
-def encode_to_base64_str(data: bytes) -> str:
-    return b64encode(data).decode()
-
-
 def get_base64_prozorro_open_cert() -> str:
     try:
-        return get_cert(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)
+        return get_cert_base64(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)
     except FileNotFoundError:
         logger.warning(
             '{} file not found'.format(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME),
@@ -85,6 +81,12 @@ def decrypt_data(data: str) -> dict:
 
 
 if __name__ == "__main__":
-    entity_data = get_entity_data_from_nazk({"entityRegCode": "88888888","entityType": "le","leFullName": "Повне найменування юрособи на момент вчинення"})
+    entity_data = get_entity_data_from_nazk({
+        "entityType": "individual",
+        "entityRegCode": "1111111111",
+        "indLastName": "Тест",
+        "indFirstName": "Тест",
+        "indPatronymic": "Тест"
+    })
 
     print(entity_data)
