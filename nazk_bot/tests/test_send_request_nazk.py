@@ -8,6 +8,7 @@ import requests
 import unittest
 
 
+@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class NazkTestCase(unittest.TestCase):
 
     @patch("nazk_bot.tasks.send_request_nazk.retry")
@@ -33,7 +34,7 @@ class NazkTestCase(unittest.TestCase):
 
         with self.assertRaises(Retry):
             send_request_nazk(
-                **data, requests_reties=0
+                **data
             )
 
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect, countdown=5)
@@ -56,13 +57,12 @@ class NazkTestCase(unittest.TestCase):
             supplier={
                 "identifier": {
                     "scheme": "UA-EDR",
-                    "legalName": 'Wow',
+                    "legalName": 'Wow1',
                     "id": "AA426097",
                 },
             },
             tender_id="f" * 32,
-            award_id="c" * 32,
-            requests_reties=0
+            award_id="c" * 32
         )
 
         requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
@@ -98,7 +98,6 @@ class NazkTestCase(unittest.TestCase):
             },
             tender_id="f" * 32,
             award_id="c" * 32,
-            requests_reties=0
         )
 
         requests_mock.post.return_value = Mock(
@@ -125,8 +124,7 @@ class NazkTestCase(unittest.TestCase):
                 },
             },
             tender_id="f" * 32,
-            award_id="c" * 32,
-            requests_reties=1
+            award_id="c" * 32
         )
 
         response = {

@@ -199,7 +199,6 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id):
 
 
 @app.task(bind=True, max_retries=10)
-@unique_lock
 @formatter.omit(["data"])
 def decode_and_save_data(self, data, supplier, tender_id, award_id):
     try:

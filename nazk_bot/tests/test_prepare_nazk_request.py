@@ -110,7 +110,6 @@ class ReceiptTestCase(unittest.TestCase):
                 request_data=base64.b64encode(b"content").decode(),
                 supplier=supplier,
                 tender_id=tender_id,
-                award_id=award_id,
-                requests_reties=0
+                award_id=award_id
             )
         )
