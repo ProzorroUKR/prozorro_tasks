@@ -12,7 +12,7 @@ from tasks_utils.requests import (
 from tasks_utils.tasks import upload_to_doc_service
 from app.utils import get_cert_base64
 
-from nazk_bot.settings import DOC_TYPE, DOC_NAME
+from nazk_bot.settings import DOC_TYPE, DOC_NAME, NAZK_NOT_RETRYING_STATUS_CODES
 from environment_settings import (
     PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
@@ -82,7 +82,7 @@ def process_tender(self, tender_id, *args, **kwargs):
 
 def should_process_award(award):
     return (award['status'] == 'active' and
-            not any(document.get('documentType') == DOC_TYPE
+            not any(document.get('documentType', '') == DOC_TYPE
                     for document in award.get('documents', [])))
 
 
@@ -110,7 +110,7 @@ def is_valid_identifier(idf):
 @app.task(bind=True, max_retries=10)
 @concurrency_lock
 @unique_lock
-def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0):
+def prepare_nazk_request(self, supplier, tender_id, award_id):
     identifier = supplier["identifier"]
     code = str(identifier["id"])
     legal_name = identifier.get("legalName", "") or supplier.get("name", "")
@@ -137,23 +137,22 @@ def prepare_nazk_request(self, supplier, tender_id, award_id, requests_reties=0)
                 "Encrypting has failed: {} {}".format(response.status_code, response.text),
                 extra={"MESSAGE_ID": "NAZK_ENCRYPT_API_ERROR"}
             )
-            self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
+            raise self.retry(countdown=response.headers.get('Retry-After', DEFAULT_RETRY_AFTER))
         else:
             request_data = b64encode(response.content).decode()
             send_request_nazk.apply_async(
                 kwargs=dict(
                     request_data=request_data,
-                    supplier=supplier,
                     tender_id=tender_id,
                     award_id=award_id,
-                    requests_reties=requests_reties
                 )
             )
 
 
-@app.task(bind=True, max_retries=50)
+@app.task(bind=True, max_retries=10)
+@unique_lock(omit=["request_data"])
 @formatter.omit(["request_data"])
-def send_request_nazk(self, request_data, supplier, tender_id, award_id, requests_reties):
+def send_request_nazk(self, request_data, tender_id, award_id):
     try:
         cert = get_cert_base64(NAZK_PROZORRO_OPEN_CERTIFICATE_NAME)  # should be in base64
     except FileNotFoundError as e:
@@ -176,14 +175,21 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
         if response.status_code != 200:
             logger.error("Unsuccessful status code: {} {}".format(response.status_code, response.text),
                          extra={"MESSAGE_ID": "NAZK_API_POST_INVALID_STATUS_CODE_RESPONSE_ERROR"})
+            if response.status_code in NAZK_NOT_RETRYING_STATUS_CODES:
+                return
             raise self.retry(countdown=get_exponential_request_retry_countdown(self, response))
         else:
             data = response.text
+            logger.info(
+                "Nazk requested successfully: {}".format(
+                    response.status_code
+                ),
+                extra={"MESSAGE_ID": "NAZK_API_POST_REQUEST_SUCCESS"}
+            )
 
     decode_and_save_data.apply_async(
         kwargs=dict(
             data=data,
-            supplier=supplier,
             tender_id=tender_id,
             award_id=award_id,
         )
@@ -192,7 +198,7 @@ def send_request_nazk(self, request_data, supplier, tender_id, award_id, request
 
 @app.task(bind=True, max_retries=10)
 @formatter.omit(["data"])
-def decode_and_save_data(self, data, supplier, tender_id, award_id):
+def decode_and_save_data(self, data, tender_id, award_id):
     try:
         response = requests.post(
             url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
