@@ -15,13 +15,6 @@ class DecodeAndSaveTestCase(unittest.TestCase):
     @patch("nazk_bot.tasks.requests")
     def test_connection_error(self, requests_mock, retry_mock):
         retry_mock.side_effect = Retry
-        supplier = {
-            "identifier": {
-                "scheme": "UA-EDR",
-                "legalName": 'Wow',
-                "id": "AA426097",
-            },
-        }
         tender_id = "a" * 32
         award_id = "f" * 32
         data = "aGVsbG8="
@@ -29,7 +22,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
 
         with self.assertRaises(Retry):
-            decode_and_save_data(data, supplier, tender_id, award_id)
+            decode_and_save_data(data, tender_id, award_id)
 
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect)
 
@@ -38,18 +31,11 @@ class DecodeAndSaveTestCase(unittest.TestCase):
     def test_422_error(self, retry_mock, upload_to_doc_service_mock):
         tender_id = "a" * 32
         award_id = "f" * 32
-        supplier = {
-            "identifier": {
-                "scheme": "UA-EDR",
-                "legalName": 'Wow',
-                "id": "AA426097",
-            },
-        }
         data = "aGVsbG8="
 
         with patch("nazk_bot.tasks.requests") as requests_mock:
             requests_mock.post.return_value = MagicMock(status_code=422, text="Unexpected smt", headers={})
-            decode_and_save_data(data, supplier, tender_id, award_id)
+            decode_and_save_data(data, tender_id, award_id)
 
         retry_mock.assert_not_called()
         upload_to_doc_service_mock.delay.assert_not_called()
@@ -60,13 +46,6 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         retry_mock.side_effect = Retry
         tender_id = "a" * 32
         award_id = "f" * 32
-        supplier = {
-            "identifier": {
-                "scheme": "UA-EDR",
-                "legalName": 'Wow',
-                "id": "AA426097",
-            },
-        }
         data = "aGVsbG8="
 
         requests_mock.post.return_value = MagicMock(
@@ -76,7 +55,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         )
 
         with self.assertRaises(Retry):
-            decode_and_save_data(data, supplier, tender_id, award_id)
+            decode_and_save_data(data, tender_id, award_id)
 
         retry_mock.assert_called_once_with(countdown=14)
 
@@ -84,20 +63,13 @@ class DecodeAndSaveTestCase(unittest.TestCase):
     def test_no_filename(self, upload_to_doc_service_mock):
         tender_id = "a" * 32
         award_id = "f" * 32
-        supplier = {
-            "identifier": {
-                "scheme": "UA-EDR",
-                "legalName": 'Wow',
-                "id": "AA426097",
-            },
-        }
         data = b'{"answer": "data"}'
         data_enc = base64.b64encode(data)
 
         with patch("nazk_bot.tasks.requests") as requests_mock:
             requests_mock.post.return_value = MagicMock(status_code=200, text=data, headers={})
 
-            decode_and_save_data(data_enc, supplier, tender_id, award_id)
+            decode_and_save_data(data_enc, tender_id, award_id)
 
         requests_mock.post.assert_called_once_with(
             url="{}/decrypt_nazk_data".format(API_SIGN_HOST),
@@ -123,13 +95,6 @@ class DecodeAndSaveTestCase(unittest.TestCase):
         award_id = "f" * 32
         data = b'{"answer": "data"}'
         data_enc = base64.b64encode(data)
-        supplier = {
-            "identifier": {
-                "scheme": "UA-EDR",
-                "legalName": 'Wow',
-                "id": "AA426097",
-            },
-        }
 
         with patch("nazk_bot.tasks.requests") as requests_mock:
             requests_mock.post.return_value = MagicMock(
@@ -140,7 +105,7 @@ class DecodeAndSaveTestCase(unittest.TestCase):
                 },
             )
 
-            decode_and_save_data(base64.b64encode(data), supplier, tender_id, award_id)
+            decode_and_save_data(base64.b64encode(data), tender_id, award_id)
 
         requests_mock.post.assert_called_once_with(
             url="{}/decrypt_nazk_data".format(API_SIGN_HOST),

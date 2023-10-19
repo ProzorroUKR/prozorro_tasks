@@ -8,23 +8,15 @@ import requests
 import unittest
 
 
+@patch('celery_worker.locks.get_mongodb_collection', Mock(return_value=Mock(find_one=Mock(return_value=None))))
 class NazkTestCase(unittest.TestCase):
 
     @patch("nazk_bot.tasks.send_request_nazk.retry")
     @patch("nazk_bot.tasks.requests")
     def test_request_exception(self, requests_mock, retry_mock):
         retry_mock.side_effect = Retry
-        filename = "test.xml"
-        request_data = "Y29udGVudA=="
 
         data = dict(
-            supplier={
-                "identifier": {
-                    "scheme": "UA-EDR",
-                    "legalName": 'Wow',
-                    "id": "AA426097",
-                },
-            },
             tender_id="f" * 32,
             award_id="c" * 32,
         )
@@ -33,7 +25,7 @@ class NazkTestCase(unittest.TestCase):
 
         with self.assertRaises(Retry):
             send_request_nazk(
-                **data, requests_reties=0
+                **data
             )
 
         retry_mock.assert_called_once_with(exc=requests_mock.post.side_effect, countdown=5)
@@ -53,16 +45,8 @@ class NazkTestCase(unittest.TestCase):
 
         data = dict(
             request_data=request_data,
-            supplier={
-                "identifier": {
-                    "scheme": "UA-EDR",
-                    "legalName": 'Wow',
-                    "id": "AA426097",
-                },
-            },
             tender_id="f" * 32,
-            award_id="c" * 32,
-            requests_reties=0
+            award_id="c" * 32
         )
 
         requests_mock.post.side_effect = requests.exceptions.ConnectionError("You shall not pass!")
@@ -89,16 +73,8 @@ class NazkTestCase(unittest.TestCase):
 
         data = dict(
             request_data=request_data,
-            supplier={
-                "identifier": {
-                    "scheme": "UA-EDR",
-                    "legalName": 'Wow',
-                    "id": "AA426097",
-                },
-            },
             tender_id="f" * 32,
             award_id="c" * 32,
-            requests_reties=0
         )
 
         requests_mock.post.return_value = Mock(
@@ -117,16 +93,8 @@ class NazkTestCase(unittest.TestCase):
         request_data = "whatever"
         data = dict(
             request_data=request_data,
-            supplier={
-                "identifier": {
-                    "scheme": "UA-EDR",
-                    "legalName": 'Wow',
-                    "id": "AA426097",
-                },
-            },
             tender_id="f" * 32,
-            award_id="c" * 32,
-            requests_reties=1
+            award_id="c" * 32
         )
 
         response = {
@@ -157,7 +125,6 @@ class NazkTestCase(unittest.TestCase):
         decode_and_save_mock.apply_async.assert_called_once_with(
             kwargs=dict(
                 data=response,
-                supplier=data["supplier"],
                 tender_id=data["tender_id"],
                 award_id=data["award_id"],
             )

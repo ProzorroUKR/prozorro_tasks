@@ -21,8 +21,8 @@ ATTACH_DOC_MAX_RETRIES = 100
 
 @app.task(bind=True)
 @formatter.omit(["content"])
-def upload_to_doc_service(self, name, content, doc_type,
-                          tender_id, item_name, item_id, decode_data=True):
+def upload_to_doc_service(self, name, content, doc_type, tender_id,
+                          item_name, item_id, decode_data=True, update_exist=False):
 
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
@@ -75,7 +75,7 @@ def upload_to_doc_service(self, name, content, doc_type,
 
 
 @app.task(bind=True, max_retries=ATTACH_DOC_MAX_RETRIES)
-def attach_doc_to_tender(self, data, tender_id, item_name, item_id):
+def attach_doc_to_tender(self, data, tender_id, item_name, item_id, update_exist=False):
 
     task_args = data, tender_id, item_name, item_id
     result = get_task_result(self, task_args)

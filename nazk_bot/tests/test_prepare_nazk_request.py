@@ -108,9 +108,7 @@ class ReceiptTestCase(unittest.TestCase):
         send_request_nazk_mock.apply_async.assert_called_once_with(
             kwargs=dict(
                 request_data=base64.b64encode(b"content").decode(),
-                supplier=supplier,
                 tender_id=tender_id,
-                award_id=award_id,
-                requests_reties=0
+                award_id=award_id
             )
         )
