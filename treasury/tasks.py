@@ -70,7 +70,11 @@ def check_contract(self, contract_id, ignore_date_signed=False):
             return logger.debug(f"Skipping contract {contract['id']} signed at {_date_signed}",
                                 extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
 
-    identifier = contract["procuringEntity"]["identifier"]
+    if "procuringEntity" in contract:
+        identifier = contract["procuringEntity"]["identifier"]
+    else:
+        identifier = contract["buyer"]["identifier"]
+
     if identifier["scheme"] != "UA-EDR":
         return logger.debug(f"Skipping {contract['status']} contract {contract['id']} with identifier {identifier}",
                             extra={"MESSAGE_ID": "TREASURY_SKIP_CONTRACT"})
