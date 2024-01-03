@@ -44,6 +44,11 @@ class TaskJsonFormatter(jsonlogger.JsonFormatter):
         else:
             def get_task_extra():
                 task = get_current_task()
+
+                if task is None:
+                    # TODO: investigate why this happens (CS-15631)
+                    return {}
+
                 request = task.request
 
                 indexes = getattr(request, "formatter_omit_indexes", [])
