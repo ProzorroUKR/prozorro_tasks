@@ -202,8 +202,8 @@ def payment_request_fake():
 @bp.route("/add", methods=["POST"])
 @login_groups_required(["admins"])
 def payment_add():
-    save_payment_item(request.form, "manual")
-    return redirect(request.referrer or url_for("payments_views.payment_request"))
+    result = save_payment_item(request.form, "manual")
+    return redirect(request.referrer or url_for("payments_views.payment_detail", uid=str(result.inserted_id)))
 
 
 @bp.route("/update", methods=["POST"])
