@@ -203,7 +203,8 @@ def payment_request_fake():
 @login_groups_required(["admins"])
 def payment_add():
     result = save_payment_item(request.form, "manual")
-    return redirect(request.referrer or url_for("payments_views.payment_detail", uid=str(result.inserted_id)))
+    uid = str(result.inserted_id)
+    return redirect(request.referrer or url_for("payments_views.payment_retry", uid=uid))
 
 
 @bp.route("/update", methods=["POST"])
