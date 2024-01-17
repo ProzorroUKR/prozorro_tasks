@@ -15,9 +15,23 @@ from payments.schemes import (
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
 
+YES_PARAM = "Так"
+NO_PARAM = "Ні"
+
+YES_NO_PARAMS = [YES_PARAM, NO_PARAM]
+
 
 def get_string_param(name, default=None):
     return request.args.get(name, default)
+
+
+def get_yes_no_param(name, default=None):
+    param = get_string_param(name, default=default)
+    if param == YES_PARAM:
+        param = True
+    elif param == NO_PARAM:
+        param = False
+    return param
 
 
 def get_int_param(name, default=None):
@@ -73,9 +87,13 @@ def get_report_params():
 def get_request_params():
     date_from = get_date_param("date_from", "%Y-%m-%d")
     date_to = get_date_param("date_to", "%Y-%m-%d")
+    status = get_string_param("status")
+    saved = get_yes_no_param("saved")
     return dict(
         date_from=date_from,
         date_to=date_to,
+        status=status,
+        saved=saved,
     )
 
 def get_payment_pagination(total=None, page=None, limit=None, **kwargs):

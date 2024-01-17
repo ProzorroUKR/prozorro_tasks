@@ -62,6 +62,26 @@
         {% endwith %}
     </div>
 
+    <div class="mb-3 mx-1">
+        {% with label='Статус операції' %}
+        {% with arg='status' %}
+        {% with choices=status_choices %}
+        {% include 'payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mx-1">
+        {% with label='Операцію збережено' %}
+        {% with arg='saved' %}
+        {% with choices=saved_choices %}
+        {% include 'payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
 </div>
 
 <div class="table-responsive mb-3">
