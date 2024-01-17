@@ -98,14 +98,14 @@ services:
       - "crawler.main"
       - "tenders"
     environment:
-      LOCK_ENABLED=yep
-      API_LIMIT=5
-      API_OPT_FIELDS=status,procurementMethodType
-      MONGODB_URL=mongodb://root:example@mongo:27017
-      PYTHONUNBUFFERED=1
-      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
-      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
-      LOCK_PROCESS_NAME=tasks-crawler-tenders
+      LOCK_ENABLED: yep
+      API_LIMIT: 5
+      API_OPT_FIELDS: status,procurementMethodType
+      MONGODB_URL: mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED: 1
+      PUBLIC_API_HOST: https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL: amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME: tasks-crawler-tenders
     volumes:
       - .:/app
     depends_on:
@@ -122,15 +122,15 @@ services:
       - "crawler.main"
       - "contracts"
     environment:
-      LOCK_ENABLED=yep
-      API_LIMIT=5
-      API_OPT_FIELDS=status,procurementMethodType
-      MONGODB_URL=mongodb://root:example@mongo:27017
-      PYTHONUNBUFFERED=1
-      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
-      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
-      LOCK_PROCESS_NAME=tasks-crawler-contracts
-      API_RESOURCE=contracts
+      LOCK_ENABLED: yep
+      API_LIMIT: 5
+      API_OPT_FIELDS: status,procurementMethodType
+      MONGODB_URL: mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED: 1
+      PUBLIC_API_HOST: https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL: amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME: tasks-crawler-contracts
+      API_RESOURCE: contracts
     volumes:
       - .:/app
     depends_on:
@@ -147,15 +147,15 @@ services:
       - "crawler.main"
       - "frameworks"
     environment:
-      LOCK_ENABLED=yep
-      API_LIMIT=5
-      API_OPT_FIELDS=status,procurementMethodType
-      MONGODB_URL=mongodb://root:example@mongo:27017
-      PYTHONUNBUFFERED=1
-      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
-      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
-      LOCK_PROCESS_NAME=tasks-crawler-frameworks
-      API_RESOURCE=frameworks
+      LOCK_ENABLED: yep
+      API_LIMIT: 5
+      API_OPT_FIELDS: status,procurementMethodType
+      MONGODB_URL: mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED: 1
+      PUBLIC_API_HOST: https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL: amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME: tasks-crawler-frameworks
+      API_RESOURCE: frameworks
     volumes:
       - .:/app
     depends_on:
@@ -172,15 +172,15 @@ services:
       - "crawler.main"
       - "agreements"
     environment:
-      LOCK_ENABLED=yep
-      API_LIMIT=5
-      API_OPT_FIELDS=status,procurementMethodType
-      MONGODB_URL=mongodb://root:example@mongo:27017
-      PYTHONUNBUFFERED=1
-      PUBLIC_API_HOST=https://public-api-sandbox.prozorro.gov.ua
-      CELERY_BROKER_URL=amqp://admin:mypass@rabbit:5672//
-      LOCK_PROCESS_NAME=tasks-crawler-agreements
-      API_RESOURCE=agreements
+      LOCK_ENABLED: yep
+      API_LIMIT: 5
+      API_OPT_FIELDS: status,procurementMethodType
+      MONGODB_URL: mongodb://root:example@mongo:27017
+      PYTHONUNBUFFERED: 1
+      PUBLIC_API_HOST: https://public-api-sandbox.prozorro.gov.ua
+      CELERY_BROKER_URL: amqp://admin:mypass@rabbit:5672//
+      LOCK_PROCESS_NAME: tasks-crawler-agreements
+      API_RESOURCE: agreements
     volumes:
       - .:/app
     depends_on:

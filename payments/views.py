@@ -33,6 +33,7 @@ from payments.context import (
     get_report_params,
     get_request_params,
     get_int_param,
+    YES_NO_PARAMS,
 )
 from payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
@@ -158,8 +159,15 @@ def payment_request():
     kwargs = get_request_params()
     date_from = kwargs.get("date_from")
     date_to = kwargs.get("date_to")
+    status = kwargs.get("status")
+    saved = kwargs.get("saved")
     rows = []
     fake_registry = None
+    STATUS_CHOICES = [
+        "success",
+        "wait_update",
+    ]
+    OTHER_STATUS_CHOICE = "other"
     if date_from and date_to:
         registry_date_from = date_from
         registry_date_to = date_to + timedelta(days=1)
@@ -171,7 +179,15 @@ def payment_request():
         if registry:
             for message in registry.get("messages", []):
                 item = find_payment_item(message) or {}
+                if saved is not None and saved != bool(item):
+                    continue
                 payment_status = message.pop("status", None)
+                if status is not None:
+                    if status == OTHER_STATUS_CHOICE:
+                        if payment_status and payment_status in STATUS_CHOICES:
+                            continue
+                    elif payment_status != status:
+                        continue
                 rows.append({
                     "status": payment_status,
                     "message": message,
@@ -184,6 +200,8 @@ def payment_request():
         "payments/payment_request.html",
         rows=rows,
         fake=fake_registry is not None,
+        status_choices=STATUS_CHOICES + [OTHER_STATUS_CHOICE],
+        saved_choices=YES_NO_PARAMS,
         **kwargs
     )
 
