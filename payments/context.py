@@ -15,10 +15,10 @@ from payments.schemes import (
 DEFAULT_PAGE = 1
 DEFAULT_LIMIT = 10
 
-YES_PARAM = "Так"
-NO_PARAM = "Ні"
+YES_CHOICE = "Так"
+NO_CHOICE = "Ні"
 
-YES_NO_PARAMS = [YES_PARAM, NO_PARAM]
+YES_NO_CHOICES = [YES_CHOICE, NO_CHOICE]
 
 
 def get_string_param(name, default=None):
@@ -27,9 +27,9 @@ def get_string_param(name, default=None):
 
 def get_yes_no_param(name, default=None):
     param = get_string_param(name, default=default)
-    if param == YES_PARAM:
+    if param == YES_CHOICE:
         param = True
-    elif param == NO_PARAM:
+    elif param == NO_CHOICE:
         param = False
     return param
 
