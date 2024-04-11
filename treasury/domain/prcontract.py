@@ -128,13 +128,17 @@ def prepare_context(task, contract, tender, plan, buyer):
     for bid in tender["bids"]:
         bid["bid_suppliers_identifier_name"] = get_name_from_organization(bid["tenderers"][0])
 
-    tender_start_date = get_tender_start_date(tender, tender_award, tender_contract)
+    # TODO: fix after all contract data will be in contracting
+    contract_data = tender_contract if tender_contract.get("suppliers") else contract
+    tender_start_date = get_tender_start_date(tender, tender_award, contract_data)
+
+    suppliers = contract_data.get("suppliers")
 
     secondary_data = dict(
         tender_start_date=tender_start_date,
         award_complaint_period_start_date=get_award_complaint_period_start_date(tender_award),
-        contracts_suppliers_address=get_custom_address_string(tender_contract.get("suppliers")[0]["address"]),
-        contracts_suppliers_identifier_name=get_name_from_organization(tender_contract["suppliers"][0]),
+        contracts_suppliers_address=get_custom_address_string(suppliers[0]["address"]),
+        contracts_suppliers_identifier_name=get_name_from_organization(suppliers[0]),
         tender_procuring_entity_name=tender_procuring_entity_name,
         tender_procuring_entity_identifier_id=tender_procuring_entity_identifier_id,
         bid_subcontracting_details=get_bid_subcontracting_details(tender_award, tender_bid, related_lot, tender),
@@ -156,7 +160,7 @@ def prepare_context(task, contract, tender, plan, buyer):
     return context
 
 
-def get_tender_start_date(tender, tender_award, tender_contract):
+def get_tender_start_date(tender, tender_award, contract):
     tender_procurement_method_type = tender["procurementMethodType"]
 
     if tender_procurement_method_type in (
@@ -170,7 +174,7 @@ def get_tender_start_date(tender, tender_award, tender_contract):
 
     elif tender_procurement_method_type in ("reporting", ):
         # TODO will be added esco procurementMethodType after changes to API
-        return tender_contract["dateSigned"]
+        return contract["dateSigned"]
 
     elif tender_procurement_method_type in ("priceQuotation", ):
         return tender["tenderPeriod"]["startDate"]

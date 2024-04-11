@@ -146,6 +146,8 @@ def _build_items_tender_xml(maker, context):
 def _build_tender_xml(maker, context):
     tender = context["tender"]
     tender_contract = context["tender_contract"]
+    if "suppliers" not in context["tender_contract"]:
+        tender_contract = context["contract"]
     tender_bid = context["tender_bid"]
     initial_bids = context["initial_bids"]
     secondary_data = context["secondary_data"]
