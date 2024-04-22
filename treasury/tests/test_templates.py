@@ -293,6 +293,7 @@ class TemplatesTestCase(unittest.TestCase):
         )
 
     def test_contract_max(self):
+        test_contract["items"] = test_tender["items"]
         context = dict(
             contract=test_contract,
             plan=test_plan,
@@ -477,6 +478,7 @@ class TemplatesTestCase(unittest.TestCase):
         context["contract"]["changes"] = []
         del context["plan"]["additionalClassifications"]
         del context["plan"]["budget"]
+        context["contract"]["items"] = []
         for contract in context["tender"]['contracts']:
             contract["items"] = []
         context["tender"]["milestones"] = []
