@@ -1,4 +1,5 @@
 import yaml
+from fractions import Fraction
 from tasks_utils.requests import get_public_api_data, download_file
 from celery.utils.log import get_task_logger
 from treasury.settings import RELEASE_2020_04_19
@@ -30,6 +31,13 @@ def get_first_stage_tender(task, tender):
         # tender initially was in the first stage
         first_stage_tender = tender
     return first_stage_tender
+
+
+def normalize_bid_amount(bid_amount):
+    if isinstance(bid_amount, str) and "/" in bid_amount:
+        bid_amount = float(Fraction(bid_amount))
+
+    return bid_amount
 
 
 def prepare_contract_context(contract):
@@ -104,7 +112,7 @@ def prepare_context(task, contract, tender, plan, buyer):
                 _, content = download_file(task, doc["url"])
                 auction_info = yaml.safe_load(content)
                 initial_bids = {
-                    str(b["bidder"]): b["amount"]
+                    str(b["bidder"]): normalize_bid_amount(b["amount"])
                     for b in auction_info["timeline"]["auction_start"]["initial_bids"]
                 }
                 break

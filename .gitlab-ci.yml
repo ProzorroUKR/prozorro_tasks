@@ -4,6 +4,8 @@ stages:
 
 test:
   image: python:3.7
+  tags:
+    - kube-dev
   script:
     - pip install -r requirements.txt
     - pip install pytest
@@ -21,6 +23,8 @@ test:
 
 docker build:
   image: docker:18.09.9-git
+  tags:
+    - kube-dev
   stage: push image
   only:
     - tags
