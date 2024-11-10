@@ -3,7 +3,7 @@ stages:
   - push image
 
 test:
-  image: python:3.7
+  image: python:3.8
   tags:
     - kube-dev
   script:
