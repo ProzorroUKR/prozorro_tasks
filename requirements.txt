@@ -8,15 +8,14 @@ aiohttp==3.6.2
 python-dateutil==2.7.5
 pytz
 pyyaml
-python-json-logger==0.1.10
+python-json-logger>=2.0.2, <3
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 itsdangerous==1.1.0
 tornado>=4.2.0,<6.0.0
 sentry-sdk==0.10.2
 gunicorn==20.0.4
-gevent==1.5.0
-greenlet==0.4.16
+gevent==22.10.2
 flask==1.1.1
 flask-paginate==0.5.5
 flask-restx==0.2.0
@@ -33,7 +32,7 @@ asgiref==3.3.4
 aio-pika==6.8.0
 
 git+https://github.com/liqpay/sdk-python#egg=liqpay-python
-git+https://github.com/ProzorroUKR/prozorro_crawler.git@1.1.5#egg=prozorro_crawler
+git+https://github.com/ProzorroUKR/prozorro_crawler.git@2.1.0#egg=prozorro_crawler
 
 ############
 ### On standards version update you should consider
