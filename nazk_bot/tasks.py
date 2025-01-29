@@ -14,7 +14,7 @@ from app.utils import get_cert_base64
 
 from nazk_bot.settings import DOC_TYPE, DOC_NAME, NAZK_NOT_RETRYING_STATUS_CODES
 from environment_settings import (
-    PUBLIC_API_HOST, API_VERSION,
+    NAZK_LOG_RESPONSE, PUBLIC_API_HOST, API_VERSION,
     API_SIGN_HOST, API_SIGN_USER, API_SIGN_PASSWORD,
     NAZK_API_HOST, NAZK_API_INFO_URI,
     NAZK_PROZORRO_OPEN_CERTIFICATE_NAME,
@@ -186,6 +186,11 @@ def send_request_nazk(self, request_data, tender_id, award_id):
                 ),
                 extra={"MESSAGE_ID": "NAZK_API_POST_REQUEST_SUCCESS"}
             )
+            if NAZK_LOG_RESPONSE:
+                logger.info(
+                    "Nazk response: {}".format(data),
+                    extra={"MESSAGE_ID": "NAZK_API_POST_RESPONSE"}
+                )
 
     decode_and_save_data.apply_async(
         kwargs=dict(
