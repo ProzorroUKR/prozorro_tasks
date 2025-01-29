@@ -54,7 +54,7 @@ SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS
 
 NAZK_API_HOST = os.environ.get("NAZK_API_HOST", "https://corruptinfo.nazk.gov.ua")
 NAZK_API_INFO_URI = os.environ.get("NAZK_API_INFO_URI", "ep_test/1.0/corrupt/getEntityInfo")
-
+NAZK_LOG_RESPONSE = os.environ.get("NAZK_LOG_RESPONSE", False) in TRUE_VARS
 
 API_SIGN_HOST = os.environ.get("API_SIGN_HOST", "http://host.docker.internal:6543")
 API_SIGN_USER = os.environ.get("API_SIGN_USER", "test")
