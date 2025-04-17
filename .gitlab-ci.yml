@@ -7,6 +7,7 @@ test:
   tags:
     - kube-dev
   script:
+    - pip install --upgrade setuptools
     - pip install -r requirements.txt
     - pip install pytest
     - pip install coverage
