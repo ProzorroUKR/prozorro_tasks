@@ -1,4 +1,3 @@
-
 FROM python:3.8
 RUN groupadd -g 10000 user && \
     useradd -r -u 10000 -g user -d /app user
