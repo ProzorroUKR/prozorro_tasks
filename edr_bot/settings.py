@@ -25,3 +25,16 @@ qualification_procedures_limited = (
     'reporting',
 )
 ID_PASSPORT_LEN = 9
+
+EDR_REGISTRATION_STATUSES = {
+    -1: 'cancelled',
+    1: 'registered',
+    2: 'beingTerminated',
+    3: 'terminated',
+    4: 'banckruptcyFiled',
+    5: 'banckruptcyReorganization',
+    6: 'invalidRegistraton',
+}
+
+EDR_IDENTIFICATION_SCHEMA = "UA-EDR"
+EDR_ACTIVITY_KIND_SCHEME = "КВЕД"

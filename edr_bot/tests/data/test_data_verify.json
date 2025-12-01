@@ -1,0 +1,55 @@
+{"00037256": [
+  {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/999186",
+    "id": 999186,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": "00037256",
+    "name": "ДЕРЖАВНЕ УПРАВЛІННЯ СПРАВАМИ"
+  }],
+  "13313462": [
+  {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/2471627",
+    "id": 2471627,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": "13313462",
+    "name": "КОМУНАЛЬНЕ ПІДПРИЄМСТВО \"ШКОЛЯР\""
+  }],
+  "21725150":[
+  {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/2485671",
+    "id": 2485671,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": "21725150",
+    "name": "ЗАКЛАД\" ЗАГАЛЬНООСВІТНЯ ШКОЛА I-III СТУПЕНІВ №10 ВІННИЦЬКОЇ МІСЬКОЇ РАДИ\""
+  }],
+  "2833906462": [
+    {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/8042901",
+    "id": 8042901,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": null,
+    "name": "ВОЛОСКО ОЛЕКСАНДРА ПЕТРІВНА"
+    }],
+  "2894905868":[
+  {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/9997886",
+    "id": 9997886,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": null,
+    "name": "БАХТІНА СВІТЛАНА ГРИГОРІВНА"
+  }],
+  "2854913619":[
+  {
+    "url": "https://zqedr-api.nais.gov.ua/1.0/subjects/6990738",
+    "id": 6990738,
+    "state": 1,
+    "state_text": "зареєстровано",
+    "code": null,
+    "name": "ЖМАЄВ ДЕНИС ВІКТОРОВИЧ"
+  }]
+}

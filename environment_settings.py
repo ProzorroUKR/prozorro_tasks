@@ -12,6 +12,8 @@ TIMEZONE = pytz.timezone(os.environ.get("TIMEZONE", "Europe/Kiev"))
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "amqp://admin:mypass@rabbit:5672")
 
+SANDBOX_MODE = os.environ.get("SANDBOX_MODE", False)
+
 def environ_list(name, sep=","):
     return [i.strip() for i in os.environ.get(name, "").split(sep) if i.strip()]
 
@@ -51,6 +53,17 @@ EDR_API_VERSION = os.environ.get("EDR_API_VERSION", "1.0")
 EDR_API_USER = os.environ.get("EDR_API_USER", "robot")
 EDR_API_PASSWORD = os.environ.get("EDR_API_PASSWORD", "robot")
 SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS_INTERVAL", "30"))
+
+# settings for direct requests to EDR server
+EDR_API_TIMEOUT_MIN = int(os.environ.get("EDR_API_TIMEOUT_MIN", 2))
+EDR_API_TIMEOUT_MAX = int(os.environ.get("EDR_API_TIMEOUT_MAX", 7))
+EDR_API_TIMEOUT_STEP = int(os.environ.get("EDR_API_TIMEOUT_STEP", 2))
+EDR_API_TIMEOUT_MODE = os.environ.get("EDR_API_TIMEOUT_MODE", "mult")
+EDR_API_DIRECT_HOST = os.environ.get("EDR_API_DIRECT_HOST", "http://127.0.0.1")
+EDR_API_DIRECT_PORT = os.environ.get("EDR_API_DIRECT_PORT", "20603")
+EDR_API_DIRECT_VERSION = os.environ.get("EDR_API_DIRECT_VERSION", "1.0")
+EDR_API_DIRECT_TOKEN = os.environ.get("EDR_API_DIRECT_TOKEN", "token")
+EDR_API_CACHE_TIMEOUT = int(os.environ.get("EDR_API_CACHE_TIMEOUT", 300))
 
 NAZK_API_HOST = os.environ.get("NAZK_API_HOST", "https://corruptinfo.nazk.gov.ua")
 NAZK_API_INFO_URI = os.environ.get("NAZK_API_INFO_URI", "ep_test/1.0/corrupt/getEntityInfo")
