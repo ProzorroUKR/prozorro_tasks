@@ -6,17 +6,16 @@ from flask_restx._http import HTTPStatus
 from celery.utils.log import get_task_logger
 from pytz import UTC
 
-from app.app import cache
 from app.exceptions import abort_json
 from edr_bot.settings import EDR_REGISTRATION_STATUSES, EDR_IDENTIFICATION_SCHEMA, EDR_ACTIVITY_KIND_SCHEME
-from environment_settings import EDR_API_DIRECT_VERSION, EDR_API_DIRECT_PORT, EDR_API_DIRECT_HOST, EDR_API_DIRECT_TOKEN, \
+from environment_settings import EDR_API_DIRECT_VERSION, EDR_API_DIRECT_URI, EDR_API_DIRECT_TOKEN, \
     CONNECT_TIMEOUT, READ_TIMEOUT, EDR_API_CACHE_TIMEOUT, TIMEZONE
 
 logger = get_task_logger(__name__)
 
 
 def get_edr_data(subjects_url):
-    url = f"{EDR_API_DIRECT_HOST}:{EDR_API_DIRECT_PORT}/{EDR_API_DIRECT_VERSION}/{subjects_url}"
+    url = f"{EDR_API_DIRECT_URI}/{EDR_API_DIRECT_VERSION}/{subjects_url}"
     return requests.get(
         url,
         timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -86,39 +85,42 @@ def remove_null_fields(data):
 
 
 def prepare_data_details(data):
-    founders = data.get('founders', [])
-    for founder in founders:
-        founder['address'] = get_address(founder)
-    additional_activity_kinds = []
-    primary_activity_kind = {}
-    for activity_kind in data.get('activity_kinds', []):
-        if activity_kind.get('is_primary'):
-            primary_activity_kind = {'id': activity_kind.get('code'),
-                                     'scheme': EDR_ACTIVITY_KIND_SCHEME,
-                                     'description': activity_kind.get('name')}
-        else:
-            additional_activity_kinds.append({'id': activity_kind.get('code'),
-                                              'scheme': EDR_ACTIVITY_KIND_SCHEME,
-                                              'description': activity_kind.get('name')})
-    result = {
-        'name': data.get('names').get('short') if data.get('names') else None,
-        'registrationStatus': EDR_REGISTRATION_STATUSES.get(data.get('state')),
-        'registrationStatusDetails': data.get('state_text'),
-        'identification': {
-            'scheme': EDR_IDENTIFICATION_SCHEMA,
-            'id': data.get('code'),
-            'legalName': data.get('names').get('display') if data.get('names') else None,
-        },
-        'founders': founders,
-        'management': data.get('management'),
-        'activityKind': primary_activity_kind or None,
-        'additionalActivityKinds': additional_activity_kinds or None,
-        'address': get_address(data),
-    }
+    if EDR_API_DIRECT_VERSION == "2.0":
+        result = data
+    else:
+        founders = data.get('founders', [])
+        for founder in founders:
+            founder['address'] = get_address(founder)
+        additional_activity_kinds = []
+        primary_activity_kind = {}
+        for activity_kind in data.get('activity_kinds', []):
+            if activity_kind.get('is_primary'):
+                primary_activity_kind = {'id': activity_kind.get('code'),
+                                         'scheme': EDR_ACTIVITY_KIND_SCHEME,
+                                         'description': activity_kind.get('name')}
+            else:
+                additional_activity_kinds.append({'id': activity_kind.get('code'),
+                                                  'scheme': EDR_ACTIVITY_KIND_SCHEME,
+                                                  'description': activity_kind.get('name')})
+        result = {
+            'name': data.get('names').get('short') if data.get('names') else None,
+            'registrationStatus': EDR_REGISTRATION_STATUSES.get(data.get('state')),
+            'registrationStatusDetails': data.get('state_text'),
+            'identification': {
+                'scheme': EDR_IDENTIFICATION_SCHEMA,
+                'id': data.get('code'),
+                'legalName': data.get('names').get('display') if data.get('names') else None,
+            },
+            'founders': founders,
+            'management': data.get('management'),
+            'activityKind': primary_activity_kind or None,
+            'additionalActivityKinds': additional_activity_kinds or None,
+            'address': get_address(data),
+        }
     return remove_null_fields(result)
 
 
-def handle_error(request, response):
+def handle_error(response):
     if response.headers['Content-Type'] != 'application/json':
         abort_json(
             code=HTTPStatus.FORBIDDEN,
@@ -150,7 +152,7 @@ def handle_error(request, response):
     )
 
 
-def user_details(request, internal_ids):
+def user_details(internal_ids):
     """Composes array of detailed reference files"""
     data = []
     details_source_date = []
@@ -164,7 +166,7 @@ def user_details(request, internal_ids):
                 error_message={"location": "body", "name": "data", "description": [{"message": "Gateway Timeout Error"}]},
             )
         if response.status_code != 200:
-            return handle_error(request, response)
+            return handle_error(response)
         else:
             logger.info(f"Return detailed data from EDR service for {internal_id}")
             data.append(prepare_data_details(response.json()))
@@ -172,8 +174,9 @@ def user_details(request, internal_ids):
     return {"data": data, "meta": {"sourceDate": details_source_date[-1], "detailsSourceDate": details_source_date}}
 
 
-def form_edr_response(request, response, code, role):
+def form_edr_response(response, code, role):
     """Form data after making a request to EDR"""
+    from app.app import cache
     if response.status_code == 200:
         logger.info(f"Response code {response.status_code} for code {code}")
         data = response.json()
@@ -181,30 +184,39 @@ def form_edr_response(request, response, code, role):
             logger.warning(f"Accept empty response from EDR service for {code}")
             abort_json(
                 code=HTTPStatus.NOT_FOUND,
-                error_message={"location": "body", "name": "data",
-                               "description": [{"message": "Code not found"}]},
+                error_message={
+                    "location": "body",
+                    "name": "data",
+                    "description": [{
+                        "meta": {"sourceDate": meta_data(response.headers['Date'])},
+                        "error": {
+                            "errorDetails": "Couldn't find this code in EDR.",
+                            "code": "notFound"
+                        }
+                    }]},
             )
         res = {'data': [prepare_data(d) for d in data], 'meta': {'sourceDate': meta_data(response.headers['Date'])}}
-        cache.set(f"verify_code", res, EDR_API_CACHE_TIMEOUT)
+        cache.set(f"verify_{EDR_API_DIRECT_VERSION}_{code}", res, EDR_API_CACHE_TIMEOUT)
         if role == 'robot':  # get details for edr-bot
-            data_details = user_details(request, [obj['id'] for obj in data])
+            data_details = user_details([obj['id'] for obj in data])
             if not data_details.get("errors"):
-                cache.set(f"details_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
+                cache.set(f"details_{EDR_API_DIRECT_VERSION}_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
             return data_details
         return res
     else:
-        return handle_error(request, response)
+        return handle_error(response)
 
 
-def cached_details(request, code):
+def cached_details(code):
     """Return cached data from EDR to robot"""
-    if cached_details_data := cache.get(f"details_{code}"):
+    from app.app import cache
+    if cached_details_data := cache.get(f"details_{EDR_API_DIRECT_VERSION}_{code}"):
         logger.info(f"Code {code} was found in cache at details")
         return cached_details_data
-    elif cached_verify_data := cache.get(f"verify_{code}"):
-        data_details = user_details(request, [obj['x_edrInternalId'] for obj in cached_verify_data['data']])
+    elif cached_verify_data := cache.get(f"verify_{EDR_API_DIRECT_VERSION}_{code}"):
+        data_details = user_details([obj['x_edrInternalId'] for obj in cached_verify_data['data']])
         if not data_details.get("errors"):
-            cache.set(f"details_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
+            cache.set(f"details_{EDR_API_DIRECT_VERSION}_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
         return data_details
 
 
@@ -245,6 +257,14 @@ def get_sandbox_data(code, role):
         logger.info(f"Code {code} not found in test data for {role}, returning 404")
         abort_json(
             code=HTTPStatus.NOT_FOUND,
-            error_message={"location": "body", "name": "data",
-                           "description": [{"message": f"Code {code} not found in test data for {role}"}]},
+            error_message={
+                "location": "body",
+                "name": "data",
+                "description": [{
+                    "meta": {"sourceDate": datetime.now(tz=TIMEZONE).isoformat()},
+                    "error": {
+                        "errorDetails": "Couldn't find this code in EDR.",
+                        "code": "notFound"
+                    }
+                }]},
         )

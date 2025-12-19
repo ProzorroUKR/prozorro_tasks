@@ -1,8 +1,9 @@
-from flask import Blueprint, request
+from flask import Blueprint
 from flask_restx._http import HTTPStatus
 
 from app.exceptions import abort_json
 from environment_settings import SANDBOX_MODE
+from environment_settings import EDR_API_DIRECT_VERSION
 from payments.context import get_string_param
 from requests.exceptions import ReadTimeout, ConnectTimeout
 from app.logging import getLogger
@@ -26,18 +27,17 @@ def verify_edr_code():
         if not code:
             abort_json(
                 code=HTTPStatus.FORBIDDEN,
-                error_message={"location": "body", "name": "data",  "description": [{"message": "Wrong name of the GET parameter. Code is required"}]},
+                error_message={"location": "body", "name": "data",  "description": [{"message": "Wrong name of the GET parameter. Code or passport is required"}]},
             )
 
     authorization = auth.get_auth()
     user_id = auth.authenticate(authorization, None)
     role = USERS.get(user_id, {}).get("username")
-
     if role == "robot":
-        res = cached_details(request, code)
+        res = cached_details(code)
         if res:
             return res
-    elif cached_verify_data := cache.get(f"verify_{code}"):
+    elif cached_verify_data := cache.get(f"verify_{EDR_API_DIRECT_VERSION}_{code}"):
         logger.info(f"Code {code} was found in cache at verify")
         return cached_verify_data
 
@@ -51,4 +51,4 @@ def verify_edr_code():
         )
     if SANDBOX_MODE and response.status_code == 402:  # Payment is required after request limit is reached for test data
         return get_sandbox_data(code, role)
-    return form_edr_response(request, response, code, role)
+    return form_edr_response(response, code, role)

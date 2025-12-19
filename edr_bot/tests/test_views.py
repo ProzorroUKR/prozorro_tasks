@@ -6,6 +6,9 @@ from unittest.mock import patch, Mock, ANY
 
 from base64 import b64encode
 
+from edr_bot.utils import TEST_DATA_DETAILS, remove_null_fields
+from environment_settings import EDR_API_DIRECT_VERSION
+
 
 def basic_auth(username, password):
     token = b64encode(f"{username}:{password}".encode("utf-8")).decode("utf-8")
@@ -35,30 +38,36 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                "location": "body",
-                "name": "data",
-                "description": [{"message": "Wrong name of the GET parameter. Code is required"}],
+                "status": "error",
+                "errors": [
+                    {
+                        "location": "body",
+                        "name": "data",
+                        "description": [{"message": "Wrong name of the GET parameter. Code or passport is required"}],
+                    }
+                ]
+
             },
         )
         self.assertEqual(response.status_code, 403)
 
-    @patch("edr_bot.utils.cache.get")
-    @patch("edr_bot.utils.cache.set")
+    @patch("app.app.cache.get")
+    @patch("app.app.cache.set")
     @patch("edr_bot.utils.get_edr_subject_data")
     @patch("edr_bot.utils.get_edr_subject_details_data")
     def test_cached_response_for_bot(self, mock_get_edr_details_data, mock_get_edr_data, mock_cache_set, mock_cache_get):
         def fake_cache_get(key):
-            if key == "details_123":
+            if key == f"details_{EDR_API_DIRECT_VERSION}_123":
                 return {"data": {"id": "1", "state": "1"}}
-            elif key == "details_456":
+            elif key == f"details_{EDR_API_DIRECT_VERSION}_456":
                 return {"data": {"id": "2", "state": "1"}}
-            elif key == "verify_789":
+            elif key == f"verify_{EDR_API_DIRECT_VERSION}_789":
                 return {"data": [{"x_edrInternalId": "1"}, {"x_edrInternalId": "3"}]}
             return None
 
         mock_get_edr_details_data.return_value = Mock(
             status_code=200,
-            json=Mock(return_value={'data': [{"test": 1}]}),
+            json=Mock(return_value={"test": 1}),
             headers={
                 'X-Request-ID': uuid4().hex,
                 'User-agent': 'prozorro_tasks',
@@ -92,7 +101,7 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                'data': [{'identification': {'scheme': 'UA-EDR'}}, {'identification': {'scheme': 'UA-EDR'}}],
+                'data': [{'test': 1}, {'test': 1}],
                 'meta': {
                     'detailsSourceDate': ['2018-12-25T19:00:00+00:00', '2018-12-25T19:00:00+00:00'],
                     'sourceDate': '2018-12-25T19:00:00+00:00'},
@@ -104,14 +113,14 @@ class MainApiTestCase(BaseTestCase):
         mock_get_edr_details_data.assert_any_call("1")
         mock_cache_set.assert_called_once()
 
-    @patch("edr_bot.utils.cache.get")
+    @patch("app.app.cache.get")
     @patch("edr_bot.utils.get_edr_subject_data")
     @patch("edr_bot.utils.get_edr_subject_details_data")
     def test_cached_response_for_platform(self, mock_get_edr_details_data, mock_get_edr_data, mock_cache_get):
         def fake_cache_get(key):
-            if key == "verify_123":
+            if key == f"verify_{EDR_API_DIRECT_VERSION}_123":
                 return {"data": [{"x_edrInternalId": "2"},]}
-            elif key == "verify_456":
+            elif key == f"verify_{EDR_API_DIRECT_VERSION}_456":
                 return {"data": [{"x_edrInternalId": "1"}, {"x_edrInternalId": "3"}]}
             return None
 
@@ -137,7 +146,7 @@ class MainApiTestCase(BaseTestCase):
         mock_get_edr_data.assert_not_called()
         mock_get_edr_details_data.assert_not_called()
 
-    @patch("edr_bot.utils.cache.get")
+    @patch("app.app.cache.get")
     @patch("edr_bot.utils.get_edr_subject_data")
     @patch("edr_bot.views.SANDBOX_MODE")
     def test_get_sandbox_data(self, mock_sandbox_mode, mock_get_edr_data, mock_cache_get):
@@ -149,9 +158,17 @@ class MainApiTestCase(BaseTestCase):
             headers={'Authorization': basic_auth("platform", "platform")}
         )
         self.assertEqual(
-            response.json,
+            response.json["errors"][0],
             {
-                'description': [{'message': 'Code 123 not found in test data for platform'}],
+                'description': [
+                    {
+                        "error": {
+                            "errorDetails": "Couldn't find this code in EDR.",
+                            "code": "notFound"
+                        },
+                        "meta": {"sourceDate": ANY},
+                    }
+                ],
                 'location': 'body',
                 'name': 'data',
             }
@@ -159,8 +176,9 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 404)
 
         # non-detailed test data for platform
+        code = "00037256"
         response = self.client.get(
-            '/edr/verify?code=00037256',
+            f'/edr/verify?code={code}',
             headers={'Authorization': basic_auth("platform", "platform")}
         )
         self.assertEqual(
@@ -182,11 +200,12 @@ class MainApiTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-        # details test data for robot
-        response = self.client.get(
-            '/edr/verify?code=00037256',
-            headers={'Authorization': basic_auth("robot", "robot")}
-        )
+        # details test data for robot version 1
+        with patch("edr_bot.utils.EDR_API_DIRECT_VERSION", "1.0"):
+            response = self.client.get(
+                f'/edr/verify?code={code}',
+                headers={'Authorization': basic_auth("robot", "robot")}
+            )
         self.assertEqual(
             response.json,
             {
@@ -222,7 +241,21 @@ class MainApiTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch("edr_bot.utils.cache.get")
+        # details test data for robot version 2
+        response = self.client.get(
+            f'/edr/verify?code={code}',
+            headers={'Authorization': basic_auth("robot", "robot")}
+        )
+        self.assertEqual(
+            response.json,
+            {
+                'data': [remove_null_fields(TEST_DATA_DETAILS[code][0])],
+                'meta': {'detailsSourceDate': [ANY], 'sourceDate': ANY},
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+
+    @patch("app.app.cache.get")
     @patch("edr_bot.utils.get_edr_subject_data")
     @patch("edr_bot.views.SANDBOX_MODE")
     def test_get_edr_data_errors(self, mock_sandbox_mode, mock_get_edr_data, mock_cache_get):
@@ -239,9 +272,12 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                'description': [{'message': 'Service is disabled or upgrade.'}],
-                'location': 'body',
-                'name': 'data',
+                "status": "error",
+                "errors": [{
+                    'description': [{'message': 'Service is disabled or upgrade.'}],
+                    'location': 'body',
+                    'name': 'data',
+                }]
             }
         )
         self.assertEqual(response.status_code, 403)
@@ -260,9 +296,12 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                'description': [{'message': 'Retry request after 30 seconds.'}],
-                'location': 'body',
-                'name': 'data',
+                "status": "error",
+                "errors": [{
+                    'description': [{'message': 'Retry request after 30 seconds.'}],
+                    'location': 'body',
+                    'name': 'data',
+                }]
             }
         )
         self.assertEqual(response.status_code, 429)
@@ -283,9 +322,12 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                'description': [{'code': 11, 'message': '`passport` parameter has wrong value.'}],
-                'location': 'body',
-                'name': 'data',
+                "status": "error",
+                "errors": [{
+                    'description': [{'code': 11, 'message': '`passport` parameter has wrong value.'}],
+                    'location': 'body',
+                    'name': 'data',
+                }]
             }
         )
         self.assertEqual(response.status_code, 403)
@@ -295,15 +337,11 @@ class MainApiTestCase(BaseTestCase):
             json=Mock(return_value={
                 'errors': [
                     {
-                        'description': [
-                            {
-                                "error": {
-                                    "errorDetails": "Couldn't find this code in EDR.",
-                                    "code": "notFound"
-                                },
-                            }
-                        ]
-                    }
+                        "error": {
+                            "errorDetails": "Couldn't find this code in EDR.",
+                            "code": "notFound"
+                        },
+                    },
                 ]
             }),
             headers={
@@ -315,18 +353,14 @@ class MainApiTestCase(BaseTestCase):
             headers={'Authorization': basic_auth("robot", "robot")}
         )
         self.assertEqual(
-            response.json,
+            response.json["errors"][0],
             {
                 'description': [
                     {
-                        'description': [
-                            {
-                                "error": {
-                                    "errorDetails": "Couldn't find this code in EDR.",
-                                    "code": "notFound"
-                                },
-                            }
-                        ]
+                        "error": {
+                            "errorDetails": "Couldn't find this code in EDR.",
+                            "code": "notFound"
+                        },
                     }
                 ],
                 'location': 'body',

@@ -32,12 +32,15 @@ class NotAllowedIPError(HTTPException):
 
 
 def abort_json(code, error_message, headers=None, **extra):
-    response = jsonify(error_message, **extra)
+    error_description = {
+        "status": "error",
+        "errors": [error_message],
+    }
+    response = jsonify(error_description, **extra)
     response.status_code = code
     if headers:
         response.headers.update(headers)
-
-    exception = HTTPException(description=error_message)
+    exception = HTTPException(description=error_description)
     exception.code = code
     exception.response = response
     raise exception

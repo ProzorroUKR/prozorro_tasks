@@ -18,9 +18,9 @@ from edr_bot.results_db import (
 )
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
-    EDR_API_HOST, EDR_API_PORT, EDR_API_VERSION, EDR_API_USER, EDR_API_PASSWORD,
+    EDR_API_USER, EDR_API_PASSWORD,
     DS_HOST, DS_USER, DS_PASSWORD,
-    SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT,
+    SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT, TASKS_API_URI,
 )
 from uuid import uuid4
 import requests
@@ -190,9 +190,9 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
         'sourceRequests': [],
         'version': EDR_BOT_VERSION,
     }
-    param = 'id' if code.isdigit() and len(code) != ID_PASSPORT_LEN else 'passport'
-    url = "{host}:{port}/api/{version}/verify?{param}={code}".format(
-        host=EDR_API_HOST, port=EDR_API_PORT, version=EDR_API_VERSION,
+    param = 'code' if code.isdigit() and len(code) != ID_PASSPORT_LEN else 'passport'
+    url = "{tasks_uri}/edr/verify?{param}={code}".format(
+        tasks_uri=TASKS_API_URI,
         param=param,
         code=code,
     )
