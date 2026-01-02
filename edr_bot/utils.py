@@ -250,7 +250,7 @@ def get_sandbox_data(code, role):
     elif MOCK_DATA_VERIFY.get(code):
         logger.info('Return test data for {} for platform'.format(code))
         return {
-            'data': [prepare_data(d) for d in MOCK_DATA_DETAILS[code]],
+            'data': [prepare_data(d) for d in MOCK_DATA_VERIFY[code]],
             'meta': {'sourceDate': datetime.now(tz=TIMEZONE).isoformat()},
         }
     else:
