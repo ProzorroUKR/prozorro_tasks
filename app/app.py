@@ -13,6 +13,7 @@ from environment_settings import APP_X_FORWARDED_NUMBER
 from payments.views import bp as payments_views_bp
 from liqpay_int.api import bp as liqpay_resources_bp
 from treasury.api.views import bp as treasury_resources_bp
+from edr_bot.views import bp as edr_resources_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
@@ -50,3 +51,4 @@ app.register_blueprint(app_views_bp)
 app.register_blueprint(payments_views_bp, url_prefix="/payments")
 app.register_blueprint(liqpay_resources_bp, url_prefix="/liqpay")
 app.register_blueprint(treasury_resources_bp, url_prefix='/treasury')
+app.register_blueprint(edr_resources_bp, url_prefix='/edr')
