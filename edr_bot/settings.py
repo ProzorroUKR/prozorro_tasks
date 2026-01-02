@@ -1,5 +1,8 @@
 VERSION = "2.0.0"
-DOC_TYPE = 'registerExtract'
+DOC_TYPES = {
+    "1.0": "registerExtract",
+    "2.0": "registerUSR",
+}
 IDENTIFICATION_SCHEME = 'UA-EDR'
 DOC_AUTHOR = "IdentificationBot"
 FILE_NAME = 'edr_identification.yaml'

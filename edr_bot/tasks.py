@@ -7,9 +7,9 @@ from tasks_utils.requests import (
     get_task_retry_logger_method,
 )
 from edr_bot.settings import (
-    DOC_TYPE, IDENTIFICATION_SCHEME, DOC_AUTHOR,
+    DOC_TYPES, IDENTIFICATION_SCHEME, DOC_AUTHOR,
     VERSION as EDR_BOT_VERSION,
-    FILE_NAME, ID_PASSPORT_LEN,
+    FILE_NAME, ID_PASSPORT_LEN, EDR_REGISTRATION_STATUSES,
 )
 from edr_bot.results_db import (
     get_upload_results,
@@ -18,7 +18,7 @@ from edr_bot.results_db import (
 )
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
-    EDR_API_USER, EDR_API_PASSWORD,
+    EDR_API_USER, EDR_API_PASSWORD, EDR_API_VERSION,
     DS_HOST, DS_USER, DS_PASSWORD,
     SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT, TASKS_API_URI,
 )
@@ -155,7 +155,7 @@ def should_process_tender(tender):
 
 def should_process_item(item):
     return (item['status'] == 'pending' and
-            not any(document.get('documentType') == DOC_TYPE
+            not any(document.get('documentType') in DOC_TYPES.values()
                     for document in item.get('documents', [])))
 
 
@@ -275,14 +275,20 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
     # will retry the task until mongodb returns either doc or None
     unique_data = {k: v for k, v in data.items() if k != "meta"}
     upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
+    if EDR_API_VERSION == "2.0" and data.get("data"):
+        edr_code = data['data'].get('code')
+        edr_status = EDR_REGISTRATION_STATUSES.get(data['data'].get('state'), 'other')
+        file_name = f"edr_{edr_code}_{edr_status}.yaml"
+    else:
+        file_name = FILE_NAME
 
     if upload_results is None:
         # generate file data
         contents = yaml.safe_dump(data, allow_unicode=True, default_flow_style=False)
         temporary_file = io.StringIO(contents)
-        temporary_file.name = FILE_NAME
+        temporary_file.name = file_name
 
-        files = {'file': (FILE_NAME, temporary_file, 'application/yaml')}
+        files = {'file': (file_name, temporary_file, 'application/yaml')}
 
         try:
             response = requests.post(
@@ -347,7 +353,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
         return
 
     document_data = file_data['data']
-    document_data["documentType"] = DOC_TYPE
+    document_data["documentType"] = DOC_TYPES.get(EDR_API_VERSION, "registerExtract")
     url = "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
         host=API_HOST,
         version=API_VERSION,
