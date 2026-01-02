@@ -47,9 +47,6 @@ DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.gov.ua")
 DS_USER = os.environ.get("DS_USER", "bot")
 DS_PASSWORD = os.environ.get("DS_PASSWORD", "bot")
 
-EDR_API_HOST = os.environ.get("EDR_API_HOST", "http://127.0.0.1")  # should NOT end with "/"
-EDR_API_PORT = os.environ.get("EDR_API_PORT", "80")
-EDR_API_VERSION = os.environ.get("EDR_API_VERSION", "1.0")
 EDR_API_USER = os.environ.get("EDR_API_USER", "robot")
 EDR_API_PASSWORD = os.environ.get("EDR_API_PASSWORD", "robot")
 SPREAD_TENDER_TASKS_INTERVAL = float(os.environ.get("EDR_BOT_SPREAD_TENDER_TASKS_INTERVAL", "30"))
