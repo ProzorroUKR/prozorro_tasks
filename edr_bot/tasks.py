@@ -18,7 +18,7 @@ from edr_bot.results_db import (
 )
 from environment_settings import (
     API_HOST, API_TOKEN, PUBLIC_API_HOST, API_VERSION,
-    EDR_API_USER, EDR_API_PASSWORD, EDR_API_VERSION,
+    EDR_API_USER, EDR_API_PASSWORD, EDR_API_DIRECT_VERSION,
     DS_HOST, DS_USER, DS_PASSWORD,
     SPREAD_TENDER_TASKS_INTERVAL, CONNECT_TIMEOUT, READ_TIMEOUT, TASKS_API_URI,
 )
@@ -275,7 +275,7 @@ def upload_to_doc_service(self, data, tender_id, item_name, item_id):
     # will retry the task until mongodb returns either doc or None
     unique_data = {k: v for k, v in data.items() if k != "meta"}
     upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
-    if EDR_API_VERSION == "2.0" and data.get("data"):
+    if EDR_API_DIRECT_VERSION == "2.0" and data.get("data"):
         edr_code = data['data'].get('code')
         edr_status = EDR_REGISTRATION_STATUSES.get(data['data'].get('state'), 'other')
         file_name = f"edr_{edr_code}_{edr_status}.yaml"
@@ -353,7 +353,7 @@ def attach_doc_to_tender(self, file_data, data, tender_id, item_name, item_id):
         return
 
     document_data = file_data['data']
-    document_data["documentType"] = DOC_TYPES.get(EDR_API_VERSION, "registerExtract")
+    document_data["documentType"] = DOC_TYPES.get(EDR_API_DIRECT_VERSION, "registerExtract")
     url = "{host}/api/{version}/tenders/{tender_id}/{item_name}s/{item_id}/documents".format(
         host=API_HOST,
         version=API_VERSION,
