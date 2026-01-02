@@ -230,27 +230,27 @@ def read_json(name):
     return loads(data)
 
 
-TEST_DATA_VERIFY = read_json('tests/data/test_data_verify.json')
-TEST_DATA_DETAILS = read_json('tests/data/test_data_details.json')
+MOCK_DATA_VERIFY = read_json('data/mock_data_verify.json')
+MOCK_DATA_DETAILS = read_json('data/mock_data_details.json')
 
 
 def get_sandbox_data(code, role):
     """ If in sandbox_mode we reached requests limit, then we return sandbox data"""
-    if role == 'robot' and TEST_DATA_DETAILS.get(code):
+    if role == 'robot' and MOCK_DATA_DETAILS.get(code):
         logger.info(f'Return test data for {code} for robot')
         data = []
         details_source_date = []
-        for i in range(len(TEST_DATA_DETAILS[code])):
-            data.append(prepare_data_details(TEST_DATA_DETAILS[code][i]))
+        for i in range(len(MOCK_DATA_DETAILS[code])):
+            data.append(prepare_data_details(MOCK_DATA_DETAILS[code][i]))
             details_source_date.append(datetime.now(tz=TIMEZONE).isoformat())
         return {
             'meta': {'sourceDate': details_source_date[0], 'detailsSourceDate': details_source_date},
             'data': data,
         }
-    elif TEST_DATA_VERIFY.get(code):
+    elif MOCK_DATA_VERIFY.get(code):
         logger.info('Return test data for {} for platform'.format(code))
         return {
-            'data': [prepare_data(d) for d in TEST_DATA_VERIFY[code]],
+            'data': [prepare_data(d) for d in MOCK_DATA_DETAILS[code]],
             'meta': {'sourceDate': datetime.now(tz=TIMEZONE).isoformat()},
         }
     else:

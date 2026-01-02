@@ -6,7 +6,7 @@ from unittest.mock import patch, Mock, ANY
 
 from base64 import b64encode
 
-from edr_bot.utils import TEST_DATA_DETAILS, remove_null_fields
+from edr_bot.utils import MOCK_DATA_DETAILS, remove_null_fields
 from environment_settings import EDR_API_DIRECT_VERSION
 
 
@@ -249,7 +249,7 @@ class MainApiTestCase(BaseTestCase):
         self.assertEqual(
             response.json,
             {
-                'data': [remove_null_fields(TEST_DATA_DETAILS[code][0])],
+                'data': [remove_null_fields(MOCK_DATA_DETAILS[code][0])],
                 'meta': {'detailsSourceDate': [ANY], 'sourceDate': ANY},
             }
         )
