@@ -264,19 +264,18 @@ def get_edr_data(self, code, tender_id, item_name, item_id, request_id=None):
             raise self.retry(countdown=countdown)
 
         for data in data_list:
-            upload_to_doc_service.delay(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+            upload_to_doc_service.delay(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id, edr_code=code)
 
 
 # --------- UPLOAD TO DS
 @app.task(bind=True)
 @formatter.omit(["data"])
-def upload_to_doc_service(self, data, tender_id, item_name, item_id):
+def upload_to_doc_service(self, data, tender_id, item_name, item_id, edr_code):
     # check if the file has been already uploaded
     # will retry the task until mongodb returns either doc or None
     unique_data = {k: v for k, v in data.items() if k != "meta"}
     upload_results = get_upload_results(self, unique_data, tender_id, item_name, item_id)
     if EDR_API_DIRECT_VERSION == "2.0" and data.get("data"):
-        edr_code = data['data'].get('code')
         edr_status = EDR_REGISTRATION_STATUSES.get(data['data'].get('state'), 'other')
         file_name = f"edr_{edr_code}_{edr_status}.yaml"
     else:

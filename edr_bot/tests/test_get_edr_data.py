@@ -92,7 +92,8 @@ class TestHandlerCase(unittest.TestCase):
             },
             tender_id=tender_id,
             item_name=item_name,
-            item_id=item_id
+            item_id=item_id,
+            edr_code='1234',
         )
 
     @patch("edr_bot.tasks.upload_to_doc_service")
@@ -134,7 +135,8 @@ class TestHandlerCase(unittest.TestCase):
                     },
                     item_id=item_id,
                     item_name=item_name,
-                    tender_id=tender_id
+                    tender_id=tender_id,
+                    edr_code=code,
                 )
             ]
         )
@@ -178,7 +180,8 @@ class TestHandlerCase(unittest.TestCase):
                     },
                     item_id=item_id,
                     item_name=item_name,
-                    tender_id=tender_id
+                    tender_id=tender_id,
+                    edr_code=code,
                 ),
                 call(
                     data={
@@ -193,7 +196,8 @@ class TestHandlerCase(unittest.TestCase):
                     },
                     item_id=item_id,
                     item_name=item_name,
-                    tender_id=tender_id
+                    tender_id=tender_id,
+                    edr_code=code,
                 )
             ]
         )

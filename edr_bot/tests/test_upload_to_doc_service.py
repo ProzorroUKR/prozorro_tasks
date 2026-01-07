@@ -18,7 +18,7 @@ class UploadDocTestCase(unittest.TestCase):
 
             upload_to_doc_service.retry = Mock(side_effect=Retry)
             with self.assertRaises(Retry):
-                upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+                upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id, edr_code="test")
 
         upload_to_doc_service.retry.assert_called_once_with(exc=requests_mock.post.side_effect)
         get_upload_results.assert_called_once_with(upload_to_doc_service, {"data": {"content": "test"}},
@@ -39,7 +39,7 @@ class UploadDocTestCase(unittest.TestCase):
 
             upload_to_doc_service.retry = Mock(side_effect=Retry)
             with self.assertRaises(Retry):
-                upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+                upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id, edr_code="test")
 
         upload_to_doc_service.retry.assert_called_once_with(countdown=ret_aft)
         get_upload_results.assert_called_once_with(upload_to_doc_service, {"data": {"content": "test"}},
@@ -62,7 +62,7 @@ class UploadDocTestCase(unittest.TestCase):
                 }),
             )
 
-            upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+            upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id, edr_code="test")
 
         file_data = {'data': {"test": 1}, 'meta': {'id': 1}}
         attach_doc_to_tender.delay.assert_called_once_with(
@@ -86,7 +86,7 @@ class UploadDocTestCase(unittest.TestCase):
         data, tender_id, item_name, item_id = {"meta": {"id": 1}, "data": {"content": "test"}}, "f" * 32, "award", "a" * 32
 
         with patch("edr_bot.tasks.requests") as requests_mock:
-            upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id)
+            upload_to_doc_service(data=data, tender_id=tender_id, item_name=item_name, item_id=item_id, edr_code="test")
 
         requests_mock.post.assert_not_called()
         attach_doc_to_tender.delay.assert_called_once_with(
