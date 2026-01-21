@@ -1,3 +1,4 @@
+# todo: remove this module when autoclient_payments module will work. + investigate redundant tasks.py, auip.ini removal
 from uuid import uuid4
 
 import requests

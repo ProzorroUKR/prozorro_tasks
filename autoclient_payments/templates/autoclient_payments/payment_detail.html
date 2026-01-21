@@ -1,0 +1,150 @@
+{% extends "autoclient_payments/base.html" %}
+
+{% block content %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("autoclient_payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_home }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">{{ row.payment.value.description.value }}</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
+
+<h1>{{ row.payment.title }}</h1>
+<div class="table-responsive collapse show mb-2">
+    {% with data=row.payment.value %}
+    {% include 'autoclient_payments/partials/table_info.html' %}
+    {% endwith %}
+</div>
+
+{% if row and row.extra %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#extraBlock"
+    aria-expanded="true"
+    aria-controls="extraBlock">
+    <i class="fas fa-sm fa-info-circle float-right text-light"></i>
+    {{ row.extra.title }}
+</h5>
+<div class="table-responsive collapse show mb-2" id="extraBlock">
+    {% with data=row.extra.value %}
+    {% include 'autoclient_payments/partials/table_info.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+
+{% if row and row.resolution.value.type.value %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#resolutionBlock"
+    aria-expanded="true"
+    aria-controls="resolutionBlock">
+    <i class="fas fa-sm fa-clipboard-check float-right text-light"></i>
+    {{ row.resolution.title }}
+</h5>
+<div class="table-responsive collapse show mb-2" id="resolutionBlock">
+    {% with data=row.resolution.value %}
+    {% include 'autoclient_payments/partials/table_info.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+
+{% if row and row.messages %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#logBlock"
+    aria-expanded="true"
+    aria-controls="logBlock">
+    <i class="fas fa-sm fa-clipboard-list float-right text-light"></i>
+    Події
+</h5>
+<div class="table-responsive collapse show mb-2" id="logBlock">
+    {% include 'autoclient_payments/partials/table_log.html' %}
+</div>
+{% endif %}
+
+{% if row.payment and row.payment.value.type.value == TransactionType.CREDIT.name %}
+{% with data=row %}
+{% include 'autoclient_payments/partials/btn_retry.html' %}
+{% endwith %}
+{% endif %}
+
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#apiBlock"
+    aria-expanded="true"
+    aria-controls="apiBlock">
+    <i class="fas fa-sm fa-cogs float-right text-light"></i>
+    Посилання на API
+</h5>
+<div class="table-responsive collapse show mb-2" id="apiBlock">
+    {% include 'autoclient_payments/partials/table_urls_api.html' %}
+</div>
+{% endif %}
+
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#portalBlock"
+    aria-expanded="true"
+    aria-controls="portalBlock">
+    <i class="fas fa-sm fa-columns float-right text-light"></i>
+    Посилання на портал
+</h5>
+<div class="table-responsive collapse show mb-2" id="portalBlock">
+    {% include 'autoclient_payments/partials/table_urls_portal.html' %}
+</div>
+{% endif %}
+
+{% if complaint %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#complaintBlock"
+    aria-expanded="false"
+    aria-controls="complaintBlock">
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
+    Скарга
+</h5>
+<div class="table-responsive collapse mb-2" id="complaintBlock">
+    {% with data=complaint %}
+    {% include 'autoclient_payments/partials/table_dict.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+
+{% if complaint and tender %}
+<h5 class="mt-4"
+    data-toggle="collapse"
+    data-target="#tenderBlock"
+    aria-expanded="false"
+    aria-controls="tenderBlock">
+    <i class="fas fa-sm fa-plus-circle float-right text-light"></i>
+    Закупівля
+</h5>
+<div class="table-responsive collapse mb-5" id="tenderBlock">
+    {% with data=tender %}
+    {% include 'autoclient_payments/partials/table_dict.html' %}
+    {% endwith %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% include 'autoclient_payments/partials/modal_retry.html' %}
+{% include 'autoclient_payments/partials/modal_link_confirm.html' %}
+{% endblock %}

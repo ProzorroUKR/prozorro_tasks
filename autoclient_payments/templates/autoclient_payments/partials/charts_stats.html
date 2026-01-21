@@ -1,0 +1,49 @@
+<table class="table table-bordered table-striped table-payments">
+    <tr class="thead-dark">
+        <th class="text-center p-2">
+            Статистичні дані
+            <small class="d-block m-0">(по оплатам що підпадають під обрані критерії)</small>
+        </th>
+    </tr>
+</table>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Дата операції
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Дата завершення обробки
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateResolutionChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Метод операції
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="sourceChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+         Тип операції
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="typeChart"></canvas>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var sourceData = {{ counts.source | safe or {} }};
+    var typeData = {{ counts.type | safe or {} }};
+    var dateOperData = {{ counts.date_oper | safe or {} }};
+    var dateResolutionData = {{ counts.date_resolution | safe or {} }};
+    var dateOperStart = "{{ request.args.get('date_oper_from', min_date) }}";
+    var dateOperEnd = "{{ request.args.get('date_oper_to', max_date) }}";
+</script>

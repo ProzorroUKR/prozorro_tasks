@@ -1,0 +1,70 @@
+<div class="accordion" id="statuses">
+    {% for field in data %}
+    {% if field!='status' %}
+    {% if field=='cdb_public' %}
+    {% set description='Публічний API ЦБД' %}
+    {% elif field=='cdb_lb' %}
+    {% set description='Приватний API ЦБД' %}
+    {% elif field=='cdb_search' %}
+    {% set description='Приватний API ЦБД (пошук скарг)' %}
+    {% elif field=='liqpay' %}
+    {% set description='Публічний API LIQPAY' %}
+    {% elif field=='mohgodb' %}
+    {% set description='База данних (mongodb)' %}
+    {% else %}
+    {% set description='' %}
+    {% endif %}
+    <div class="card z-depth-0 bordered">
+        <div class="card-header" id="heading{{ field }}">
+            <h2 class="mb-0">
+                <button class="btn btn-link btn-block text-left p-0" type="button" data-toggle="collapse"
+                        data-target="#collapse{{ field }}" aria-expanded="true" aria-controls="collapse{{ field }}">
+                    <div>
+                        {{ field }}
+
+                        <div class="float-sm-right">
+                            {% if 'status' in data[field] and data[field]['status']=='available' %}
+                            <span class="badge badge-pill badge-success z-depth-0">
+                                <i class="fas fa-check mr-1"></i> {{ data[field]['status'] }}
+                            </span>
+                            {% elif 'status' in data[field] %}
+                            <span class="badge badge-pill badge-danger z-depth-0">
+                                <i class="fas fa-times mr-1"></i> {{ data[field]['status'] }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="text-muted small float-left">{{ description }}</span>
+                </button>
+            </h2>
+            <div class="chart-status-available-wrapper mb-1 mt-3 d-none">
+                <canvas class="chart-status-available" data-source="{{ field }}"></canvas>
+            </div>
+        </div>
+
+        <div id="collapse{{ field }}" class="collapse" aria-labelledby="heading{{ field }}" data-parent="#statuses">
+            <div>
+                <div class="chart-status-total-time-wrapper d-none">
+                    <canvas class="chart-status-total-time" data-source="{{ field }}"></canvas>
+                </div>
+                <table class="table table-bordered table-striped table-payments">
+                    <tr>
+                        {% if data[field]|typing_is_dict %}
+                        <td>
+                            {% with data=data[field] %}
+                            {% include 'autoclient_payments/partials/table_dict.html' %}
+                            {% endwith %}
+                        </td>
+                        {% else %}
+                        <td>
+                            {{ data[field] }}
+                        </td>
+                        {% endif %}
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>

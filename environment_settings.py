@@ -24,6 +24,7 @@ EXPONENTIAL_RETRY_BASE = int(os.environ.get("EXPONENTIAL_RETRY_BASE", 5))
 EXPONENTIAL_RETRY_MAX = int(os.environ.get("EXPONENTIAL_RETRY_MAX", 60 * 60))
 USER_AGENT = os.environ.get("USER_AGENT", "prozorro_tasks")
 
+# todo: check if devops enabled this env var
 CRAWLER_TENDER_HANDLERS = set(environ_list("CRAWLER_TENDER_HANDLERS"))
 CRAWLER_CONTRACT_HANDLERS = set(environ_list("CRAWLER_CONTRACT_HANDLERS"))
 CRAWLER_FRAMEWORK_HANDLERS = set(environ_list("CRAWLER_FRAMEWORK_HANDLERS"))
@@ -91,6 +92,7 @@ SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", None)
 APP_AUTH_FILE = os.environ.get("APP_AUTH_FILE", None)
 APP_AUIP_FILE = os.environ.get("APP_AUIP_FILE", None)
 APP_AUIP_ENABLED = os.environ.get("APP_AUIP_ENABLED", False) in TRUE_VARS
+APP_COUNTERPARTIES_FILE = os.environ.get("APP_COUNTERPARTIES_FILE", None)
 
 APP_X_FORWARDED_NUMBER = int(os.environ.get("APP_X_FORWARDED_NUMBER", 0))
 
@@ -132,3 +134,12 @@ TREASURY_DATETIME_FMT = os.environ.get("TREASURY_DATETIME_FMT", "%Y-%m-%dT%H:%M:
 
 CERTIFICATES_DIR = os.environ.get("CERTIFICATES_DIR", os.path.join(BASE_DIR, "certificates"))
 NAZK_PROZORRO_OPEN_CERTIFICATE_NAME = os.environ.get("NAZK_PROZORRO_OPEN_CERTIFICATE_NAME", "nazk_test.crt")
+
+AUTOCLIENT_PROCESSING_ENABLED = bool(os.environ.get("AUTOCLIENT_PROCESSING_ENABLED", ""))
+
+PB_AUTOCLIENT_NAME = os.environ.get("PB_AUTOCLIENT_NAME", "")
+PB_AUTOCLIENT_TOKEN = os.environ.get("PB_AUTOCLIENT_TOKEN", "")
+PB_ACCOUNT = os.environ.get("PB_ACCOUNT", "")
+
+PB_AUTOCLIENT_RELEASE_DATE = os.environ.get("PB_AUTOCLIENT_RELEASE_DATE", "2026-01-20")
+PB_AUTOCLIENT_SYNC_INTERVAL = int(os.environ.get("PB_AUTOCLIENT_SYNC_INTERVAL", 60))  # in seconds

@@ -1,0 +1,68 @@
+{% extends "autoclient_payments/base.html" %}
+
+{% block content %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("autoclient_payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_home }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Статус</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
+
+<div class="table-responsive mb-3">
+    {% with data=rows %}
+    {% if data %}
+    {% if 'status' in data and data['status']=='available' %}
+    <div class="alert badge-success">
+        <i class="fas fa-rocket mr-2"></i> Всі системи функціонують нормально
+    </div>
+    {% elif 'status' in data %}
+    <div class="alert badge-danger">
+        <i class="fas fa-exclamation mr-2"></i> Часткове відключення
+    </div>
+    {% endif %}
+    {% include "autoclient_payments/partials/charts_status.html" %}
+    {% else %}
+    {% include "autoclient_payments/partials/table_empty.html" %}
+    {% endif %}
+
+    {% endwith %}
+</div>
+
+<div class="btn-toolbar btn-toolbar-payment float-right" role="toolbar">
+
+    <div class="mb-3 mx-1">
+        {% with label='Кількість днів історичних данних' %}
+        {% with arg='days' %}
+        {% with choices=['1', '2', '5', '10', '20', '30'] %}
+        {% include 'autoclient_payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% include 'autoclient_payments/partials/filter_rangepicker_script.html' %}
+{% include 'autoclient_payments/partials/charts_status_script.html' %}
+
+{% endblock %}

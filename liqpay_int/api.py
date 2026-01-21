@@ -8,6 +8,7 @@ from liqpay_int.broker.namespaces import api as broker_ns
 from liqpay_int.resources import Resource
 from payments.health import health, save_health_data, get_health_data
 from payments.results_db import init_indexes
+from autoclient_payments.results_db import init_indexes as init_autoclient_indexes
 
 API_VERSION_MAJOR = 1
 API_VERSION_MINOR = 0
@@ -15,6 +16,7 @@ API_PREFIX = "/api/v{}".format(API_VERSION_MAJOR)
 
 if "test" not in sys.argv[0]:  # pragma: no cover
     init_indexes()
+    init_autoclient_indexes()
 
 bp = Blueprint('payments_resources', __name__)
 api = Api(

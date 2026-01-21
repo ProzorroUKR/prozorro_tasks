@@ -1,0 +1,98 @@
+{% extends "autoclient_payments/base.html" %}
+
+{% block content %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("autoclient_payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_home }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Створення звіту</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
+
+{% include 'autoclient_payments/partials/toolbar_links.html' %}
+
+<div class="btn-toolbar mt-3" role="toolbar">
+
+    <div class="mb-3 mr-2">
+        {% with label='Дата завершення обробки' %}
+        {% with arg_from='date_resolution_from' %}
+        {% with arg_to='date_resolution_to' %}
+        {% include 'autoclient_payments/partials/filter_rangepicker.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="dropdown mb-3">
+        <button class="btn btn-sm btn-primary btn-payment btn-payment-filter"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false">
+            <i class="fas fa-angle-double-down mr-2"></i>
+            Завантажити
+        </button>
+
+        <div class="dropdown-menu pr-3 pl-1 pt-1 pb-1">
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', exclude=['funds']) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'all'|complaint_funds_description }}
+            </a>
+            {% endwith %}
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='state')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'state'|complaint_funds_description }}
+            </a>
+            {% endwith %}
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='complainant')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'complainant'|complaint_funds_description}}
+            </a>
+            {% endwith %}
+
+            {% with href=url_for_search(request.url_rule.endpoint + '_download', include=dict(funds='unknown')) %}
+            <a href="{{ href }}" type="button"
+               class="btn btn-sm btn-block btn-primary btn-payment m-1{%if not rows[1] %} disabled{% endif %} text-nowrap">
+                {{ 'unknown'|complaint_funds_description }}
+            </a>
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive mb-2">
+    {% with data=rows %}
+    {% include 'autoclient_payments/partials/table_report.html' %}
+    {% endwith %}
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+{{ super() }}
+
+{% include 'autoclient_payments/partials/filter_rangepicker_script.html' %}
+
+{% endblock %}
+
