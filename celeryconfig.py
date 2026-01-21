@@ -72,10 +72,10 @@ task_routes = ([
 ],)
 
 task_queues = tuple(
-    Queue(module_name)
+    Queue(module_name, no_declare=True)
     for module_name in task_modules
 ) + (
-    Queue('celery',  routing_key=''),  # default
+    Queue('celery', routing_key='', no_declare=True),  # default
 )
 
 timezone = str(TIMEZONE)
