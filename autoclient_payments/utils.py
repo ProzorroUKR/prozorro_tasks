@@ -386,7 +386,7 @@ def filter_payment_data(data):
     return {key: value for key, value in data.items() if key not in PAYMENT_EXCLUDE_FIELDS}
 
 
-def _get_transactions(
+def get_transactions(
     url: str,
     query_args: dict,
 ) -> Tuple[list, bool, str]:
@@ -410,7 +410,7 @@ def transactions_list(
     }
     if end_date:
         query_args.update({"endDate": end_date})
-    while page_resp := _get_transactions(url, query_args):
+    while page_resp := get_transactions(url, query_args):
         transactions, next_page_exists, next_page_id = page_resp
         for transaction in transactions:
             yield transaction

@@ -27,10 +27,10 @@ get_mongodb_collection = partial(base_get_mongodb_collection, collection_name="a
 
 get_mongodb_status_collection = partial(base_get_mongodb_collection, collection_name="autopayments_status")
 
-UID_KEYS = [
+UID_KEYS = (
     "REF",
     "REFN",
-]
+)
 
 
 def init_indexes():
@@ -80,7 +80,7 @@ def init_index(collection, **kwargs):
     collection.create_index(**kwargs)
 
 
-def data_to_uid(data, keys=None):
+def data_to_uid(data, keys=UID_KEYS):
     return args_to_uid(
         sorted(
             [
@@ -109,7 +109,7 @@ def query_payment_find(data):
                     {"payment.REFN": {"$exists": False}},
                     {
                         "$or": [
-                            {"_id": data_to_uid(data, keys=UID_KEYS)},
+                            {"_id": data_to_uid(data)},
                         ]
                     },
                 ]
@@ -303,7 +303,7 @@ def get_payment_item(uid):
 @log_exc(logger, PyMongoError, "PAYMENTS_SAVE_RESULTS_MONGODB_EXCEPTION")
 def save_payment_item(data, user):
     collection = get_mongodb_collection()
-    uid = data_to_uid(data, keys=UID_KEYS)
+    uid = data_to_uid(data)
     document = {
         "_id": uid,
         "payment": filter_payment_data(data),
