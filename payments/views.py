@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response, request
 
 from app.auth import login_groups_required
+from environment_settings import LIQPAY_PAYMENT_PROCESSING_ENABLED
 from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN,
@@ -70,6 +71,11 @@ bp.add_app_template_filter(payment_message_list_status, "payment_message_list_st
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
+
+
+@bp.context_processor
+def inject_constants_context():
+    return {"LIQPAY_PAYMENT_PROCESSING_ENABLED": LIQPAY_PAYMENT_PROCESSING_ENABLED}
 
 
 @bp.route("/", methods=["GET"])

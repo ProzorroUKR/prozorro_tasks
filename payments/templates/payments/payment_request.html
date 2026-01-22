@@ -22,6 +22,12 @@
 {% endwith %}
 {% endwith %}
 
+{% if not LIQPAY_PAYMENT_PROCESSING_ENABLED %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка вимкнена
+</div>
+{% endif %}
+
 {% if fake %}
 <div class="alert badge-danger">
     <i class="fas fa-exclamation mr-2"></i> Увімкнено тестові дані

@@ -22,6 +22,12 @@
 {% endwith %}
 {% endwith %}
 
+{% if not LIQPAY_PAYMENT_PROCESSING_ENABLED %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка вимкнена
+</div>
+{% endif %}
+
 <h1>{{ row.payment.title }}</h1>
 <div class="table-responsive collapse show mb-2">
     {% with data=row.payment.value %}
