@@ -68,9 +68,6 @@ from autoclient_payments.messages import (
 )
 
 
-DEFAULT_CURRENCY = "UAH"
-
-
 def complaint_status_description(status):
     return COMPLAINT_STATUS_DICT.get(status, status)
 

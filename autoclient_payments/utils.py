@@ -36,7 +36,7 @@ from autoclient_payments.data import (
 )
 from tasks_utils.settings import DEFAULT_HEADERS
 
-PB_DATA_DATE_FORMAT = "%d.%m.%Y"
+PB_DATA_DT_FORMAT = "%d.%m.%Y %H:%M:%S"
 PB_QUERY_DATE_FORMAT = "%d-%m-%Y"
 
 PAYMENT_RE = re.compile(
@@ -432,7 +432,7 @@ def get_payments_registry_fake(date_from, date_to):
 
         def fake_date_oper_range(value):
             try:
-                date_oper = datetime.strptime(value["DATE_TIME_DAT_OD_TIM_P"], "%d.%m.%Y %H:%M:%S")
+                date_oper = datetime.strptime(value["DATE_TIME_DAT_OD_TIM_P"], PB_DATA_DT_FORMAT)
             except (ValueError, KeyError, TypeError):
                 return False
             return date_from <= date_oper < date_to

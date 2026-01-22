@@ -19,7 +19,7 @@ from autoclient_payments.data import (
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     OTHER_COUNTERPARTIES,
 )
-from autoclient_payments.utils import filter_payment_data, PB_DATA_DATE_FORMAT
+from autoclient_payments.utils import filter_payment_data, PB_DATA_DT_FORMAT
 
 logger = get_task_logger(__name__)
 
@@ -38,6 +38,7 @@ def init_indexes():
     # drop_indexes(collection)
     indexes = [
         dict(keys="createdAt", name="created_at"),
+        dict(keys="dateOper", name="date_oper"),
         dict(keys=[("payment.OSND", pymongo.TEXT)], name="payment_description"),
         dict(keys=[("payment.REF", ASCENDING), ("payment.REFN", ASCENDING)], name="payment_ref"),
         dict(
@@ -255,7 +256,7 @@ def get_payment_stats(filters=None, page=None, limit=None, **kwargs):
                         },
                     }
                 ),
-                "counts_date_oper": pipeline_payments_counts_date("$payment.DAT_OD", lambda x: x),
+                "counts_date_oper": pipeline_payments_counts_date("$dateOper", lambda x: query_date_split(x)),
                 "counts_date_resolution": pipeline_payments_counts_date(
                     "$resolution.date", lambda x: query_date_split(x)
                 ),
@@ -307,6 +308,7 @@ def save_payment_item(data, user):
         "_id": uid,
         "payment": filter_payment_data(data),
         "user": user,
+        "dateOper": TIMEZONE.localize(datetime.strptime(data["DATE_TIME_DAT_OD_TIM_P"], PB_DATA_DT_FORMAT)).isoformat(),
         "createdAt": datetime.utcnow(),
     }
     try:
@@ -383,13 +385,8 @@ def query_payment_search(
             {
                 "$expr": {
                     "$and": [
-                        {"$gte": [query_date_from_str("$payment.DAT_OD"), payment_date_from]},
-                        {
-                            "$lt": [
-                                query_date_from_str("$payment.DAT_OD"),
-                                payment_date_to + timedelta(days=1),
-                            ]
-                        },
+                        {"$gte": ["$dateOper", payment_date_from.isoformat()]},
+                        {"$lt": ["$dateOper", (payment_date_to + timedelta(days=1)).isoformat()]},
                     ]
                 }
             }
@@ -439,10 +436,6 @@ def query_combined_or(filters):
     return {"$or": filters}
 
 
-def query_date_from_str(field, format=PB_DATA_DATE_FORMAT):
-    return {"$dateFromString": {"dateString": field, "format": format, "onError": None}}
-
-
 @log_exc(logger, PyMongoError, "PAYMENTS_STATUS_LIST_MONGODB_EXCEPTION")
 def get_statuses_list(limit=None):
     collection = get_mongodb_status_collection()
@@ -486,11 +479,4 @@ def query_payment_results(date_from, date_to, **search_kwargs):
 
 def get_last_transaction() -> dict:
     collection = get_mongodb_collection()
-    pipeline = [
-        {"$addFields": {"transactionDate": query_date_from_str("$payment.DAT_OD")}},
-        {"$sort": {"transactionDate": DESCENDING}},
-        {"$limit": 1},
-    ]
-
-    docs = list(collection.aggregate(pipeline))
-    return docs[0] if docs else None
+    return collection.find_one({}, sort=[("dateOper", DESCENDING)])

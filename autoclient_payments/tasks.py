@@ -55,14 +55,13 @@ from autoclient_payments.utils import (
     check_complaint_value,
     check_complaint_value_amount,
     check_complaint_value_currency,
-    PB_DATA_DATE_FORMAT,
     PB_QUERY_DATE_FORMAT,
     ALLOWED_COMPLAINT_RESOLUTION_STATUSES,
     get_resolution,
     request_cdb_tender_data,
     transactions_list,
 )
-from environment_settings import AUTOCLIENT_PROCESSING_ENABLED
+from environment_settings import AUTOCLIENT_PAYMENT_PROCESSING_ENABLED, PB_AUTOCLIENT_RELEASE_DATE
 from tasks_utils.datetime import get_now
 from tasks_utils.requests import get_exponential_request_retry_countdown, get_task_retry_logger_method
 
@@ -93,7 +92,7 @@ def save_and_process_payment(transaction: dict, user: str):
     except PyMongoError:
         logger.error("Payment save failed.", extra=extra)
     # process only credit transactions
-    if AUTOCLIENT_PROCESSING_ENABLED and created_obj and transaction["TRANTYPE"] == TransactionType.CREDIT.value:
+    if created_obj and transaction["TRANTYPE"] == TransactionType.CREDIT.value:
         try:
             process_payment_data.apply_async(kwargs=dict(payment_data=transaction))
         except OperationalError:
@@ -103,13 +102,13 @@ def save_and_process_payment(transaction: dict, user: str):
 @app.task(bind=True, max_retries=10)
 def sync_autoclient_payments(self):
     if last_payment := get_last_transaction():
-        last_date = datetime.strptime(last_payment["payment"]["DAT_OD"], PB_DATA_DATE_FORMAT).date()
+        last_date = datetime.fromisoformat(last_payment["dateOper"]).date()
     else:
         last_date = get_now().date()
-    sync_start_date = (last_date - timedelta(days=1)).strftime(PB_QUERY_DATE_FORMAT)
+    sync_start_date = max(datetime.fromisoformat(PB_AUTOCLIENT_RELEASE_DATE).date(), last_date - timedelta(days=1))
 
     try:
-        for transaction in transactions_list(sync_start_date):
+        for transaction in transactions_list(sync_start_date.strftime(PB_QUERY_DATE_FORMAT)):
             # save and process only real, recorded transactions
             if (
                 transaction["FL_REAL"] == TransactionKind.REAL.value
@@ -379,6 +378,9 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
             task=self,
             extra={"MESSAGE_ID": PAYMENTS_INVALID_COMPLAINT_VALUE},
         )
+        return
+
+    if not AUTOCLIENT_PAYMENT_PROCESSING_ENABLED:
         return
 
     value = complaint_data.get("value", {})

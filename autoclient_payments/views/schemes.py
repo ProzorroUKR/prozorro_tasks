@@ -42,7 +42,8 @@ PAYMENT_CURRENCY_SCHEME_ITEM = {
 PAYMENT_DATE_OPER_SCHEME_ITEM = {
     "type": "object",
     "title": "Дата операції",
-    "path": "payment.DATE_TIME_DAT_OD_TIM_P",
+    "path": "dateOper",
+    "method": date_representation,
     "default": "",
 }
 

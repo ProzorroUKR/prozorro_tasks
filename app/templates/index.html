@@ -18,6 +18,12 @@
                                 Payments
                             </a>
                             {% endwith %}
+                            {% with url=url_for("autoclient_payments_views.payment_list") %}
+                            <a href="{{ url }}" class="btn btn-outline-white btn-md">
+                                <i class="fas fa-coins left"></i>
+                                Autoclient payments
+                            </a>
+                            {% endwith %}
                         </div>
                     </div>
                 </div>

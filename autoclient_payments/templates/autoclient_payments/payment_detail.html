@@ -12,7 +12,7 @@
                 <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
             </li>
             <li class="breadcrumb-item">
-                <a class="black-text" href="{{ href_payments }}">Оплати</a>
+                <a class="black-text" href="{{ href_payments }}">Оплати з автоклієнта</a>
                 <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
             </li>
             <li class="breadcrumb-item active">{{ row.payment.value.description.value }}</li>
@@ -21,6 +21,12 @@
 </div>
 {% endwith %}
 {% endwith %}
+
+{% if not AUTOCLIENT_PAYMENT_PROCESSING_ENABLED %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка вимкнена
+</div>
+{% endif %}
 
 <h1>{{ row.payment.title }}</h1>
 <div class="table-responsive collapse show mb-2">

@@ -61,7 +61,7 @@ from autoclient_payments.utils import (
     transactions_list,
     PB_QUERY_DATE_FORMAT,
 )
-from environment_settings import PB_AUTOCLIENT_RELEASE_DATE, AUTOCLIENT_PROCESSING_ENABLED
+from environment_settings import PB_AUTOCLIENT_RELEASE_DATE, AUTOCLIENT_PAYMENT_PROCESSING_ENABLED
 from tasks_utils.datetime import get_now, parse_dt_string
 
 bp = Blueprint("autoclient_payments_views", __name__, template_folder="../templates")
@@ -72,6 +72,11 @@ bp.add_app_template_filter(payment_message_list_status, "payment_message_list_st
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
+
+
+@bp.context_processor
+def inject_constants_context():
+    return {"AUTOCLIENT_PAYMENT_PROCESSING_ENABLED": AUTOCLIENT_PAYMENT_PROCESSING_ENABLED}
 
 
 @bp.route("/", methods=["GET"])
@@ -230,7 +235,7 @@ def payment_add():
     if data.get("FL_REAL") == TransactionKind.REAL.value and data.get("PR_PR") == TransactionStatus.RECORDED.value:
         created_obj = save_payment_item(data, "manual")
     # process only credit transactions
-    if AUTOCLIENT_PROCESSING_ENABLED and created_obj and data.get("TRANTYPE") == TransactionType.CREDIT.value:
+    if created_obj and data.get("TRANTYPE") == TransactionType.CREDIT.value:
         uid = str(created_obj.inserted_id)
         return redirect(url_for("autoclient_payments_views.payment_retry", uid=uid))
     else:
@@ -290,7 +295,7 @@ def payment_retry(uid):
     if not data:
         abort(404)
     payment = data.get("payment", {})
-    if AUTOCLIENT_PROCESSING_ENABLED and payment.get("TRANTYPE") == TransactionType.CREDIT.value:
+    if payment.get("TRANTYPE") == TransactionType.CREDIT.value:
         process_payment_data.apply_async(kwargs=dict(payment_data=payment))
     return redirect(url_for("autoclient_payments_views.payment_detail", uid=uid))
 
@@ -303,7 +308,7 @@ def payment_recheck(uid):
         abort(404)
     params = data.get("params", {})
     tender_id = params.get("tender_id")
-    if AUTOCLIENT_PROCESSING_ENABLED and tender_id:
+    if tender_id:
         process_tender.apply_async(kwargs=dict(tender_id=tender_id))
     return redirect(url_for("autoclient_payments_views.payment_detail", uid=uid))
 
