@@ -6,7 +6,7 @@ from celery.utils.log import get_task_logger
 from pymongo.errors import PyMongoError
 
 from celery_worker.celery import app
-from environment_settings import LIQPAY_PAYMENT_PROCESSING_ENABLED
+from environment_settings import PAYMENT_COMPLAINT_PROCESSING_ENABLED
 from payments.data import STATUS_COMPLAINT_MISTAKEN, STATUS_COMPLAINT_PENDING
 from payments.logging import PaymentResultsLoggerAdapter
 from payments.message_ids import (
@@ -243,6 +243,9 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
             "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_SUCCESS
         })
 
+    if not PAYMENT_COMPLAINT_PROCESSING_ENABLED:
+        return
+
     complaint_data = response.json()["data"]
 
     if not check_complaint_status(complaint_data):
@@ -259,9 +262,6 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_INVALID_COMPLAINT_VALUE
         })
-        return
-
-    if not LIQPAY_PAYMENT_PROCESSING_ENABLED:
         return
 
     value = complaint_data.get("value", {})

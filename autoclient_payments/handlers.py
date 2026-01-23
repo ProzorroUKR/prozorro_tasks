@@ -7,7 +7,7 @@ from environment_settings import PAYMENTS_SKIP_TENDER_DAYS
 from datetime import timedelta
 
 
-async def payments_tender_handler(tender, **kwargs):
+async def autoclient_payments_tender_handler(tender, **kwargs):
     delta = get_now() - parse_dt_string(tender["dateModified"])
     if (
         delta < timedelta(days=PAYMENTS_SKIP_TENDER_DAYS)

@@ -22,9 +22,15 @@
 {% endwith %}
 {% endwith %}
 
-{% if not LIQPAY_PAYMENT_PROCESSING_ENABLED %}
+{% if not PAYMENT_COMPLAINT_PROCESSING_ENABLED %}
 <div class="alert badge-danger">
-  <i class="fas fa-exclamation mr-2"></i> Обробка вимкнена
+  <i class="fas fa-exclamation mr-2"></i> Обробка скарг вимкнена
+</div>
+{% endif %}
+
+{% if not SYNC_PAYMENTS_RESOLUTIONS %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка рішень вимкнена
 </div>
 {% endif %}
 

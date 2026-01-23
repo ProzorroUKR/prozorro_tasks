@@ -197,9 +197,9 @@ class TestHandlerCase(unittest.TestCase):
             countdown=DEFAULT_RETRY_AFTER
         )
 
+    @patch("liqpay_int.tasks.PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("liqpay_int.tasks.process_payment_complaint_patch")
-    @patch("liqpay_int.tasks.LIQPAY_PAYMENT_PROCESSING_ENABLED", return_value=True)
-    def test_handle_200_response_valid_complaint(self, _, process_payment_complaint_patch):
+    def test_handle_200_response_valid_complaint(self, process_payment_complaint_patch):
         payment_data = {
             "description": "test",
             "amount": "2000",
@@ -251,6 +251,7 @@ class TestHandlerCase(unittest.TestCase):
             )
         )
 
+    @patch("liqpay_int.tasks.PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("liqpay_int.tasks.process_payment_complaint_patch")
     def test_handle_200_response_invalid_complaint_status(self, process_payment_complaint_patch):
         payment_data = {
@@ -297,6 +298,7 @@ class TestHandlerCase(unittest.TestCase):
 
         process_payment_complaint_patch.apply_async.assert_not_called()
 
+    @patch("liqpay_int.tasks.PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("liqpay_int.tasks.process_payment_complaint_patch")
     def test_handle_200_response_no_complaint_value(self, process_payment_complaint_patch):
         payment_data = {
@@ -339,9 +341,9 @@ class TestHandlerCase(unittest.TestCase):
 
         process_payment_complaint_patch.apply_async.assert_not_called()
 
+    @patch("liqpay_int.tasks.PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("liqpay_int.tasks.process_payment_complaint_patch")
-    @patch("liqpay_int.tasks.LIQPAY_PAYMENT_PROCESSING_ENABLED", return_value=True)
-    def test_handle_200_response_invalid_value_amount(self, _, process_payment_complaint_patch):
+    def test_handle_200_response_invalid_value_amount(self, process_payment_complaint_patch):
         payment_data = {
             "description": "test",
             "amount": "1",
@@ -393,9 +395,9 @@ class TestHandlerCase(unittest.TestCase):
             )
         )
 
+    @patch("liqpay_int.tasks.PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("liqpay_int.tasks.process_payment_complaint_patch")
-    @patch("liqpay_int.tasks.LIQPAY_PAYMENT_PROCESSING_ENABLED", return_value=True)
-    def test_handle_200_response_invalid_value_currency(self, _, process_payment_complaint_patch):
+    def test_handle_200_response_invalid_value_currency(self, process_payment_complaint_patch):
         payment_data = {
             "description": "test",
             "amount": "2000",

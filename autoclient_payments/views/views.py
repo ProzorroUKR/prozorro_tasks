@@ -61,7 +61,11 @@ from autoclient_payments.utils import (
     transactions_list,
     PB_QUERY_DATE_FORMAT,
 )
-from environment_settings import PB_AUTOCLIENT_RELEASE_DATE, AUTOCLIENT_PAYMENT_PROCESSING_ENABLED
+from environment_settings import (
+    PB_AUTOCLIENT_RELEASE_DATE,
+    AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED,
+    SYNC_AUTOCLIENT_PAYMENTS_RESOLUTIONS,
+)
 from tasks_utils.datetime import get_now, parse_dt_string
 
 bp = Blueprint("autoclient_payments_views", __name__, template_folder="../templates")
@@ -76,7 +80,10 @@ bp.add_app_template_filter(complaint_funds_description, "complaint_funds_descrip
 
 @bp.context_processor
 def inject_constants_context():
-    return {"AUTOCLIENT_PAYMENT_PROCESSING_ENABLED": AUTOCLIENT_PAYMENT_PROCESSING_ENABLED}
+    return {
+        "AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED": AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED,
+        "SYNC_AUTOCLIENT_PAYMENTS_RESOLUTIONS": SYNC_AUTOCLIENT_PAYMENTS_RESOLUTIONS,
+    }
 
 
 @bp.route("/", methods=["GET"])
@@ -308,7 +315,7 @@ def payment_recheck(uid):
         abort(404)
     params = data.get("params", {})
     tender_id = params.get("tender_id")
-    if tender_id:
+    if SYNC_AUTOCLIENT_PAYMENTS_RESOLUTIONS and tender_id:
         process_tender.apply_async(kwargs=dict(tender_id=tender_id))
     return redirect(url_for("autoclient_payments_views.payment_detail", uid=uid))
 

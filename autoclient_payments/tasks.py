@@ -61,7 +61,7 @@ from autoclient_payments.utils import (
     request_cdb_tender_data,
     transactions_list,
 )
-from environment_settings import AUTOCLIENT_PAYMENT_PROCESSING_ENABLED, PB_AUTOCLIENT_RELEASE_DATE
+from environment_settings import AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED, PB_AUTOCLIENT_RELEASE_DATE
 from tasks_utils.datetime import get_now
 from tasks_utils.requests import get_exponential_request_retry_countdown, get_task_retry_logger_method
 
@@ -362,6 +362,9 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
 
     complaint_data = response.json()["data"]
 
+    if not AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED:
+        return
+
     if not check_complaint_status(complaint_data):
         logger.warning(
             "Invalid complaint status: {}".format(complaint_data["status"]),
@@ -378,9 +381,6 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
             task=self,
             extra={"MESSAGE_ID": PAYMENTS_INVALID_COMPLAINT_VALUE},
         )
-        return
-
-    if not AUTOCLIENT_PAYMENT_PROCESSING_ENABLED:
         return
 
     value = complaint_data.get("value", {})
