@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from environment_settings import CELERY_BROKER_URL, SENTRY_DSN, SENTRY_ENVIRONMENT
 from celery import Celery
-from celery.signals import after_setup_logger, after_setup_task_logger
+from celery.signals import after_setup_logger, after_setup_task_logger, worker_init
 from pythonjsonlogger import jsonlogger
 from functools import wraps
 from inspect import getfullargspec
@@ -28,6 +28,54 @@ app = Celery(
     ],
 )
 app.config_from_object(celeryconfig)
+
+
+@worker_init.connect
+def declare_queues_on_startup(sender, **kwargs):
+    """
+    Автоматичне створення черг при старті воркера.
+
+    Логіка:
+    1. Перевіряє чи черга вже існує (passive declare)
+    2. Якщо існує - використовує як є (не змінює тип)
+    3. Якщо не існує - створює з типом залежно від версії RabbitMQ:
+       - RabbitMQ 3.x: classic черги
+       - RabbitMQ 4.x+: quorum черги
+
+    Це дозволяє коду працювати на всіх середовищах без додаткових налаштувань:
+    - Dev: створює нові черги з правильним типом
+    - Staging/Prod: використовує існуючі черги як є
+    """
+    from amqp.exceptions import NotFound
+
+    with sender.app.connection() as conn:
+        conn.connect()
+
+        props = conn.connection.server_properties
+        version = props.get('version', b'0.0.0')
+        if isinstance(version, bytes):
+            version = version.decode()
+        major = int(version.split('.')[0])
+
+        if major >= 4:
+            queue_args = {"x-queue-type": "quorum"}
+        else:
+            queue_args = {}
+
+        queue_names = celeryconfig.task_modules + ['celery']
+        channel = conn.channel()
+
+        for queue_name in queue_names:
+            try:
+                channel.queue_declare(queue=queue_name, passive=True)
+            except NotFound:
+                channel = conn.channel()
+                channel.queue_declare(
+                    queue=queue_name,
+                    durable=True,
+                    auto_delete=False,
+                    arguments=queue_args,
+                )
 
 
 OMITTED_STR = "<omitted>"
