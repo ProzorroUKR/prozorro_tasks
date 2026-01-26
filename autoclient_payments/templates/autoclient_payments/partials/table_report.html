@@ -1,0 +1,32 @@
+{% if data[1] %}
+<table class="table table-bordered table-striped table-payments">
+    {% for row in data[0:1] %}
+    <tr class="thead-dark">
+        <th class="text-center">#</th>
+        {% for header in row %}
+        <th>{{ header }}</th>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    {% for row in data[1:-1] %}
+    <tr>
+        <td class="text-center align-middle">{{ loop.index }}</td>
+        {% for field in row %}
+        <td>
+            {{ field }}
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    <tr>
+        <td class="text-center align-middle" style="visibility: hidden;"></td>
+        {% for field in data[-1] %}
+        <td>
+            {{ field }}
+        </td>
+        {% endfor %}
+    </tr>
+</table>
+{% else %}
+{% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

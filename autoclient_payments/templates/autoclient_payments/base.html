@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+{{ super() }}
+
+<style type="text/css">
+
+    [data-toggle="collapse"] {
+        cursor: pointer;
+    }
+
+    .modal-payment > .modal-dialog > .modal-content {
+        border-radius: 0;
+        border: 0;
+    }
+
+    .modal-payment > .modal-dialog > .modal-content > .modal-body {
+        font-size: .75rem;
+    }
+
+    .btn.btn-payment {
+        border-radius: 0;
+        text-align: center;
+    }
+
+    .btn.btn-payment-filter {
+        margin: 0;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .btn.btn-payment-filter:hover {
+        z-index: auto;
+    }
+
+    .btn.btn-payment-light {
+        color: #495057 !important;
+        background-color: #e9ecef !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    .btn.btn-payment-light.active {
+        background-color: #ced4da !important;
+    }
+
+    .btn.btn-payment-light.btn-sm {
+        padding-top: calc(.5rem - 1px) !important;
+        padding-bottom: calc(.5rem - 1px) !important;
+    }
+
+    .btn-group .btn.btn-payment-light + .btn {
+        border-left: 0 !important;
+    }
+
+    .btn-group .btn.btn-payment-light + input {
+        border-left: 0 !important;
+    }
+
+    .nav-item + .nav-item .btn.btn-payment-light {
+        border-left: 0 !important;
+    }
+
+    .btn-group > .btn.btn-payment-filter:not(:first-child) {
+        margin: 0;
+    }
+
+    .group-payment-filter {
+        height: 100%;
+    }
+
+    .group-payment-filter .dropdown-menu {
+        border-radius: 0;
+        padding: 2px;
+    }
+
+    .dropdown > .dropdown-menu {
+        border-radius: 0;
+        padding: 0;
+    }
+
+    .dropdown .btn.btn-payment {
+        height: 100%;
+    }
+
+    .dropdown-item-payment {
+        font-size: .75rem;
+    }
+
+    .dropdown-item-payment.active {
+        background-color: #343a40;
+    }
+
+    .input-payment {
+        border-radius: 0;
+        font-size: .64rem;
+    }
+
+    .input-payment[type="text"] {
+        height: 100%;
+    }
+
+    .nav-payments {
+        padding: 0;
+    }
+
+    .nav-payments > .nav-item > .btn {
+        border-radius: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    .table-payments {
+        font-size: .75rem;
+        margin-bottom: 0;
+    }
+
+    .table-payments td {
+        font-size: .75rem;
+    }
+
+    .table-payments th {
+        font-size: .75rem;
+    }
+
+    .table-payments + .table-payments {
+        margin-top: .4rem;
+    }
+
+    .table-payments > tbody > tr > td {
+        padding: .4rem .4rem;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .table-payments > tbody > tr > td.cell-payment {
+        min-width: 30rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-resolution,
+    .table-payments > tbody > tr > td.cell-extra {
+        min-width: 22rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-processing_status {
+        min-width: 10rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-name {
+        width: 9rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-value {
+        min-width: 9rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-action {
+        opacity: 0.7;
+        text-align: center;
+        vertical-align: middle;
+        width: 0.7rem;
+        border: 0;
+    }
+
+    .table-payments > tbody > tr > td.cell-action.cell-lg {
+        font-size: 24px;
+        min-width: 4rem;
+    }
+
+    .table-payments > tbody > tr > td.cell-action:hover {
+        overflow: hidden;
+    }
+
+    .table-payments > tbody > tr > td.cell-action:not(.cell-action-disabled):hover {
+        opacity: 0.9;
+        cursor: pointer;
+    }
+
+    .table-payments > tbody > tr > td.cell-action > a,
+    .table-payments > tbody > tr > td.cell-action > form > button {
+        background: transparent;
+        margin: -100em;
+        padding: 100em;
+        height: 100%;
+        color: #ffffff;
+    }
+
+    .textarea-payments {
+        font-size: .7rem;
+    }
+
+    .pagination .page-item .page-link,
+    .pagination .page-item.active .page-link {
+        border-radius: 0;
+    }
+
+    .table-failed,
+    .table-failed > td,
+    .table-failed > th {
+        background-color: #e1cdff;
+    }
+
+    .table-failed tbody + tbody,
+    .table-failed td,
+    .table-failed th,
+    .table-failed thead th {
+        border-color: rgba(162, 146, 238, 0.84) !important;
+    }
+
+    .bg-failed {
+        background-color: #625790 !important;
+    }
+
+    .btn-failed {
+        background-color: #625790;
+        color: #ffffff;
+    }
+
+    .waves-input-wrapper {
+        border-radius: 0;
+    }
+
+    .daterangepicker {
+        border-radius: 0;
+    }
+
+    .daterangepicker .active {
+        background-color: #4285f4 !important;
+    }
+
+    .breadcrumbs-payment .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+        font-size: .65rem;
+        text-transform: uppercase;
+    }
+
+    .breadcrumbs-payment .breadcrumb-item + .breadcrumb-item::before {
+        content: none;
+    }
+
+    .breadcrumbs-payment .breadcrumb-item.active {
+        color: #455a64;
+    }
+
+    .btn-toolbar-payment {
+        margin: 0 -.25rem;
+    }
+
+    .daterangepicker .drp-buttons .btn {
+        font-size: .64rem;
+        font-weight: inherit;
+        padding: .5rem 1.6rem;;
+    }
+
+    .chart-status-available-wrapper {
+        position: relative;
+        height: 10px;
+        width: 100%;
+        border: 1px solid #9e9e9e;
+        transition: height .5s ease;
+    }
+
+    .card:hover .chart-status-available-wrapper {
+        height: 40px;
+    }
+
+    .chart-status-available-wrapper .chart-status-available {
+        height: 100%;
+    }
+
+    .chart-status-total-time-wrapper {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .chart-status-total-time-wrapper .chart-status-total-time {
+        height: 100%;
+    }
+
+    .chart-payments-wrapper {
+        border: 1px solid #dee2e6;
+        background-color: rgba(0,0,0,.05);
+        margin-top: -1px;
+        margin-bottom: -1px;
+        padding: 25px 10px 10px 10px;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block main %}
+
+<div class="container-fluid pb-5 h-100">
+    {% block content %}{% endblock %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% endblock %}

@@ -1,3 +1,4 @@
+# todo: remove this module when autoclient_payments module will work. + investigate redundant tasks.py, auip.ini removal
 from uuid import uuid4
 
 import requests
@@ -5,6 +6,7 @@ from celery.utils.log import get_task_logger
 from pymongo.errors import PyMongoError
 
 from celery_worker.celery import app
+from environment_settings import PAYMENT_COMPLAINT_PROCESSING_ENABLED
 from payments.data import STATUS_COMPLAINT_MISTAKEN, STATUS_COMPLAINT_PENDING
 from payments.logging import PaymentResultsLoggerAdapter
 from payments.message_ids import (
@@ -240,6 +242,9 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
         ), payment_data=payment_data, task=self, extra={
             "MESSAGE_ID": PAYMENTS_GET_COMPLAINT_SUCCESS
         })
+
+    if not PAYMENT_COMPLAINT_PROCESSING_ENABLED:
+        return
 
     complaint_data = response.json()["data"]
 

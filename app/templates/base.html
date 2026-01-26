@@ -66,6 +66,11 @@
                         <a class="nav-link" href="{{ url }}">Payments</a>
                         {% endwith %}
                     </li>
+                    <li class="nav-item">
+                        {% with url=url_for("autoclient_payments_views.payment_list") %}
+                        <a class="nav-link" href="{{ url }}">Autoclient payments</a>
+                        {% endwith %}
+                    </li>
                 </ul>
             </div>
         </div>

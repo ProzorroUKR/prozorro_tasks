@@ -1,0 +1,30 @@
+{% if data %}
+<table class="table table-bordered table-striped table-payments">
+    {% if data|typing_is_dict %}
+    {% for field in data %}
+    <tr>
+        <td>
+            {{ field }}
+        </td>
+        <td>
+            {% with data=data[field] %}
+            {% include 'autoclient_payments/partials/table_dict.html' %}
+            {% endwith %}
+        </td>
+    </tr>
+    {% endfor %}
+    {% elif data|typing_is_list %}
+    {% for field in data %}
+    <tr>
+        <td>
+            {% with data=field %}
+            {% include 'autoclient_payments/partials/table_dict.html' %}
+            {% endwith %}
+        </td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    {{ data }}
+    {% endif %}
+</table>
+{% endif %}

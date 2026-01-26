@@ -1,5 +1,13 @@
+from datetime import timedelta
+
 from kombu import Queue
-from environment_settings import TIMEZONE
+from environment_settings import (
+    TIMEZONE,
+    PB_AUTOCLIENT_SYNC_INTERVAL,
+    PB_AUTOCLIENT_NAME,
+    PB_AUTOCLIENT_TOKEN,
+    PB_ACCOUNT,
+)
 from celery.schedules import crontab
 
 task_acks_late = True
@@ -89,3 +97,19 @@ beat_schedule = {
         'schedule': crontab(minute=0),
     },
 }
+
+if PB_AUTOCLIENT_NAME and PB_AUTOCLIENT_TOKEN:
+    beat_schedule.update({
+        'check-autoclient-services-status': {
+            'task': 'autoclient_payments.tasks.check_services_status',
+            # executes every hour
+            'schedule': crontab(minute=0),
+        },
+    })
+    if PB_ACCOUNT:
+        beat_schedule.update({
+            'sync-autoclient-payments': {
+                'task': 'autoclient_payments.tasks.sync_autoclient_payments',
+                'schedule': timedelta(seconds=PB_AUTOCLIENT_SYNC_INTERVAL),
+            },
+        })

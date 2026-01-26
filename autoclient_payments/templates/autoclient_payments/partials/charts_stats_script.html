@@ -1,0 +1,147 @@
+<script type="text/javascript">
+    var colors = ['#33b5e5', '#ff3547', '#a6c', '#fb3'];
+
+    function rotate(arr, n) {
+        return arr.slice(n, arr.length).concat(arr.slice(0, n));
+    }
+
+    initStatsHorizontalChart($("#sourceChart"), {
+        data: sourceData,
+        colors: colors
+    });
+
+    initStatsHorizontalChart($("#typeChart"), {
+        data: typeData,
+        colors: rotate(colors, 2)
+    });
+
+    initStatsTimeBoundariesLineChart($("#dateOperChart"), {
+        data: dateOperData,
+        start: dateOperStart,
+        end: dateOperEnd,
+        colors: '#33b5e5'
+    });
+
+    initStatsTimeBoundariesLineChart($("#dateResolutionChart"), {
+        data: dateResolutionData,
+        start: dateOperStart,
+        end: dateOperEnd,
+        colors: '#33b5e5'
+    });
+
+    function initStatsHorizontalChart($elem, options) {
+        $elem.css("min-height", Object.keys(options.data).length * 30 + 35);
+        $elem.css("height", Object.keys(options.data).length * 30 + 35);
+        return new Chart($elem, {
+            type: 'horizontalBar',
+            data: {
+                labels: Object.keys(options.data),
+                datasets: [{
+                    data: Object.values(options.data),
+                    backgroundColor: options.colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                tooltips: {
+                    enabled: true,
+                    intersect: false,
+                    titleMarginBottom: 1,
+                    bodySpacing: 1,
+                    yPadding: 2,
+                },
+                scales: {
+                    xAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            stepSize: 1,
+                            callback: function(value) {
+                                if (Object.values(options.data).indexOf(value) !== -1) {
+                                    return value;
+                                }
+                            }
+                        }
+                    }]
+                }
+            }
+        });
+    }
+
+    function initStatsTimeBoundariesLineChart($elem, options) {
+        function dateFormat(date) {
+            return date.toISOString().split('T')[0];
+        }
+        var start_date = new Date(options.start);
+        var end_date = new Date(options.end);
+        end_date.setDate(end_date.getDate() + 1);
+
+        $elem.css("min-height", 150);
+        $elem.css("height", 150);
+
+        var data = {};
+
+        for (var date = start_date; date <= end_date; date.setDate(date.getDate() + 1)) {
+            var date_str = dateFormat(date);
+            if (!options.data.hasOwnProperty(date_str)) {
+                data[date] = 0;
+            } else {
+                data[date] = options.data[date_str];
+            }
+        }
+
+        return new Chart($elem, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data).map(function (key) {
+                    return key;
+                }),
+                datasets: [{
+                    data: Object.keys(data).map(function (key) {
+                        return {
+                            "t": key,
+                            "y": data[key]
+                        }
+                    }),
+                    backgroundColor: options.colors,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                tooltips: {
+                    enabled: true,
+                    intersect: false,
+                    titleMarginBottom: 1,
+                    bodySpacing: 1,
+                    yPadding: 2,
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            var keys = Object.keys(data);
+                            var index = tooltipItems[0].index;
+                            var date = new Date(keys[index]);
+                            return dateFormat(date);
+                        },
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time'
+					}],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }],
+                }
+            }
+        });
+    }
+
+</script>

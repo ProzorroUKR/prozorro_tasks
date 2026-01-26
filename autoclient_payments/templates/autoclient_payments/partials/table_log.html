@@ -1,0 +1,25 @@
+{% if row.messages %}
+<table class="table table-bordered table-striped table-payments">
+    {% if row.messages %}
+    {% for message in row.messages %}
+    <tr class="table-{{ message|payment_message_status or 'default' }}">
+        <td>
+            {{ message.createdAt|date_representation }}
+        </td>
+        <td>
+            {{ message.message_id }}
+        </td>
+        <td>
+            {{ message.message }}
+        </td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr>
+        <td>Дані відсутні</td>
+    </tr>
+    {% endif %}
+</table>
+{% else %}
+    {% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

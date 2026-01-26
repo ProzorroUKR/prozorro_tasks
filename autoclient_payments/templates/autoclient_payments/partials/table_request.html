@@ -1,0 +1,91 @@
+{% if rows %}
+<table class="table table-bordered table-striped table-payments">
+    <tr class="thead-dark">
+        <th class="text-center">#</th>
+        <th>Статус</th>
+        <th>Операція (джерело)</th>
+        <th>Операція (збережено)</th>
+        <th>Дата збереження</th>
+        <th>Дата оновлення</th>
+        <th>Додати</th>
+        <th>Онов.</th>
+        <th>Інф.</th>
+    </tr>
+    {% for row in rows %}
+    <tr>
+        <td class="text-center align-middle">{{ rows|length - loop.index + 1 }}</td>
+        <td class="text-center align-middle">
+            {{ row.get("status") }}
+        </td>
+        <td>
+            {% with data=row.get("transaction") %}
+            {% include "autoclient_payments/partials/table_dict.html" %}
+            {% endwith %}
+        </td>
+        <td>
+            {% if row.get("item") %}
+            {% with data=row.get("item") %}
+            {% include "autoclient_payments/partials/table_dict.html" %}
+            {% endwith %}
+            {% endif %}
+        </td>
+        <td class="text-center align-middle">
+            {% if row.get("created") %}
+            {{ row.get("created")|date_representation }}
+            {% endif %}
+        </td>
+        <td class="text-center align-middle">
+            {% if row.get("updated") %}
+            {{ row.get("updated")|date_representation }}
+            {% endif %}
+        </td>
+        {% if not row.get("item") and row.get("transaction", {}).get("FL_REAL") == TransactionKind.REAL.value and row.get("transaction", {}).get("PR_PR") == TransactionStatus.RECORDED.value %}
+        <td class="text-white cell-action cell-lg bg-success">
+            {% with href_add=url_for("autoclient_payments_views.payment_add") %}
+            <form method="POST" action="{{ href_add }}">
+                {% for name, value in row.get("transaction").items() %}
+                <input name="{{ name }}" value="{{ value }}" hidden>
+                {% endfor %}
+                <button type="submit"><i class="fas fa-plus-circle"></i></button>
+            </form>
+            {% endwith %}
+        </td>
+        {% else %}
+        <td class="text-white cell-action cell-lg bg-dark">
+            <i class="fas fa-plus-circle"></i>
+        </td>
+        {% endif %}
+        {% if row.get("uid") and row.get("item") != row.get("transaction") %}
+        <td class="text-white cell-action cell-lg bg-failed">
+            {% with href_update=url_for("autoclient_payments_views.payment_update") %}
+            <form method="POST" action="{{ href_update }}">
+                <input name="uid" value="{{ row.get('uid') }}" hidden>
+                {% for name, value in row.get("transaction").items() %}
+                <input name="{{ name }}" value="{{ value }}" hidden>
+                {% endfor %}
+                <button type="submit"><i class="fas fa-arrow-alt-circle-right"></i></button>
+            </form>
+            {% endwith %}
+        </td>
+        {% else %}
+        <td class="text-white cell-action cell-lg bg-dark">
+            <i class="fas fa-arrow-alt-circle-right"></i>
+        </td>
+        {% endif %}
+        {% if row.get("uid") %}
+        <td class="text-white cell-action cell-lg bg-primary">
+            {% with href_detail=url_for("autoclient_payments_views.payment_detail", uid=row.get("uid")) %}
+            <a href="{{ href_detail }}"><i class="fas fa-info-circle"></i></a>
+            {% endwith %}
+        </td>
+        {% else %}
+        <td class="text-white cell-action cell-lg bg-dark">
+            <i class="fas fa-info-circle"></i>
+        </td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+{% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

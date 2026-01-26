@@ -1,0 +1,46 @@
+<div class="btn-group group-payment-filter" role="group">
+    {% with value=request.args.get(arg) %}
+    <div class="btn-group" role="group" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <button class="btn btn-sm btn-payment-light btn-payment btn-payment-filter text-nowrap">
+            {{ label }}
+        </button>
+        {% if value %}
+          {% if choices is mapping %}
+            <button class="btn btn-sm btn-primary btn-payment btn-payment-filter text-nowrap">
+              {{ choices[value] }}
+            </button>
+          {% else %}
+            <button class="btn btn-sm btn-primary btn-payment btn-payment-filter text-nowrap">
+              {{ value }}
+            </button>
+          {% endif %}
+        {% endif %}
+    </div>
+    <div class="dropdown-menu">
+      {% if choices is mapping %}
+        {% for choice_val, choice_label in choices.items() %}
+        {% with href=url_for_search(request.url_rule.endpoint, exclude=['page'], include={arg: choice_val}) %}
+        <a href="{{ href }}" class="dropdown-item dropdown-item-payment{% if value==choice_val %} active{% endif %}">
+            {{ choice_label }}
+        </a>
+        {% endwith %}
+        {% endfor %}
+      {% else %}
+        {% for choice in choices %}
+        {% with href=url_for_search(request.url_rule.endpoint, exclude=['page'], include={arg: choice}) %}
+        <a href="{{ href }}" class="dropdown-item dropdown-item-payment{% if value==choice %} active{% endif %}">
+            {{ choice }}
+          </a>
+        {% endwith %}
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endwith %}
+    {% if arg in request.args %}
+    {% with href=url_for_search(request.url_rule.endpoint, exclude=['page', arg]) %}
+    <a href="{{ href }}" class="btn btn-sm btn-primary btn-payment btn-payment-filter">
+        <i class="fas fa-times"></i>
+    </a>
+    {% endwith %}
+    {% endif %}
+</div>

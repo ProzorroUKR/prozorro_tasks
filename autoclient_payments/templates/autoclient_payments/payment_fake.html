@@ -1,0 +1,42 @@
+{% extends "autoclient_payments/base.html" %}
+
+{% block content %}
+
+{% with href_home=url_for("app_views.index") %}
+{% with href_payments=url_for("autoclient_payments_views.payment_list") %}
+<div class="breadcrumbs-payment mt-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_home }}">Головна</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item">
+                <a class="black-text" href="{{ href_payments }}">Оплати з автоклієнта</a>
+                <i class="fas fa-caret-right ml-1" aria-hidden="true"></i>
+            </li>
+            <li class="breadcrumb-item active">Операції</li>
+        </ol>
+    </nav>
+</div>
+{% endwith %}
+{% endwith %}
+
+<div class="pb-5 h-100">
+    {% with href_fake=url_for("autoclient_payments_views.payment_request_fake") %}
+    <form class="h-100" method="POST" action="{{ href_fake }}">
+        <textarea name="text" class="textarea-payments w-100 h-100">{{ text }}</textarea>
+        <button type="submit" class="btn btn-sm btn-payment btn-success m-0 w-100">Submit</button>
+    </form>
+    {% endwith %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+{% include 'autoclient_payments/partials/filter_rangepicker_script.html' %}
+
+{% endblock %}

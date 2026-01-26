@@ -1,0 +1,28 @@
+<div class="modal modal-payment fade" id="modalLinkConfirm" tabindex="-1" role="dialog" aria-labelledby="modalLinkConfirmTitle"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLinkConfirmTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Спробувати обробити дані операції ще раз.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-payment btn-secondary" data-dismiss="modal">Закрити</button>
+                <a class="btn btn-payment btn-primary" href="/">Підтвердити</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $('#modalLinkConfirm').on('show.bs.modal', function (event) {
+        var modal = $(this);
+        modal.find('.modal-title').text($(event.relatedTarget).data('title'));
+        modal.find('.modal-body').text($(event.relatedTarget).data('text'));
+        modal.find('.modal-footer a').attr('href', $(event.relatedTarget).attr('href'));
+    })
+</script>

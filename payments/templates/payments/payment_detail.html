@@ -22,6 +22,18 @@
 {% endwith %}
 {% endwith %}
 
+{% if not PAYMENT_COMPLAINT_PROCESSING_ENABLED %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка скарг вимкнена
+</div>
+{% endif %}
+
+{% if not SYNC_PAYMENTS_RESOLUTIONS %}
+<div class="alert badge-danger">
+  <i class="fas fa-exclamation mr-2"></i> Обробка рішень вимкнена
+</div>
+{% endif %}
+
 <h1>{{ row.payment.title }}</h1>
 <div class="table-responsive collapse show mb-2">
     {% with data=row.payment.value %}
