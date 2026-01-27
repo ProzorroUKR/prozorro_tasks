@@ -360,10 +360,10 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
             extra={"MESSAGE_ID": PAYMENTS_GET_COMPLAINT_SUCCESS},
         )
 
-    complaint_data = response.json()["data"]
-
     if not AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED:
         return
+
+    complaint_data = response.json()["data"]
 
     if not check_complaint_status(complaint_data):
         logger.warning(
