@@ -20,6 +20,13 @@ def detect_rabbitmq_major_version():
 RABBITMQ_MAJOR_VERSION = detect_rabbitmq_major_version()
 QUEUE_ARGUMENTS = {'x-queue-type': 'quorum'} if RABBITMQ_MAJOR_VERSION >= 4 else {}
 
+# For RabbitMQ 4.x with per-consumer QoS, increase prefetch to fetch more tasks
+# Default is 4, but with per-consumer QoS each consumer is limited individually
+# This is critical for scheduled tasks (ETA) - without higher prefetch, tasks
+# with future ETAs block fetching of other tasks from the queue
+if RABBITMQ_MAJOR_VERSION >= 4:
+    worker_prefetch_multiplier = 1000
+
 task_acks_late = True
 # Default: Disabled.
 # Late ack means the task messages will be acknowledged after the task has been executed,
