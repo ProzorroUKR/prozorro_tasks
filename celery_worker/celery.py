@@ -9,9 +9,13 @@ from inspect import getfullargspec
 import celeryconfig
 
 # Disable global QoS for RabbitMQ 4.x (quorum queues don't support it)
+# In kombu 4.6.x, global QoS is controlled by qos_semantics_matches_spec
+# which returns False for RabbitMQ >= 3.3, causing qos_global=True
+# For quorum queues, we need qos_global=False, so we patch it to return True
 if celeryconfig.RABBITMQ_MAJOR_VERSION >= 4:
-    from kombu.common import QoS
-    QoS.apply_global = False
+    from kombu.transport import pyamqp
+    _original_qos_semantics = pyamqp.Transport.qos_semantics_matches_spec
+    pyamqp.Transport.qos_semantics_matches_spec = lambda self, conn: True
 
 import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
