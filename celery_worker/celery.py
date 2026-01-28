@@ -8,6 +8,11 @@ from functools import wraps
 from inspect import getfullargspec
 import celeryconfig
 
+# Disable global QoS for RabbitMQ 4.x (quorum queues don't support it)
+if celeryconfig.RABBITMQ_MAJOR_VERSION >= 4:
+    from kombu.common import QoS
+    QoS.apply_global = False
+
 import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
