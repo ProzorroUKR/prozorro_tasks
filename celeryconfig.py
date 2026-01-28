@@ -38,7 +38,13 @@ broker_connection_max_retries = None
 # If this is set to 0 or None, we'll retry forever.
 
 # https://github.com/celery/celery/issues/5410
-broker_transport_options = {'confirm_publish': True}
+# Quorum queues don't support global QoS, so disable it for RabbitMQ 4.x
+broker_transport_options = {
+    'confirm_publish': True,
+    'global_qos': False,  # Required for quorum queues
+} if RABBITMQ_MAJOR_VERSION >= 4 else {
+    'confirm_publish': True,
+}
 
 task_ignore_result = True
 # Default: Disabled.
