@@ -41,10 +41,14 @@ broker_connection_max_retries = None
 # Quorum queues don't support global QoS, so disable it for RabbitMQ 4.x
 broker_transport_options = {
     'confirm_publish': True,
-    'global_qos': False,  # Required for quorum queues
 } if RABBITMQ_MAJOR_VERSION >= 4 else {
     'confirm_publish': True,
 }
+
+# Quorum queues require per-consumer QoS (not global)
+# Setting worker_prefetch_multiplier=1 forces Celery to use basic_qos with global=False
+if RABBITMQ_MAJOR_VERSION >= 4:
+    worker_prefetch_multiplier = 1
 
 task_ignore_result = True
 # Default: Disabled.
