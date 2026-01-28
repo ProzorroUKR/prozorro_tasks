@@ -45,11 +45,6 @@ broker_transport_options = {
     'confirm_publish': True,
 }
 
-# Quorum queues require per-consumer QoS (not global)
-# Setting worker_prefetch_multiplier=1 forces Celery to use basic_qos with global=False
-if RABBITMQ_MAJOR_VERSION >= 4:
-    worker_prefetch_multiplier = 1
-
 task_ignore_result = True
 # Default: Disabled.
 # Whether to store the task return values or not (tombstones).
