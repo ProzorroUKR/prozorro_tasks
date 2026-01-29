@@ -388,7 +388,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     if not check_complaint_value_amount(complaint_data, payment_data):
         logger.warning(
             "Invalid payment amount for complaint {}: {} not equal {}".format(
-                complaint_id, payment_data.get("amount"), value.get("amount")
+                complaint_id, payment_data.get("SUM"), value.get("amount")
             ),
             payment_data=payment_data,
             task=self,
@@ -407,7 +407,7 @@ def process_payment_complaint_data(self, complaint_params, payment_data, cookies
     if not check_complaint_value_currency(complaint_data, payment_data):
         logger.warning(
             "Invalid payment amount for complaint {}: {} not equal {}".format(
-                complaint_id, payment_data.get("currency"), value.get("currency")
+                complaint_id, payment_data.get("CCY"), value.get("currency")
             ),
             payment_data=payment_data,
             task=self,

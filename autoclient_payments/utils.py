@@ -194,15 +194,15 @@ def check_complaint_value(complaint_data):
 
 def check_complaint_value_amount(complaint_data, payment_data):
     complaint_value_data = complaint_data.get("value", {})
-    if "amount" in payment_data and "amount" in complaint_value_data:
-        return float(payment_data["amount"]) == float(complaint_value_data["amount"])
+    if "SUM" in payment_data and "amount" in complaint_value_data:
+        return float(payment_data["SUM"]) == float(complaint_value_data["amount"])
     return False
 
 
 def check_complaint_value_currency(complaint_data, payment_data):
     complaint_value_data = complaint_data.get("value", {})
-    if "currency" in payment_data and "currency" in complaint_value_data:
-        return payment_data["currency"] == complaint_data.get("value", {}).get("currency")
+    if "CCY" in payment_data and "currency" in complaint_value_data:
+        return payment_data["CCY"] == complaint_data.get("value", {}).get("currency")
     return False
 
 
