@@ -22,7 +22,7 @@ from autoclient_payments.tasks import process_payment_complaint_data
 
 class TestHandlerCase(unittest.TestCase):
     def test_handle_connection_error(self):
-        payment_data = {"description": "test"}
+        payment_data = {"OSND": "test"}
         complaint_params = {"test": "test"}
 
         with patch("autoclient_payments.utils.requests") as requests_mock, \
@@ -48,7 +48,7 @@ class TestHandlerCase(unittest.TestCase):
         )
 
     def test_handle_429_response(self):
-        payment_data = {"description": "test"}
+        payment_data = {"OSND": "test"}
         complaint_params = {"test": "test"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -78,7 +78,7 @@ class TestHandlerCase(unittest.TestCase):
         process_payment_complaint_data.retry.assert_called_once_with(countdown=ret_aft)
 
     def test_handle_412_response(self):
-        payment_data = {"description": "test"}
+        payment_data = {"OSND": "test"}
         complaint_params = {"test": "test"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -114,7 +114,7 @@ class TestHandlerCase(unittest.TestCase):
         )
 
     def test_handle_500_response(self):
-        payment_data = {"description": "test"}
+        payment_data = {"OSND": "test"}
         complaint_params = {"test": "test"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -142,7 +142,7 @@ class TestHandlerCase(unittest.TestCase):
         process_payment_complaint_data.retry.assert_called_once_with(countdown=DEFAULT_RETRY_AFTER)
 
     def test_handle_404_response(self):
-        payment_data = {"description": "test"}
+        payment_data = {"OSND": "test"}
         complaint_params = {"test": "test"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -172,7 +172,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("autoclient_payments.tasks.AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("autoclient_payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_valid_complaint(self, process_payment_complaint_patch):
-        payment_data = {"description": "test", "amount": "2000", "currency": "UAH"}
+        payment_data = {"OSND": "test", "SUM": "2000", "CCY": "UAH"}
         complaint_params = {"tender_id": "test_tender_id", "complaint_id": "test_complaint_id"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -217,7 +217,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("autoclient_payments.tasks.AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("autoclient_payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_invalid_complaint_status(self, process_payment_complaint_patch):
-        payment_data = {"description": "test", "amount": "2000", "currency": "UAH"}
+        payment_data = {"OSND": "test", "SUM": "2000", "CCY": "UAH"}
         complaint_params = {"tender_id": "test_tender_id", "complaint_id": "test_complaint_id"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -255,7 +255,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("autoclient_payments.tasks.AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("autoclient_payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_no_complaint_value(self, process_payment_complaint_patch):
-        payment_data = {"description": "test", "amount": "2000", "currency": "UAH"}
+        payment_data = {"OSND": "test", "SUM": "2000", "CCY": "UAH"}
         complaint_params = {"tender_id": "test_tender_id", "complaint_id": "test_complaint_id"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -289,7 +289,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("autoclient_payments.tasks.AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("autoclient_payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_invalid_value_amount(self, process_payment_complaint_patch):
-        payment_data = {"description": "test", "amount": "1", "currency": "UAH"}
+        payment_data = {"OSND": "test", "SUM": "1", "CCY": "UAH"}
         complaint_params = {"tender_id": "test_tender_id", "complaint_id": "test_complaint_id"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 
@@ -334,7 +334,7 @@ class TestHandlerCase(unittest.TestCase):
     @patch("autoclient_payments.tasks.AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED", True)
     @patch("autoclient_payments.tasks.process_payment_complaint_patch")
     def test_handle_200_response_invalid_value_currency(self, process_payment_complaint_patch):
-        payment_data = {"description": "test", "amount": "2000", "currency": "USD"}
+        payment_data = {"OSND": "test", "SUM": "2000", "CCY": "USD"}
         complaint_params = {"tender_id": "test_tender_id", "complaint_id": "test_complaint_id"}
         cookies = {"TEST_COOKIE": "TEST_COOKIE_VALUE"}
 

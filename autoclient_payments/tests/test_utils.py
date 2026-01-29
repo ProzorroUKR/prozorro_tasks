@@ -191,7 +191,7 @@ class CheckComplaintValueAmountTestCase(unittest.TestCase):
     """
 
     def test_valid_amount(self):
-        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100}}, {"amount": 100}))
+        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100}}, {"SUM": 100}))
 
     def test_invalid_amount(self):
         self.assertFalse(check_complaint_value_amount({"value": {"amount": 90}}, {"amount": 100}))
@@ -206,16 +206,16 @@ class CheckComplaintValueAmountTestCase(unittest.TestCase):
         self.assertFalse(check_complaint_value_amount({"value": {"amount": 100}}, {}))
 
     def test_complaint_amount_float(self):
-        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100.0}}, {"amount": 100}))
+        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100.0}}, {"SUM": 100}))
 
     def test_payment_amount_float(self):
-        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100}}, {"amount": 100.0}))
+        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100}}, {"SUM": 100.0}))
 
     def test_payment_amount_str(self):
-        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100.0}}, {"amount": "100"}))
+        self.assertTrue(check_complaint_value_amount({"value": {"amount": 100.0}}, {"SUM": "100"}))
 
     def test_complaint_amount_str(self):
-        self.assertTrue(check_complaint_value_amount({"value": {"amount": "100"}}, {"amount": 100.0}))
+        self.assertTrue(check_complaint_value_amount({"value": {"amount": "100"}}, {"SUM": 100.0}))
 
 
 class CheckComplaintValueCurrencyTestCase(unittest.TestCase):
@@ -224,16 +224,16 @@ class CheckComplaintValueCurrencyTestCase(unittest.TestCase):
     """
 
     def test_valid_currency(self):
-        self.assertTrue(check_complaint_value_currency({"value": {"currency": "UAH"}}, {"currency": "UAH"}))
+        self.assertTrue(check_complaint_value_currency({"value": {"currency": "UAH"}}, {"CCY": "UAH"}))
 
     def test_invalid_currency(self):
-        self.assertFalse(check_complaint_value_currency({"value": {"currency": "USD"}}, {"currency": "UAH"}))
+        self.assertFalse(check_complaint_value_currency({"value": {"currency": "USD"}}, {"CCY": "UAH"}))
 
     def test_no_complaint_currency(self):
-        self.assertFalse(check_complaint_value_currency({"value": {}}, {"currency": "UAH"}))
+        self.assertFalse(check_complaint_value_currency({"value": {}}, {"CCY": "UAH"}))
 
     def test_no_complaint_value(self):
-        self.assertFalse(check_complaint_value_currency({}, {"currency": "UAH"}))
+        self.assertFalse(check_complaint_value_currency({}, {"CCY": "UAH"}))
 
     def test_no_payment_currency(self):
         self.assertFalse(check_complaint_value_currency({"value": {"currency": "UAH"}}, {}))
