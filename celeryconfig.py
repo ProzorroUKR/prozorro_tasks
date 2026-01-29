@@ -65,6 +65,7 @@ task_modules = [
     'tasks_utils',
     'liqpay_int',
     'payments',
+    'autoclient_payments',
     'treasury',
     'chronograph',
 ]
