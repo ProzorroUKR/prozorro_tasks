@@ -45,7 +45,7 @@
 <div class="btn-toolbar btn-toolbar-payment float-right" role="toolbar">
 
     <div class="mb-3 mx-1">
-        {% with label='Кількість днів історичних данних' %}
+        {% with label='Кількість днів історичних даних' %}
         {% with arg='days' %}
         {% with choices=['1', '2', '5', '10', '20', '30'] %}
         {% include 'autoclient_payments/partials/filter_dropdown.html' %}
@@ -63,6 +63,5 @@
 {{ super() }}
 
 {% include 'autoclient_payments/partials/filter_rangepicker_script.html' %}
-{% include 'autoclient_payments/partials/charts_status_script.html' %}
 
 {% endblock %}

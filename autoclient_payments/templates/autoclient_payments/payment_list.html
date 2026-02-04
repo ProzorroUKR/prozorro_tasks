@@ -100,12 +100,4 @@
 
 {% include 'autoclient_payments/partials/filter_rangepicker_script.html' %}
 
-{% include 'autoclient_payments/partials/charts_stats_script.html' %}
-
-<script type="text/javascript">
-    $.get("/liqpay/api/v1/healthcheck").fail(function () {
-        $("#status").toggleClass("btn-success btn-danger")
-    });
-</script>
-
 {% endblock %}
