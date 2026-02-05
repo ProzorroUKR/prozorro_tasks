@@ -2,10 +2,11 @@ import io
 from datetime import timedelta
 
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response, request
+from flask_restx import reqparse, inputs, Api
 
 from app.auth import login_groups_required, COUNTERPARTIES
 from autoclient_payments.enums import TransactionStatus, TransactionKind, TransactionType
-from autoclient_payments.health import health
+from autoclient_payments.health import health, save_health_data, get_health_data
 from autoclient_payments.message_ids import (
     PAYMENTS_INVALID_PATTERN,
     PAYMENTS_SEARCH_INVALID_COMPLAINT,
@@ -66,6 +67,7 @@ from environment_settings import (
     AUTOCLIENT_PAYMENT_COMPLAINT_PROCESSING_ENABLED,
     SYNC_AUTOCLIENT_PAYMENTS_RESOLUTIONS,
 )
+from liqpay_int.resources import Resource
 from tasks_utils.datetime import get_now, parse_dt_string
 
 bp = Blueprint("autoclient_payments_views", __name__, template_folder="../templates")
@@ -76,6 +78,12 @@ bp.add_app_template_filter(payment_message_list_status, "payment_message_list_st
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
+
+api = Api(
+    bp,
+    title='Autoclient',
+    description='Autoclient integration api.'
+)
 
 
 @bp.context_processor
@@ -421,3 +429,26 @@ def status():
         return redirect(url_for("autoclient_payments_views.status", days=1))
     data = health()
     return render_template("autoclient_payments/payment_status.html", rows=data)
+
+
+@api.route('/healthcheck')
+class HealthCheckResource(Resource):
+    parser_query_healthcheck = reqparse.RequestParser()
+    parser_query_healthcheck.add_argument(
+        "historical",
+        type=inputs.boolean,
+        default=False
+    )
+
+    def get(self):
+        data = health()
+        save_health_data(data)
+        if self.parser_query_healthcheck.parse_args().get("historical"):
+            historical_list = get_health_data()
+            data["historical"] = [{
+                "data": item["data"],
+                "timestamp": int(item["createdAt"].timestamp() * 1000)
+            } for item in historical_list]
+        if data["status"] != "available":
+            return data, 500
+        return data

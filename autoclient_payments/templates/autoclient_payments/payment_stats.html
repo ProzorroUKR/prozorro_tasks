@@ -90,4 +90,10 @@
 
 {% include 'autoclient_payments/partials/charts_stats_script.html' %}
 
+<script type="text/javascript">
+    $.get("/autoclient_payments/healthcheck").fail(function () {
+        $("#status").toggleClass("btn-success btn-danger")
+    });
+</script>
+
 {% endblock %}
