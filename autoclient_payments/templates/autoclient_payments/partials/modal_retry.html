@@ -1,0 +1,54 @@
+<div class="modal modal-payment fade" id="modalRetry" tabindex="-1" role="dialog" aria-labelledby="modalRetryTitle"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRetryTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Спробувати обробити дані оплати ще раз.</p>
+                {% if message_ids %}
+                <p>Не має сенсу якщо у списку подій наявні наступні події:</p>
+
+                <ul>
+                    {% for message_id in message_ids['success'] %}
+                    <li>{{ message_id }}</li>
+                    {% endfor %}
+                    {% for message_id in message_ids['warning'] %}
+                    <li>{{ message_id }}</li>
+                    {% endfor %}
+                </ul>
+                <p>У більшості випадків не має сенсу якщо у списку подій наявні наступні події (але немає
+                    попередніх):</p>
+                <ul>
+                    {% for message_id in message_ids['danger'] %}
+                    <li>{{ message_id }}</li>
+                    {% endfor %}
+                </ul>
+                <p>Є сенс якщо у списку подій наявні наступні події (але немає попередніх):</p>
+                <ul>
+                    {% for message_id in message_ids['error'] %}
+                    <li>{{ message_id }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-payment btn-secondary" data-dismiss="modal">Закрити</button>
+                <a class="btn btn-payment btn-primary" href="/">
+                    Підтвердити</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $('#modalRetry').on('show.bs.modal', function (event) {
+        var modal = $(this);
+        modal.find('.modal-title').text('Повторити обробку оплати');
+        modal.find('.modal-footer a').attr('href', $(event.relatedTarget).attr('href'));
+    })
+</script>

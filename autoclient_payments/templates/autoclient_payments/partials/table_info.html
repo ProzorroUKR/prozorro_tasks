@@ -1,0 +1,16 @@
+{% if data %}
+<table class="table table-bordered table-striped table-payments">
+    {% for name, item in data.items() %}
+    <tr>
+        <td class="cell-name">
+            {{ item.title }}
+        </td>
+        <td class="cell-value">
+            {{ item.value }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+    {% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

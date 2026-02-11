@@ -1,0 +1,40 @@
+{% if rows %}
+<table class="table table-bordered table-striped table-payments">
+    <tr class="thead-dark">
+        <th class="text-center">#</th>
+        {% for name, item in rows[0].items() %}
+        {% if name not in ['id', 'messages', 'params'] %}
+        <th>{{ item.title }}</th>
+        {% endif %}
+        {% endfor %}
+        <th>Інф.</th>
+    </tr>
+    {% for row in rows %}
+    <tr>
+        <td class="text-center align-middle">{{ total - (loop.index + page * limit - limit) + 1 }}</td>
+        {% for name, item in row.items() %}
+        {% if item.value|typing_is_dict %}
+        <td class="cell-{{ name }}">
+            {% if not name=='resolution' or item.value.type.value %}
+            {% with data=item.value %}
+            {% include "autoclient_payments/partials/table_info.html" %}
+            {% endwith %}
+            {% endif %}
+        </td>
+        {% elif name not in ['id', 'messages', 'params'] %}
+        <td class="cell-{{ name }}">
+            {{ item.value }}
+        </td>
+        {% endif %}
+        {% endfor %}
+        <td class="text-white cell-action cell-lg bg-{{ row.messages|payment_message_list_status or 'dark' }}">
+            <a href="/autoclient_payments/{{row.id.value}}">
+                <i class="fas fa-info-circle"></i>
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+{% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

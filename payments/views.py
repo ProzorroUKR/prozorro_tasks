@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, abort, make_response, request
 
 from app.auth import login_groups_required
+from environment_settings import PAYMENT_COMPLAINT_PROCESSING_ENABLED, SYNC_PAYMENTS_RESOLUTIONS
 from payments.health import health
 from payments.message_ids import (
     PAYMENTS_INVALID_PATTERN,
@@ -70,6 +71,14 @@ bp.add_app_template_filter(payment_message_list_status, "payment_message_list_st
 bp.add_app_template_filter(complaint_status_description, "complaint_status_description")
 bp.add_app_template_filter(complaint_reject_description, "complaint_reject_description")
 bp.add_app_template_filter(complaint_funds_description, "complaint_funds_description")
+
+
+@bp.context_processor
+def inject_constants_context():
+    return {
+        "PAYMENT_COMPLAINT_PROCESSING_ENABLED": PAYMENT_COMPLAINT_PROCESSING_ENABLED,
+        "SYNC_PAYMENTS_RESOLUTIONS": SYNC_PAYMENTS_RESOLUTIONS,
+    }
 
 
 @bp.route("/", methods=["GET"])
@@ -290,7 +299,7 @@ def payment_recheck(uid):
         abort(404)
     params = data.get("params", {})
     tender_id = params.get("tender_id")
-    if tender_id:
+    if SYNC_PAYMENTS_RESOLUTIONS and tender_id:
         process_tender.apply_async(kwargs=dict(
             tender_id=tender_id
         ))

@@ -1,0 +1,13 @@
+{% if tender %}
+<table class="table table-bordered table-striped table-payments">
+    <tr>
+        <td>
+            {% with href=tender['tenderID']|prozorro_portal_tender_path|prozorro_portal_url %}
+            <a href="{{ href }}">{{ href }}</a>
+            {% endwith %}
+        </td>
+    </tr>
+</table>
+{% else %}
+    {% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

@@ -1,0 +1,17 @@
+{% if 'params' in row %}
+<table class="table table-bordered table-striped table-payments">
+    {% with href=row['params']|prozorro_api_tender_path|prozorro_api_url %}
+    <tr><td><a href="{{ href }}">{{ href }}</a></td></tr>
+    {% endwith %}
+    {% if row['params']['item_type'] %}
+    {% with href=row['params']|prozorro_api_item_path|prozorro_api_url %}
+    <tr><td><a href="{{ href }}">{{ href }}</a></td></tr>
+    {% endwith %}
+    {% endif %}
+    {% with href=row['params']|prozorro_api_complaint_path|prozorro_api_url %}
+    <tr><td><a href="{{ href }}">{{ href }}</a></td></tr>
+    {% endwith %}
+</table>
+{% else %}
+    {% include "autoclient_payments/partials/table_empty.html" %}
+{% endif %}

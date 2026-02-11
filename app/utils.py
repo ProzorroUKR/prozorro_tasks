@@ -70,6 +70,14 @@ def get_auth_ips(config):
     return ips
 
 
+def get_counterparties(config):
+    res = {}
+    for group in config.sections():
+        for key, value in config.items(group):
+            res[key] = split_config_value(value)
+    return res
+
+
 def get_auth_ip_groups(config, network, username):
     groups = []
     for group in config.sections():

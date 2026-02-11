@@ -62,6 +62,7 @@ bin/
 mongo_data/
 rabbit_data/
 payments.db
+autoclient_payments.db
 
 # IDE
 .idea/

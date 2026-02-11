@@ -1,0 +1,333 @@
+<script type="text/javascript">
+    $(function () {
+        const STATUS_AVAILABLE = "available";
+        const STATUS_UNAVAILABLE = "unavailable";
+
+        var startDate = getStartDate();
+
+        var colors = {
+            border: 'rgb(0, 0, 0)',
+            available: 'rgb(0, 200, 81)',
+            unavailable: 'rgb(255, 53, 71)',
+            transparent_available: 'rgba(0, 200, 81, 0.5)',
+            transparent_unavailable: 'rgba(255, 53, 71, 0.5)',
+            transparent: 'rgba(0, 0, 0, 0)'
+        };
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        function getStartDate() {
+            var days = getParameterByName('days');
+            var start = new Date();
+            start.setDate(start.getDate() - (days || 1));
+            return start
+        }
+
+        function createTotalTimePoint(data, source) {
+            return {
+                x: new Date(data['timestamp']),
+                y: data['data'][source]['total_seconds'],
+                info: data['data'][source]
+            }
+        }
+
+        function createAvailablePoint(data, source) {
+            return {
+                x: new Date(data['timestamp']),
+                y: data['data'][source]['status'] === STATUS_AVAILABLE ? 1 : 0,
+                info: data['data'][source]
+            }
+        }
+
+        function createUnavailablePoint(data, source) {
+            return {
+                x: new Date(data['timestamp']),
+                y: data['data'][source]['status'] !== STATUS_AVAILABLE ? 1 : 0,
+                info: data['data'][source]
+            }
+        }
+
+        function isAvailablePoint(data, source) {
+            return data['data'][source]['status'] === STATUS_AVAILABLE;
+        }
+
+        function labelColorCallback(tooltipItem, chart) {
+            var data = chart.config.data;
+            var dataset = data.datasets[tooltipItem.datasetIndex];
+            var label = dataset.label || '';
+            if (label === STATUS_AVAILABLE.toUpperCase()) {
+                return {
+                    backgroundColor: colors.available,
+                    borderColor: colors.border
+                };
+            } else {
+                return {
+                    backgroundColor: colors.unavailable,
+                    borderColor: colors.border
+                };
+            }
+
+        }
+
+        function initTotalTimeChart($obj, historical) {
+            var source = $obj.data('source');
+
+            var data_available = [];
+            var data_unavailable = [];
+
+            for (var i = 0; i < historical.length; i++) {
+                var current_historical = historical[i];
+                if (new Date(current_historical.timestamp) > startDate) {
+                    if (isAvailablePoint(current_historical, source)) {
+                        data_available.push(createTotalTimePoint(current_historical, source));
+                    } else {
+                        data_unavailable.push(createTotalTimePoint(current_historical, source));
+                    }
+                }
+            }
+
+            new Chart.Scatter($obj, {
+                data: {
+                    datasets: [
+                        {
+                            label: STATUS_AVAILABLE.toUpperCase(),
+                            data: data_available,
+                            backgroundColor: [colors.available],
+                            borderColor: [colors.transparent],
+                        },
+                        {
+                            label: STATUS_UNAVAILABLE.toUpperCase(),
+                            data: data_unavailable,
+                            backgroundColor: [colors.unavailable],
+                            borderColor: [colors.transparent],
+                        },
+                        {
+                            label: 'BOUNDARY',
+                            data: [{
+                                y: 0,
+                                x: startDate
+                            }],
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    tooltips: {
+                        enabled: true,
+                        intersect: false,
+                        callbacks: {
+                            title: function (tooltipItems, data) {
+                                return tooltipItems[0].xLabel;
+                            },
+                            label: function (tooltipItem, data) {
+                                var dataset = data.datasets[tooltipItem.datasetIndex];
+                                return dataset.label || '';
+                            },
+                            footer: function (tooltipItems, data) {
+                                var text = '';
+                                var dataset = data.datasets[tooltipItems[0].datasetIndex];
+                                var dataset_data = dataset.data[tooltipItems[0].index];
+                                for (var key in dataset_data.info) {
+                                    if (dataset_data.info.hasOwnProperty(key)) {
+                                        text += key + ': ' + dataset_data.info[key] + '\r\n';
+                                    }
+                                }
+                                return text;
+                            },
+                            labelColor: labelColorCallback,
+                        },
+                    },
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        }],
+                        yAxes: [{
+                            type: 'linear',
+                            gridLines: {
+                                tickMarkLength: -20,
+                            }
+                        }]
+                    },
+                }
+            });
+        }
+
+        function initAvailableChart($obj, historical) {
+            var source = $obj.data('source');
+
+            var data_available = [];
+            var data_unavailable = [];
+
+            var boundary_historical = {
+                timestamp: new Date(0)
+            };
+
+            var min_historical = {
+                timestamp: new Date()
+            };
+
+            for (var i = 0; i < historical.length; i++) {
+                var current_historical = historical[i];
+                var prev_historical = historical[i - 1];
+                if (current_historical.timestamp > startDate.getTime()) {
+                    var is_current_available = isAvailablePoint(current_historical, source);
+                    if (i > 0) {
+                        var is_prev_available = isAvailablePoint(prev_historical, source);
+                        if (is_current_available !== is_prev_available) {
+                            data_available.push(createUnavailablePoint(prev_historical, source));
+                            data_unavailable.push(createAvailablePoint(prev_historical, source));
+                        }
+                    }
+                    data_available.push(createAvailablePoint(current_historical, source));
+                    data_unavailable.push(createUnavailablePoint(current_historical, source));
+                    if (min_historical.timestamp > current_historical.timestamp) {
+                        min_historical = current_historical;
+                    }
+                } else {
+                    if (boundary_historical.timestamp < current_historical.timestamp) {
+                        boundary_historical = current_historical;
+                        boundary_historical.timestamp = startDate.getTime()
+                    }
+                }
+            }
+            if (boundary_historical.data) {
+                var is_boundary_available = isAvailablePoint(boundary_historical, source);
+                var is_min_available = isAvailablePoint(min_historical, source);
+                if (is_boundary_available !== is_min_available) {
+                    data_available.push(createUnavailablePoint(min_historical, source));
+                    data_unavailable.push(createAvailablePoint(min_historical, source));
+                }
+                data_available.push(createAvailablePoint(boundary_historical, source));
+                data_unavailable.push(createUnavailablePoint(boundary_historical, source));
+            }
+
+            new Chart($obj, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: STATUS_AVAILABLE.toUpperCase(),
+                            data: data_available,
+                            backgroundColor: [colors.transparent_available],
+                            borderColor: [colors.transparent],
+                            lineTension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                        },
+                        {
+                            label: STATUS_UNAVAILABLE.toUpperCase(),
+                            data: data_unavailable,
+                            backgroundColor: [colors.transparent_unavailable],
+                            borderColor: [colors.transparent],
+                            lineTension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                        },
+                        {
+                            label: 'BOUNDARY',
+                            data: [{
+                                y: 0,
+                                x: startDate
+                            }],
+                            lineTension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {
+                        display: false
+                    },
+                    tooltips: {
+                        enabled: true,
+                        intersect: false,
+                        titleMarginBottom: 1,
+                        bodySpacing: 1,
+                        yPadding: 2,
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var dataset = data.datasets[tooltipItem.datasetIndex];
+                                var dataset_data = dataset.data[tooltipItem.index];
+                                if (dataset_data.y === 1) {
+                                    return dataset.label || '';
+                                }
+                            },
+                            labelColor: labelColorCallback
+                        },
+                    },
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            ticks: {
+                                display: false,
+                            },
+                            gridLines: {
+                                display: false,
+                                tickMarkLength: 0
+                            }
+                        }],
+                        yAxes: [{
+                            type: 'linear',
+                            ticks: {
+                                display: false,
+                            },
+                            gridLines: {
+                                display: false,
+                                tickMarkLength: 0
+                            }
+                        }]
+                    },
+                }
+            });
+        }
+
+        function processHealthData(data) {
+            var historical = data.historical;
+            var current = Object.assign({}, data, {historical: undefined, status: undefined});
+
+            historical.unshift({
+                data: current,
+                timestamp: new Date().getTime()
+            });
+
+            $(".chart-status-available").each(function () {
+                var $obj = $(this);
+                initAvailableChart($obj, historical);
+                $obj.parent('.chart-status-available-wrapper').toggleClass("d-none");
+            });
+
+            $(".chart-status-total-time").each(function () {
+                var $obj = $(this);
+                initTotalTimeChart($obj, historical);
+                $obj.parent('.chart-status-total-time-wrapper').toggleClass("d-none");
+            });
+        }
+
+        $.get("/autoclient_payments/healthcheck?historical=true").done(function (data) {
+            if (data && data.historical && data.historical.length > 1) {
+                processHealthData(data);
+            }
+        }).fail(function ($xhr) {
+            var data = $xhr.responseJSON;
+            if (data && data.historical && data.historical.length > 1) {
+                processHealthData(data);
+            }
+        });
+
+    });
+</script>

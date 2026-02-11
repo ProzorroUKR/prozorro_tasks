@@ -10,8 +10,8 @@ from flask import request
 from six import text_type
 
 from app.exceptions import UnauthorizedError, NotAllowedIPError
-from app.utils import get_auth_users, get_auth_ips, generate_auth_id
-from environment_settings import APP_AUTH_FILE, APP_AUIP_FILE, APP_AUIP_ENABLED
+from app.utils import get_auth_users, get_auth_ips, generate_auth_id, get_counterparties
+from environment_settings import APP_AUTH_FILE, APP_AUIP_FILE, APP_AUIP_ENABLED, APP_COUNTERPARTIES_FILE
 
 auth = HTTPBasicAuth()
 
@@ -23,8 +23,12 @@ config.read(APP_AUTH_FILE or "{}/auth.ini".format(BASE_PATH), encoding="utf-8")
 ip_config = ConfigParser()
 ip_config.read(APP_AUIP_FILE or "{}/auip.ini".format(BASE_PATH), encoding="utf-8")
 
+counterparties_config = ConfigParser()
+counterparties_config.read(APP_COUNTERPARTIES_FILE or "{}/counterparties.ini".format(BASE_PATH), encoding="utf-8")
+
 USERS = get_auth_users(config)
 IPS = get_auth_ips(ip_config)
+COUNTERPARTIES = get_counterparties(counterparties_config)
 
 
 def get_network_data():

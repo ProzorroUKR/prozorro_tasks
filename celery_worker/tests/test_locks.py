@@ -1,6 +1,8 @@
 from unittest.mock import patch, MagicMock, Mock
 from datetime import datetime
 from pymongo.errors import ConnectionFailure
+
+import celery_worker.locks
 from celery_worker.celery import app
 from celery_worker.locks import (
     hash_string_to_uid,
@@ -25,6 +27,7 @@ class LocksTestCase(unittest.TestCase):
 
     @patch("celery_worker.locks.MongoClient")
     def test_get_mongodb_collection(self, mongodb_client):
+        celery_worker.locks.mongodb = None
         client = MagicMock()
         setattr(getattr(client, MONGODB_DATABASE), DUPLICATE_COLLECTION_NAME, 13)
         mongodb_client.return_value = client

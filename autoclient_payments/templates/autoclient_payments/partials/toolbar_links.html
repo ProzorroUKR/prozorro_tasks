@@ -1,0 +1,38 @@
+<div class="btn-toolbar btn-toolbar-payment float-right">
+    <div class="mb-3 mx-1">
+        {% with href=url_for('autoclient_payments_views.report') %}
+        <a href="{{ href }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter{% if href==request.path %} active{% endif %}">
+            Звіт
+        </a>
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mx-1">
+        {% with href=url_for('autoclient_payments_views.payment_request') %}
+        <a href="{{ href }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter{% if href==request.path %} active{% endif %}">
+            Реєстр
+        </a>
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mx-1">
+        {% with href=url_for('autoclient_payments_views.payment_stats') %}
+        <a href="{{ href }}"
+           class="btn btn-sm btn-info btn-payment btn-payment-filter{% if href==request.path %} active{% endif %}">
+            Статистика
+        </a>
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mx-1">
+        {% with href=url_for('autoclient_payments_views.status') %}
+        <a href="{{ href }}"
+           id="status"
+           class="btn btn-sm btn-success btn-payment btn-payment-filter{% if href==request.path %} active{% endif %}">
+            Статус
+        </a>
+        {% endwith %}
+    </div>
+</div>

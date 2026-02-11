@@ -1,5 +1,14 @@
+from datetime import timedelta
+
 from kombu import Queue, Connection
-from environment_settings import TIMEZONE, CELERY_BROKER_URL
+from environment_settings import (
+    TIMEZONE,
+    CELERY_BROKER_URL,
+    PB_AUTOCLIENT_SYNC_INTERVAL,
+    PB_AUTOCLIENT_NAME,
+    PB_AUTOCLIENT_TOKEN,
+    PB_ACCOUNT,
+)
 from celery.schedules import crontab
 
 
@@ -82,6 +91,7 @@ task_modules = [
     'tasks_utils',
     'liqpay_int',
     'payments',
+    'autoclient_payments',
     'treasury',
 ]
 
@@ -113,3 +123,19 @@ beat_schedule = {
         'schedule': crontab(minute=0),
     },
 }
+
+if PB_AUTOCLIENT_NAME and PB_AUTOCLIENT_TOKEN:
+    beat_schedule.update({
+        'check-autoclient-services-status': {
+            'task': 'autoclient_payments.tasks.check_services_status',
+            # executes every hour
+            'schedule': crontab(minute=0),
+        },
+    })
+    if PB_ACCOUNT:
+        beat_schedule.update({
+            'sync-autoclient-payments': {
+                'task': 'autoclient_payments.tasks.sync_autoclient_payments',
+                'schedule': timedelta(seconds=PB_AUTOCLIENT_SYNC_INTERVAL),
+            },
+        })
