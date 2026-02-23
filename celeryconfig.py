@@ -1,14 +1,44 @@
 from datetime import timedelta
 
-from kombu import Queue
+from kombu import Queue, Connection
+from kombu.utils.text import version_string_as_tuple
 from environment_settings import (
     TIMEZONE,
+    CELERY_BROKER_URL,
     PB_AUTOCLIENT_SYNC_INTERVAL,
     PB_AUTOCLIENT_NAME,
     PB_AUTOCLIENT_TOKEN,
     PB_ACCOUNT,
 )
 from celery.schedules import crontab
+
+
+def uses_quorum_queues():
+    try:
+        with Connection(CELERY_BROKER_URL) as conn:
+            conn.connect()
+            props = conn.connection.server_properties
+            if props.get('product') == 'RabbitMQ':
+                return version_string_as_tuple(props['version']) >= (4, 0)
+    except Exception:
+        pass
+
+    return False
+
+QUEUE_ARGUMENTS = {}
+
+# If RabbitMQ 4.x or later is detected, use quorum queues
+# RabbitMQ 4.x introduces quorum queues, which are a new type of queue 
+# that provides higher availability and reliability.
+# RabbitMQ 3.x does not support quorum queues.
+if uses_quorum_queues():
+    QUEUE_ARGUMENTS['x-queue-type'] = 'quorum'
+
+# For RabbitMQ 4.x with per-consumer QoS, increase prefetch to fetch more tasks
+# Default is 4, but with per-consumer QoS each consumer is limited individually
+# This is critical for scheduled tasks (ETA) - without higher prefetch, tasks
+# with future ETAs block fetching of other tasks from the queue
+worker_prefetch_multiplier = 1000
 
 task_acks_late = True
 # Default: Disabled.
@@ -25,7 +55,7 @@ task_reject_on_worker_lost = True
 broker_connection_max_retries = None
 # Default: 100.
 # Maximum number of retries before we give up re-establishing a connection to the AMQP broker.
-# If this is set to 0 or None, we’ll retry forever.
+# If this is set to 0 or None, we'll retry forever.
 
 # https://github.com/celery/celery/issues/5410
 broker_transport_options = {'confirm_publish': True}
@@ -38,15 +68,15 @@ task_ignore_result = True
 
 task_track_started = True
 # Default: Disabled.
-# If True the task will report its status as ‘started’ when the task is executed by a worker.
+# If True the task will report its status as 'started' when the task is executed by a worker.
 # The default value is False as the normal behavior is to not report that level of granularity.
 # Tasks are either pending, finished, or waiting to be retried.
-# Having a ‘started’ state can be useful for when there are long running tasks
-# and there’s a need to report what task is currently running.
+# Having a 'started' state can be useful for when there are long running tasks
+# and there's a need to report what task is currently running.
 
 worker_send_task_events = True
 # Default: Disabled by default.
-# If enabled, a task-sent event will be sent for every task so tasks can be tracked before they’re consumed by a worker.
+# If enabled, a task-sent event will be sent for every task so tasks can be tracked before they're consumed by a worker.
 
 # Celery will automatically retry sending messages in the event of connection failure,
 # and retry behavior can be configured – like how often to retry,
@@ -67,7 +97,6 @@ task_modules = [
     'payments',
     'autoclient_payments',
     'treasury',
-    'chronograph',
 ]
 
 # Route tasks to different queues
@@ -81,10 +110,10 @@ task_routes = ([
 ],)
 
 task_queues = tuple(
-    Queue(module_name)
+    Queue(module_name, queue_arguments=QUEUE_ARGUMENTS)
     for module_name in task_modules
 ) + (
-    Queue('celery',  routing_key=''),  # default
+    Queue('celery', routing_key='', queue_arguments=QUEUE_ARGUMENTS),  # default
 )
 
 timezone = str(TIMEZONE)
