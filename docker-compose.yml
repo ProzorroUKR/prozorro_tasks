@@ -208,7 +208,7 @@ services:
       - EDR_API_VERSION=1
       - EDR_API_USER=robot
       - EDR_API_PASSWORD=
-    command: celery worker -A celery_worker -B --concurrency=20 --loglevel=info
+    command: celery -A celery_worker worker -B --concurrency=20 --loglevel=info
     volumes:
         - .:/app
     depends_on:
