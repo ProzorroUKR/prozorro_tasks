@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from kombu import Queue, Connection
+from kombu.utils.text import version_string_as_tuple
 from environment_settings import (
     TIMEZONE,
     CELERY_BROKER_URL,
@@ -12,29 +13,32 @@ from environment_settings import (
 from celery.schedules import crontab
 
 
-def detect_rabbitmq_major_version():
-    """Detect RabbitMQ major version from server properties."""
+def uses_quorum_queues():
     try:
         with Connection(CELERY_BROKER_URL) as conn:
             conn.connect()
             props = conn.connection.server_properties
-            version = props.get('version', b'0.0.0')
-            if isinstance(version, bytes):
-                version = version.decode()
-            return int(version.split('.')[0])
+            if props.get('product') == 'RabbitMQ':
+                return version_string_as_tuple(props['version']) >= (4, 0)
     except Exception:
-        return 3  # Default to 3.x behavior
+        pass
 
+    return False
 
-RABBITMQ_MAJOR_VERSION = detect_rabbitmq_major_version()
-QUEUE_ARGUMENTS = {'x-queue-type': 'quorum'} if RABBITMQ_MAJOR_VERSION >= 4 else {}
+QUEUE_ARGUMENTS = {}
+
+# If RabbitMQ 4.x or later is detected, use quorum queues
+# RabbitMQ 4.x introduces quorum queues, which are a new type of queue 
+# that provides higher availability and reliability.
+# RabbitMQ 3.x does not support quorum queues.
+if uses_quorum_queues():
+    QUEUE_ARGUMENTS['x-queue-type'] = 'quorum'
 
 # For RabbitMQ 4.x with per-consumer QoS, increase prefetch to fetch more tasks
 # Default is 4, but with per-consumer QoS each consumer is limited individually
 # This is critical for scheduled tasks (ETA) - without higher prefetch, tasks
 # with future ETAs block fetching of other tasks from the queue
-if RABBITMQ_MAJOR_VERSION >= 4:
-    worker_prefetch_multiplier = 1000
+worker_prefetch_multiplier = 1000
 
 task_acks_late = True
 # Default: Disabled.
