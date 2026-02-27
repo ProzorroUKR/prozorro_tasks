@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from datetime import datetime
 
 from flask import request, url_for
@@ -129,7 +131,7 @@ def get_report(rows, total=False):
         item = []
         if total:
             payment = row.get("payment", {})
-            amount_total += float(payment.get("amount", 0.0))
+            amount_total += Decimal(str(payment.get("amount", 0.0)))
         for key, scheme in REPORT_SCHEME.items():
             value = get_scheme_value(row, scheme) or ""
             item.append(value)

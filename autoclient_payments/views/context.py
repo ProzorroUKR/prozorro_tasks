@@ -2,8 +2,9 @@ from datetime import datetime
 
 from flask import request
 from flask_paginate import Pagination
+from decimal import Decimal
 
-from autoclient_payments.data import amount_convert
+from autoclient_payments.data import value_amount_representation
 from autoclient_payments.messages import DESC_REPORT_TOTAL
 from autoclient_payments.views.schemes import (
     get_scheme_value,
@@ -133,7 +134,7 @@ def get_report(rows, total=False):
         item = []
         if total:
             payment = row.get("payment", {})
-            amount_total += float(payment.get("SUM_E", 0.0))
+            amount_total += Decimal(str(payment.get("SUM_E", 0.0)))
         for key, scheme in REPORT_SCHEME.items():
             value = get_scheme_value(row, scheme) or ""
             item.append(value)
@@ -142,6 +143,6 @@ def get_report(rows, total=False):
     data.insert(0, headers)
 
     if total:
-        data.append([DESC_REPORT_TOTAL, str(amount_convert(amount_total))])
+        data.append([DESC_REPORT_TOTAL, value_amount_representation(amount_total)])
 
     return data
