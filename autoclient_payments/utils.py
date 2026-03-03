@@ -4,7 +4,7 @@ import shelve
 from datetime import datetime
 from json import JSONDecodeError
 from typing import Generator, Tuple
-from urllib.parse import urlencode
+from urllib.parse import urljoin
 
 import requests
 
@@ -23,6 +23,8 @@ from environment_settings import (
     PB_AUTOCLIENT_NAME,
     PB_AUTOCLIENT_TOKEN,
     PB_ACCOUNT,
+    PB_AUTOCLIENT_INTEGRATION_API_HOST,
+    PB_AUTOCLIENT_API_PROXIES,
 )
 from autoclient_payments.data import (
     complaint_funds_description,
@@ -150,7 +152,7 @@ PB_HEADERS = {
     "token": PB_AUTOCLIENT_TOKEN,
     "Content-Type": "application/json;charset=cp1251",
 }
-PB_TRANSACTIONS_URL = "https://acp.privatbank.ua/api/statements/transactions"
+PB_TRANSACTIONS_PATH = "/api/statements/transactions"
 
 
 def find_replace(string, dictionary):
@@ -387,10 +389,11 @@ def filter_payment_data(data):
 
 
 def get_transactions(
-    url: str,
+    path: str,
     query_args: dict,
 ) -> Tuple[list, bool, str]:
-    resp = requests.get(f"{url}?{urlencode(query_args)}", headers=PB_HEADERS)
+    url = urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, path)
+    resp = requests.get(url, verify=False, proxies=PB_AUTOCLIENT_API_PROXIES, headers=PB_HEADERS, params=query_args)
     resp.raise_for_status()
     data = resp.json()
     return data.get("transactions", []), data["exist_next_page"], data.get("next_page_id")
@@ -401,7 +404,7 @@ def transactions_list(
     end_date: str = None,
     limit: int = 100,
     pb_account: str = PB_ACCOUNT,
-    url: str = PB_TRANSACTIONS_URL,
+    path: str = PB_TRANSACTIONS_PATH,
 ) -> Generator[dict, None, None]:
     query_args = {
         "acc": pb_account,
@@ -410,7 +413,7 @@ def transactions_list(
     }
     if end_date:
         query_args.update({"endDate": end_date})
-    while page_resp := get_transactions(url, query_args):
+    while page_resp := get_transactions(path, query_args):
         transactions, next_page_exists, next_page_id = page_resp
         for transaction in transactions:
             yield transaction
@@ -419,9 +422,10 @@ def transactions_list(
         query_args.update({"followId": next_page_id})
 
 
-def request_pb_autoclient_head(timeout=None, url="https://acp.privatbank.ua/api/statements/settings"):
+def request_pb_autoclient_head(timeout=None, path="/api/statements/settings"):
+    url = urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, path)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.head(url, timeout=timeout, headers=PB_HEADERS)
+    return requests.head(url, verify=False, proxies=PB_AUTOCLIENT_API_PROXIES, timeout=timeout, headers=PB_HEADERS)
 
 
 # --- fake data registry

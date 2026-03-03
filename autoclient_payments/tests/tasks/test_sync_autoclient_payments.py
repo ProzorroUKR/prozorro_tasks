@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
-from urllib.parse import urlencode
+from urllib.parse import urljoin
 
 import pymongo.errors
 import requests
@@ -10,8 +10,8 @@ from celery.exceptions import Retry
 from autoclient_payments.enums import TransactionType
 from autoclient_payments.tasks import sync_autoclient_payments
 from autoclient_payments.tests.conftest import TRANSACTION_DATA
-from autoclient_payments.utils import PB_TRANSACTIONS_URL, PB_HEADERS, PB_QUERY_DATE_FORMAT
-from environment_settings import PB_ACCOUNT, PB_AUTOCLIENT_RELEASE_DATE
+from autoclient_payments.utils import PB_TRANSACTIONS_PATH, PB_HEADERS, PB_QUERY_DATE_FORMAT
+from environment_settings import PB_ACCOUNT, PB_AUTOCLIENT_RELEASE_DATE, PB_AUTOCLIENT_INTEGRATION_API_HOST
 
 
 class TestHandlerCase(unittest.TestCase):
@@ -44,7 +44,13 @@ class TestHandlerCase(unittest.TestCase):
                         days=1)
                 ).strftime(PB_QUERY_DATE_FORMAT),
             }
-            requests_mock.get.assert_called_once_with(f"{PB_TRANSACTIONS_URL}?{urlencode(query_args)}", headers=PB_HEADERS)
+            requests_mock.get.assert_called_once_with(
+                urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
+                verify=False,
+                proxies={},
+                headers=PB_HEADERS,
+                params=query_args,
+            )
             save_payment_item_mock.assert_called_once_with(TRANSACTION_DATA, "system")
             process_payment_data_mock.apply_async.assert_called_once_with(kwargs=dict(payment_data=TRANSACTION_DATA))
 
@@ -78,7 +84,13 @@ class TestHandlerCase(unittest.TestCase):
                         days=1)
                 ).strftime(PB_QUERY_DATE_FORMAT),
             }
-            requests_mock.get.assert_called_once_with(f"{PB_TRANSACTIONS_URL}?{urlencode(query_args)}", headers=PB_HEADERS)
+            requests_mock.get.assert_called_once_with(
+                urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
+                verify=False,
+                proxies={},
+                headers=PB_HEADERS,
+                params=query_args,
+            )
             save_payment_item_mock.assert_called_once_with(transaction_data, "system")
             process_payment_data_mock.apply_async.assert_not_called()
 
@@ -111,7 +123,13 @@ class TestHandlerCase(unittest.TestCase):
                         days=1)
                 ).strftime(PB_QUERY_DATE_FORMAT),
             }
-            requests_mock.get.assert_called_once_with(f"{PB_TRANSACTIONS_URL}?{urlencode(query_args)}", headers=PB_HEADERS)
+            requests_mock.get.assert_called_once_with(
+                urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
+                verify=False,
+                proxies={},
+                headers=PB_HEADERS,
+                params=query_args,
+            )
             save_payment_item_mock.assert_called_once_with(TRANSACTION_DATA, "system")
             process_payment_data_mock.apply_async.assert_not_called()
 

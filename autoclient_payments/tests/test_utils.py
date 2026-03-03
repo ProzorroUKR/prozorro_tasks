@@ -687,7 +687,7 @@ class GetTransactions(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        transactions, has_next, next_page_id = get_transactions("http://test-url", {"limit": 2})
+        transactions, has_next, next_page_id = get_transactions("/api/test", {"limit": 2})
 
         self.assertEqual(transactions, [{"id": 1}, {"id": 2}])
         self.assertTrue(has_next)
