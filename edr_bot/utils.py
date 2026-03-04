@@ -9,7 +9,7 @@ from pytz import UTC
 from app.exceptions import abort_json
 from edr_bot.settings import EDR_REGISTRATION_STATUSES, EDR_IDENTIFICATION_SCHEMA, EDR_ACTIVITY_KIND_SCHEME
 from environment_settings import EDR_API_DIRECT_VERSION, EDR_API_DIRECT_URI, EDR_API_DIRECT_TOKEN, \
-    CONNECT_TIMEOUT, READ_TIMEOUT, EDR_API_CACHE_TIMEOUT, TIMEZONE
+    CONNECT_TIMEOUT, READ_TIMEOUT, EDR_API_CACHE_TIMEOUT, TIMEZONE, WEB_PROXIES
 
 logger = get_task_logger(__name__)
 
@@ -18,6 +18,7 @@ def get_edr_data(subjects_url):
     url = f"{EDR_API_DIRECT_URI}/{EDR_API_DIRECT_VERSION}/{subjects_url}"
     return requests.get(
         url,
+        proxies=WEB_PROXIES,
         timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         headers={
             "Accept": "application/json",
