@@ -703,7 +703,7 @@ dependencies = [
 
 [[package]]
 name = "prozorro-tasks"
-version = "0.2.11"
+version = "0.2.13"
 source = { virtual = "." }
 dependencies = [
     { name = "aio-pika" },
