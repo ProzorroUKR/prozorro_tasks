@@ -65,12 +65,6 @@ API_SIGN_USER = os.environ.get("API_SIGN_USER", "test")
 API_SIGN_PASSWORD = os.environ.get("API_SIGN_PASSWORD", "test")
 
 FISCAL_API_HOST = os.environ.get("FISCAL_API_HOST", "https://cabinet.sfs.gov.ua")
-FISCAL_API_PROXIES = dict()
-if os.environ.get("FISCAL_API_HTTP_PROXY"):
-    FISCAL_API_PROXIES["http"] = os.environ.get("FISCAL_API_HTTP_PROXY")
-if os.environ.get("FISCAL_API_HTTPS_PROXY"):
-    FISCAL_API_PROXIES["https"] = os.environ.get("FISCAL_API_HTTPS_PROXY")
-FISCAL_API_PROXIES = FISCAL_API_PROXIES or None
 FISCAL_SENDER_TIN = os.environ.get("FISCAL_SENDER_TIN", "02426097")
 FISCAL_SENDER_NAME = os.environ.get("FISCAL_SENDER_NAME", "ДП «ПРОЗОРРО»")
 FISCAL_SENDER_STI = os.environ.get("FISCAL_SENDER_STI", "ДПI у Шевченківському районі ГУ ДФС у м. Києві")
@@ -97,11 +91,6 @@ LIQPAY_API_HOST = os.environ.get("LIQPAY_API_HOST", "https://www.liqpay.ua")
 LIQPAY_INTEGRATION_API_HOST = os.environ.get("LIQPAY_INTEGRATION_API_HOST", "https://prozoro.microaws.com")
 LIQPAY_INTEGRATION_API_PATH = os.environ.get("LIQPAY_INTEGRATION_API_PATH", "api/v1/getRegistry")
 LIQPAY_PROZORRO_ACCOUNT = os.environ.get("LIQPAY_PROZORRO_ACCOUNT")
-LIQPAY_API_PROXIES = dict()
-if os.environ.get("LIQPAY_API_HTTP_PROXY"):
-    LIQPAY_API_PROXIES["http"] = os.environ.get("LIQPAY_API_HTTP_PROXY")
-if os.environ.get("LIQPAY_API_HTTPS_PROXY"):
-    LIQPAY_API_PROXIES["https"] = os.environ.get("LIQPAY_API_HTTPS_PROXY")
 LIQPAY_PUBLIC_KEY = os.environ.get("LIQPAY_PUBLIC_KEY", "")
 LIQPAY_PRIVATE_KEY = os.environ.get("LIQPAY_PRIVATE_KEY", "")
 LIQPAY_SANDBOX_PUBLIC_KEY = os.environ.get("LIQPAY_SANDBOX_PUBLIC_KEY", "")
@@ -147,8 +136,9 @@ PB_AUTOCLIENT_RELEASE_DATE = os.environ.get("PB_AUTOCLIENT_RELEASE_DATE", "2026-
 PB_AUTOCLIENT_SYNC_INTERVAL = int(os.environ.get("PB_AUTOCLIENT_SYNC_INTERVAL", 60))  # in seconds
 
 PB_AUTOCLIENT_INTEGRATION_API_HOST = os.environ.get("PB_AUTOCLIENT_INTEGRATION_API_HOST", "https://acp.privatbank.ua")
-PB_AUTOCLIENT_API_PROXIES = dict()
-if os.environ.get("PB_AUTOCLIENT_API_HTTP_PROXY"):
-    PB_AUTOCLIENT_API_PROXIES["http"] = os.environ.get("PB_AUTOCLIENT_API_HTTP_PROXY")
-if os.environ.get("PB_AUTOCLIENT_API_HTTPS_PROXY"):
-    PB_AUTOCLIENT_API_PROXIES["https"] = os.environ.get("PB_AUTOCLIENT_API_HTTPS_PROXY")
+
+WEB_PROXIES = dict()
+if os.environ.get("WEB_HTTP_PROXY"):
+    WEB_PROXIES["http"] = os.environ.get("WEB_HTTP_PROXY")
+if os.environ.get("WEB_HTTPS_PROXY"):
+    WEB_PROXIES["https"] = os.environ.get("WEB_HTTPS_PROXY")

@@ -11,13 +11,13 @@ from environment_settings import (
     LIQPAY_SANDBOX_PRIVATE_KEY,
     LIQPAY_TAX_PERCENTAGE,
     LIQPAY_API_HOST,
-    LIQPAY_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
+    WEB_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from tasks_utils.settings import DEFAULT_HEADERS
 
 
 class LiqPay(liqpay.LiqPay):
-    def __init__(self, public_key, private_key, host=LIQPAY_API_HOST, proxies=LIQPAY_API_PROXIES):
+    def __init__(self, public_key, private_key, host=LIQPAY_API_HOST, proxies=WEB_PROXIES):
         super(LiqPay, self).__init__(public_key=public_key, private_key=private_key, host=host)
         self._proxies = proxies
 

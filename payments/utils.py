@@ -20,7 +20,7 @@ from environment_settings import (
     LIQPAY_INTEGRATION_API_HOST,
     LIQPAY_PROZORRO_ACCOUNT,
     LIQPAY_INTEGRATION_API_PATH,
-    LIQPAY_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
+    WEB_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT,
 )
 from payments.data import (
     complaint_funds_description,
@@ -354,7 +354,7 @@ def get_resolution(complaint_data):
 def get_payments_registry(date_from, date_to):
     if LIQPAY_PROZORRO_ACCOUNT:
         url = "{}/{}".format(LIQPAY_INTEGRATION_API_HOST, LIQPAY_INTEGRATION_API_PATH)
-        return requests.post(url, proxies=LIQPAY_API_PROXIES, json={
+        return requests.post(url, proxies=WEB_PROXIES, json={
             "account": LIQPAY_PROZORRO_ACCOUNT,
             "date_from": int(date_from.timestamp() * 1000),
             "date_to": int(date_to.timestamp() * 1000)

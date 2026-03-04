@@ -11,7 +11,7 @@ from autoclient_payments.enums import TransactionType
 from autoclient_payments.tasks import sync_autoclient_payments
 from autoclient_payments.tests.conftest import TRANSACTION_DATA
 from autoclient_payments.utils import PB_TRANSACTIONS_PATH, PB_HEADERS, PB_QUERY_DATE_FORMAT
-from environment_settings import PB_ACCOUNT, PB_AUTOCLIENT_RELEASE_DATE, PB_AUTOCLIENT_INTEGRATION_API_HOST
+from environment_settings import PB_ACCOUNT, PB_AUTOCLIENT_RELEASE_DATE, PB_AUTOCLIENT_INTEGRATION_API_HOST, WEB_PROXIES
 
 
 class TestHandlerCase(unittest.TestCase):
@@ -47,7 +47,7 @@ class TestHandlerCase(unittest.TestCase):
             requests_mock.get.assert_called_once_with(
                 urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
                 verify=False,
-                proxies={},
+                proxies=WEB_PROXIES,
                 headers=PB_HEADERS,
                 params=query_args,
             )
@@ -87,7 +87,7 @@ class TestHandlerCase(unittest.TestCase):
             requests_mock.get.assert_called_once_with(
                 urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
                 verify=False,
-                proxies={},
+                proxies=WEB_PROXIES,
                 headers=PB_HEADERS,
                 params=query_args,
             )
@@ -126,7 +126,7 @@ class TestHandlerCase(unittest.TestCase):
             requests_mock.get.assert_called_once_with(
                 urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, PB_TRANSACTIONS_PATH),
                 verify=False,
-                proxies={},
+                proxies=WEB_PROXIES,
                 headers=PB_HEADERS,
                 params=query_args,
             )
