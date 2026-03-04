@@ -24,7 +24,7 @@ from environment_settings import (
     PB_AUTOCLIENT_TOKEN,
     PB_ACCOUNT,
     PB_AUTOCLIENT_INTEGRATION_API_HOST,
-    PB_AUTOCLIENT_API_PROXIES,
+    WEB_PROXIES,
 )
 from autoclient_payments.data import (
     complaint_funds_description,
@@ -393,7 +393,7 @@ def get_transactions(
     query_args: dict,
 ) -> Tuple[list, bool, str]:
     url = urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, path)
-    resp = requests.get(url, verify=False, proxies=PB_AUTOCLIENT_API_PROXIES, headers=PB_HEADERS, params=query_args)
+    resp = requests.get(url, verify=False, proxies=WEB_PROXIES, headers=PB_HEADERS, params=query_args)
     resp.raise_for_status()
     data = resp.json()
     return data.get("transactions", []), data["exist_next_page"], data.get("next_page_id")
@@ -425,7 +425,7 @@ def transactions_list(
 def request_pb_autoclient_head(timeout=None, path="/api/statements/settings"):
     url = urljoin(PB_AUTOCLIENT_INTEGRATION_API_HOST, path)
     timeout = timeout or (CONNECT_TIMEOUT, READ_TIMEOUT)
-    return requests.head(url, verify=False, proxies=PB_AUTOCLIENT_API_PROXIES, timeout=timeout, headers=PB_HEADERS)
+    return requests.head(url, verify=False, proxies=WEB_PROXIES, timeout=timeout, headers=PB_HEADERS)
 
 
 # --- fake data registry

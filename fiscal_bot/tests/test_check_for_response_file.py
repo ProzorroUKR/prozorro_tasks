@@ -1,4 +1,4 @@
-from environment_settings import FISCAL_API_HOST, TIMEZONE, FISCAL_API_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT
+from environment_settings import FISCAL_API_HOST, TIMEZONE, WEB_PROXIES, CONNECT_TIMEOUT, READ_TIMEOUT
 from fiscal_bot.tasks import check_for_response_file
 from fiscal_bot.settings import REQUEST_MAX_RETRIES, WORKING_TIME
 from celery.exceptions import Retry
@@ -97,7 +97,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            proxies=FISCAL_API_PROXIES,
+            proxies=WEB_PROXIES,
             headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.delay.assert_not_called()
@@ -153,7 +153,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            proxies=FISCAL_API_PROXIES,
+            proxies=WEB_PROXIES,
             headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.delay.assert_not_called()
@@ -211,7 +211,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            proxies=FISCAL_API_PROXIES,
+            proxies=WEB_PROXIES,
             headers={'User-agent': 'prozorro_tasks'},
         )
         prepare_receipt_request_mock.delay.assert_not_called()
@@ -271,7 +271,7 @@ class CheckResponseTestCase(unittest.TestCase):
                     '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
                     data=request_data,
                     timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                    proxies=FISCAL_API_PROXIES,
+                    proxies=WEB_PROXIES,
                     headers={'User-agent': 'prozorro_tasks'},
                 )
             ]
@@ -349,7 +349,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            proxies=FISCAL_API_PROXIES,
+            proxies=WEB_PROXIES,
             headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.assert_not_called()
@@ -402,7 +402,7 @@ class CheckResponseTestCase(unittest.TestCase):
                     '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
                     data=request_data,
                     timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-                    proxies=FISCAL_API_PROXIES,
+                    proxies=WEB_PROXIES,
                     headers={'User-agent': 'prozorro_tasks'},
                 )
             ]
@@ -470,7 +470,7 @@ class CheckResponseTestCase(unittest.TestCase):
             '{}/cabinet/public/api/exchange/kvt_by_id'.format(FISCAL_API_HOST),
             data=request_data,
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-            proxies=FISCAL_API_PROXIES,
+            proxies=WEB_PROXIES,
             headers={'User-agent': 'prozorro_tasks'},
         )
         decode_and_save_data_mock.assert_not_called()

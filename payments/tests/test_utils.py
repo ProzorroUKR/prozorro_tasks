@@ -573,7 +573,7 @@ class GetPaymentsRegistryTestCase(unittest.TestCase):
     @patch("payments.utils.LIQPAY_INTEGRATION_API_HOST", "http://test.example.com")
     @patch("payments.utils.LIQPAY_INTEGRATION_API_PATH", "test/path")
     @patch("payments.utils.LIQPAY_PROZORRO_ACCOUNT", "test")
-    @patch("payments.utils.LIQPAY_API_PROXIES", {"http": "http://proxy.example.com"})
+    @patch("payments.utils.WEB_PROXIES", {"http": "http://proxy.example.com"})
     @patch("payments.utils.requests")
     def test_get_payments_registry(self, requests):
         date_from = MagicMock()
