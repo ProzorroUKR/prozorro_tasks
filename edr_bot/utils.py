@@ -6,7 +6,7 @@ from flask_restx._http import HTTPStatus
 from celery.utils.log import get_task_logger
 from pytz import UTC
 
-from app.exceptions import abort_json
+from edr_bot.exceptions import abort_json
 from edr_bot.settings import EDR_REGISTRATION_STATUSES, EDR_IDENTIFICATION_SCHEMA, EDR_ACTIVITY_KIND_SCHEME
 from environment_settings import EDR_API_DIRECT_VERSION, EDR_API_DIRECT_URI, EDR_API_DIRECT_TOKEN, \
     CONNECT_TIMEOUT, READ_TIMEOUT, EDR_API_CACHE_TIMEOUT, TIMEZONE, WEB_PROXIES
@@ -219,6 +219,15 @@ def cached_details(code):
         if not data_details.get("errors"):
             cache.set(f"details_{EDR_API_DIRECT_VERSION}_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
         return data_details
+
+def cached_data(code, role):
+    from app.app import cache
+    if role == "robot":
+        return cached_details(code)
+    elif cached_verify_data := cache.get(f"verify_{EDR_API_DIRECT_VERSION}_{code}"):
+        logger.info(f"Code {code} was found in cache at verify")
+        return cached_verify_data
+    logger.info(f'Code {code} was not found in cache at {"details" if role == "robot" else "verify"}')
 
 
 def read_json(name):

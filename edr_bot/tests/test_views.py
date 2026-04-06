@@ -22,11 +22,8 @@ class MainApiTestCase(BaseTestCase):
             headers={'Authorization': basic_auth("test", "test")}
         )
         self.assertEqual(
-            response.data,
-            b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
-            b'<title>401 Unauthorized</title>\n'
-            b'<h1>Unauthorized</h1>\n'
-            b'<p>Invalid username or password</p>\n'
+            response.json,
+            {"message": "Invalid username or password", "status": "error"}
         )
         self.assertEqual(response.status_code, 401)
 

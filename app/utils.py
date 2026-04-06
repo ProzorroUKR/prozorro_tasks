@@ -146,3 +146,12 @@ def get_cert(cert_name: str) -> bytes:
 def get_cert_base64(cert_name: str) -> str:
     cert_data = get_cert(cert_name)
     return encode_to_base64_str(cert_data)
+
+
+def set_output_status(data, code):
+    if "status" not in data:
+        if code >= 500:
+            data["status"] = "failure"
+        elif code >= 400:
+            data["status"] = "error"
+    return data
