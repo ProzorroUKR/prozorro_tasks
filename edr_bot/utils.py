@@ -220,6 +220,15 @@ def cached_details(code):
             cache.set(f"details_{EDR_API_DIRECT_VERSION}_{code}", data_details, timeout=EDR_API_CACHE_TIMEOUT)
         return data_details
 
+def cached_data(code, role):
+    from app.app import cache
+    if role == "robot":
+        return cached_details(code)
+    elif cached_verify_data := cache.get(f"verify_{EDR_API_DIRECT_VERSION}_{code}"):
+        logger.info(f"Code {code} was found in cache at verify")
+        return cached_verify_data
+    logger.info(f'Code {code} was not found in cache at {"details" if role == "robot" else "verify"}')
+
 
 def read_json(name):
     import os.path
