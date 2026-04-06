@@ -1,8 +1,9 @@
 import sys
 
 from flask import Blueprint
-from flask_restx import Api, reqparse, inputs
+from flask_restx import Api, representations, reqparse, inputs
 
+from app.utils import set_output_status
 from liqpay_int.provider.namespaces import api as provider_ns
 from liqpay_int.broker.namespaces import api as broker_ns
 from liqpay_int.resources import Resource
@@ -55,4 +56,7 @@ class HealthCheckResource(Resource):
         return data
 
 
-import liqpay_int.representations
+@api.representation("application/json")
+def output_json(data, code, headers=None):
+    data = set_output_status(data, code)
+    return representations.output_json(data, code, headers=headers)

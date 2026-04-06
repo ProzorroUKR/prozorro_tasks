@@ -6,7 +6,7 @@ from flask_restx._http import HTTPStatus
 from celery.utils.log import get_task_logger
 from pytz import UTC
 
-from app.exceptions import abort_json
+from edr_bot.exceptions import abort_json
 from edr_bot.settings import EDR_REGISTRATION_STATUSES, EDR_IDENTIFICATION_SCHEMA, EDR_ACTIVITY_KIND_SCHEME
 from environment_settings import EDR_API_DIRECT_VERSION, EDR_API_DIRECT_URI, EDR_API_DIRECT_TOKEN, \
     CONNECT_TIMEOUT, READ_TIMEOUT, EDR_API_CACHE_TIMEOUT, TIMEZONE, WEB_PROXIES
