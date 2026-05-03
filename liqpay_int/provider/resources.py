@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask_restx import abort
 from flask_restx._http import HTTPStatus
 from kombu.exceptions import OperationalError
@@ -5,6 +7,7 @@ from pymongo.errors import PyMongoError
 
 from app.auth import ip_group_required, get_network_data
 from app.logging import getLogger
+from environment_settings import PB_AUTOCLIENT_RELEASE_DATE
 from liqpay_int.broker.messages import REQUEST_ID_DESC, CLIENT_REQUEST_ID_DESC
 from liqpay_int.provider.models import model_payment
 from liqpay_int.provider.namespaces import api
@@ -19,6 +22,8 @@ from payments.results_db import save_payment_item
 from liqpay_int.tasks import process_payment_data
 
 logger = getLogger()
+
+PAYMENT_DATE_OPER_FORMAT = "%d.%m.%Y %H:%M:%S"
 
 
 @api.route('/push')
@@ -38,6 +43,11 @@ class PushResource(Resource):
     @api.expect(model_payment, validate=True)
     def post(self):
         extra = {"PAYMENT_DESCRIPTION": api.payload.get("description")}
+        date_release = datetime.fromisoformat(PB_AUTOCLIENT_RELEASE_DATE).date()
+        date_oper = datetime.strptime(api.payload.get("date_oper"), PAYMENT_DATE_OPER_FORMAT).date()
+        if date_oper >= date_release:
+            logger.info("Payment push skipped after autoclient release date.", extra=extra)
+            return {"status": "success"}
         try:
             save_payment_item(api.payload, (get_network_data() or {}).get("username"))
         except PyMongoError:

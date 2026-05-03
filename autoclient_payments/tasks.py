@@ -101,11 +101,12 @@ def save_and_process_payment(transaction: dict, user: str):
 
 @app.task(bind=True, max_retries=10)
 def sync_autoclient_payments(self):
+    release_date = datetime.fromisoformat(PB_AUTOCLIENT_RELEASE_DATE).date()
     if last_payment := get_last_transaction():
         last_date = datetime.fromisoformat(last_payment["dateOper"]).date()
     else:
-        last_date = get_now().date()
-    sync_start_date = max(datetime.fromisoformat(PB_AUTOCLIENT_RELEASE_DATE).date(), last_date - timedelta(days=1))
+        last_date = release_date
+    sync_start_date = max(release_date, last_date - timedelta(days=1))
 
     try:
         for transaction in transactions_list(sync_start_date.strftime(PB_QUERY_DATE_FORMAT)):
