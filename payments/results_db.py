@@ -10,7 +10,14 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 
 from environment_settings import TIMEZONE
 from app.logging import log_exc
-from payments.data import PAYMENTS_FAILED_MESSAGE_ID_LIST, PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST
+from payments.data import (
+    DEFAULT_MESSAGE_STATUS,
+    DESC_PROCESSING_CHOICES_DICT,
+    MESSAGE_ID_PRIORITY,
+    PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+    PAYMENTS_MESSAGE_IDS,
+)
 from payments.utils import filter_payment_data
 
 logger = get_task_logger(__name__)
@@ -367,6 +374,7 @@ def query_payment_search(
     search=None,
     payment_type=None,
     payment_source=None,
+    processing_status=None,
     payment_date_from=None,
     payment_date_to=None,
     **kwargs
@@ -378,6 +386,25 @@ def query_payment_search(
         filters.append({"payment.type": payment_type})
     if payment_source is not None:
         filters.append({"payment.source": payment_source})
+    if processing_status in DESC_PROCESSING_CHOICES_DICT:
+        if processing_status == DEFAULT_MESSAGE_STATUS:
+            # "default" means there are no message ids from known non-default statuses.
+            all_status_ids = {
+                message_id
+                for message_ids in PAYMENTS_MESSAGE_IDS.values()
+                for message_id in message_ids
+            }
+            filters.append({"messages.message_id": {"$nin": list(all_status_ids)}})
+        elif processing_status in PAYMENTS_MESSAGE_IDS:
+            status_ids = set(PAYMENTS_MESSAGE_IDS[processing_status])
+            higher_priority_ids = []
+            for message_id in MESSAGE_ID_PRIORITY:
+                if message_id in status_ids:
+                    break
+                higher_priority_ids.append(message_id)
+            if higher_priority_ids:
+                filters.append({"messages.message_id": {"$nin": higher_priority_ids}})
+            filters.append({"messages.message_id": {"$in": list(status_ids)}})
     if payment_date_from is not None and payment_date_to is not None:
         filters.append({
             "$expr": {

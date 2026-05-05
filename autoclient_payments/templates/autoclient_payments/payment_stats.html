@@ -53,6 +53,16 @@
     </div>
 
     <div class="mb-3 mx-1">
+        {% with label='Статус обробки' %}
+        {% with arg='processing_status' %}
+        {% with choices=processing_status_choices %}
+        {% include 'autoclient_payments/partials/filter_dropdown.html' %}
+        {% endwith %}
+        {% endwith %}
+        {% endwith %}
+    </div>
+
+    <div class="mb-3 mx-1">
         {% with label='Дата операції' %}
         {% with arg_from='date_oper_from' %}
         {% with arg_to='date_oper_to' %}
