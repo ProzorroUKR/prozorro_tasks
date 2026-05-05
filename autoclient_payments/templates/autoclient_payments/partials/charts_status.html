@@ -7,6 +7,8 @@
     {% set description='Приватний API ЦБД' %}
     {% elif field=='cdb_search' %}
     {% set description='Приватний API ЦБД (пошук скарг)' %}
+    {% elif field=='liqpay' %}
+    {% set description='Публічний API LIQPAY' %}
     {% elif field=='autoclient' %}
     {% set description='API автоклієнта ПБ' %}
     {% elif field=='mongodb' %}
@@ -26,6 +28,10 @@
                             {% if 'status' in data[field] and data[field]['status']=='available' %}
                             <span class="badge badge-pill badge-success z-depth-0">
                                 <i class="fas fa-check mr-1"></i> {{ data[field]['status'] }}
+                            </span>
+                            {% elif 'status' in data[field] and data[field]['status']=='disabled' %}
+                            <span class="badge badge-pill badge-secondary z-depth-0">
+                                <i class="fas fa-minus mr-1"></i> {{ data[field]['status'] }}
                             </span>
                             {% elif 'status' in data[field] %}
                             <span class="badge badge-pill badge-danger z-depth-0">

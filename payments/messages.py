@@ -46,9 +46,9 @@ DESC_COMPLAINT_STATUS_STOPPED = "Розгляд припинено"
 
 DESC_PROCESSING_INFO = "Оброблено"
 DESC_PROCESSING_SUCCESS = "Очікується рішення"
-DESC_PROCESSING_WARNING = "Виконується"
-DESC_PROCESSING_DANGER = "Виконується"
-DESC_PROCESSING_FAILED = "Оброблено (помилковий або не підпадає під критерії обробки платіж)"
+DESC_PROCESSING_WARNING = "Виконується (не критична помилка)"
+DESC_PROCESSING_DANGER = "Виконується (критична помилка)"
+DESC_PROCESSING_FAILED = "Оброблено (помилковий)"
 DESC_PROCESSING_NEUTRAL = "Виконується"
 DESC_PROCESSING_DEFAULT = "Отримано"
 

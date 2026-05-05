@@ -27,7 +27,8 @@
         </td>
         {% endif %}
         {% endfor %}
-        <td class="text-white cell-action cell-lg bg-{{ row.messages|payment_message_list_status or 'dark' }}">
+        {% set processing_status = row.messages|payment_message_list_status %}
+        <td class="text-white cell-action cell-lg bg-{{ 'dark' if processing_status in ['default', 'neutral'] else (processing_status or 'dark') }}">
             <a href="/autoclient_payments/{{row.id.value}}">
                 <i class="fas fa-info-circle"></i>
             </a>

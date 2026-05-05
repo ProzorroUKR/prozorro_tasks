@@ -38,6 +38,7 @@ from autoclient_payments.views.context import (
 )
 from autoclient_payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    DESC_PROCESSING_CHOICES_DICT,
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     complaint_status_description,
     complaint_reject_description,
@@ -125,6 +126,7 @@ def payment_list():
         total=total,
         counterparties_choices=list(COUNTERPARTIES.keys()) + [OTHER_COUNTERPARTIES],
         type_choices=TransactionType.as_dict(),
+        processing_status_choices=DESC_PROCESSING_CHOICES_DICT,
         **search_kwargs,
         **report_kwargs,
     )
@@ -162,6 +164,7 @@ def payment_stats():
             max_date=max_date,
             counterparties_choices=list(COUNTERPARTIES.keys()) + [OTHER_COUNTERPARTIES],
             type_choices=TransactionType.as_dict(),
+            processing_status_choices=DESC_PROCESSING_CHOICES_DICT,
             **search_kwargs,
             **report_kwargs,
         )
@@ -443,12 +446,15 @@ class HealthCheckResource(Resource):
     def get(self):
         data = health()
         save_health_data(data)
-        if self.parser_query_healthcheck.parse_args().get("historical"):
+        historical_requested = self.parser_query_healthcheck.parse_args().get("historical")
+        if historical_requested:
             historical_list = get_health_data()
             data["historical"] = [{
                 "data": item["data"],
                 "timestamp": int(item["createdAt"].timestamp() * 1000)
             } for item in historical_list]
-        if data["status"] != "available":
+        # Historical data is used by UI charts and should be returned even when
+        # one of dependencies is unavailable.
+        if data["status"] != "available" and not historical_requested:
             return data, 500
         return data

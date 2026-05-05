@@ -9,6 +9,9 @@ from contextlib import contextmanager
 from celery_worker.celery import app
 from celery_worker.locks import get_mongodb_client
 from environment_settings import (
+    PB_AUTOCLIENT_INTEGRATION_API_HOST,
+    PB_AUTOCLIENT_NAME,
+    PB_AUTOCLIENT_TOKEN,
     PUBLIC_API_HOST,
     API_HOST,
     MONGODB_SERVER_SELECTION_TIMEOUT,
@@ -18,16 +21,22 @@ from environment_settings import (
     CONNECT_TIMEOUT,
     READ_TIMEOUT,
 )
+from liqpay_int.utils import generate_liqpay_status_params, liqpay_request
 from autoclient_payments.results_db import get_statuses_list, save_status
 from autoclient_payments.utils import request_cdb_head_spore, request_cdb_complaint_search, request_pb_autoclient_head
 
 HEATH_DATA_INTERVAL_SECONDS = 10 * 60
+STATUS_AVAILABLE = "available"
+STATUS_UNAVAILABLE = "unavailable"
+STATUS_DISABLED = "disabled"
+STATUS_INVALID = "invalid"
+SUCCESS_HEALTH_STATUSES = {STATUS_AVAILABLE, STATUS_DISABLED}
 
 
 def response_health_status(response):
     if response and response.status_code in [200, 201]:
-        return "available"
-    return "unavailable"
+        return STATUS_AVAILABLE
+    return STATUS_UNAVAILABLE
 
 
 def liqpay_health_status(response):
@@ -36,12 +45,12 @@ def liqpay_health_status(response):
             json_data = json.loads(response.text)
             code = json_data["code"]
         except Exception:
-            return "invalid"
+            return STATUS_INVALID
         if code == "payment_not_found":
-            return "available"
+            return STATUS_AVAILABLE
         else:
             return code
-    return "unavailable"
+    return STATUS_UNAVAILABLE
 
 
 def response_status_code(response):
@@ -73,6 +82,11 @@ def request_lb():
 
 def request_autoclient():
     return request_pb_autoclient_head(timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+
+
+def request_liqpay():
+    params = generate_liqpay_status_params({"order_id": ""})
+    return liqpay_request(params, sandbox=False, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
 
 
 @contextmanager
@@ -112,6 +126,8 @@ def api_health(request_method):
 
 
 def autoclient_health(request_method):
+    if not PB_AUTOCLIENT_INTEGRATION_API_HOST or not PB_AUTOCLIENT_NAME or not PB_AUTOCLIENT_TOKEN:
+        return {"status": STATUS_DISABLED}
     start = time.time()
     with try_method(request_method) as (response, exception):
         total_seconds = time.time() - start
@@ -133,12 +149,34 @@ def autoclient_health(request_method):
         return health_item
 
 
+def liqpay_health(request_method):
+    start = time.time()
+    with try_method(request_method) as (response, exception):
+        total_seconds = time.time() - start
+        health_item = {
+            "status": liqpay_health_status(response),
+            "connect_timeout": CONNECT_TIMEOUT,
+            "read_timeout": READ_TIMEOUT,
+            "total_seconds": total_seconds,
+        }
+        if response:
+            health_item.update(
+                {
+                    "url": getattr(response, "url", None),
+                    "status_code": response_status_code(response),
+                }
+            )
+        if exception:
+            health_item.update({"exception": str(exception)})
+        return health_item
+
+
 def mongodb_health():
     start = time.time()
     with try_method(mongodb_info) as (info, exception):
         total_seconds = time.time() - start
         health_item = {
-            "status": "available" if info else "unavailable",
+            "status": STATUS_AVAILABLE if info else STATUS_UNAVAILABLE,
             "server_selection_timeout": MONGODB_SERVER_SELECTION_TIMEOUT,
             "connect_timeout": MONGODB_CONNECT_TIMEOUT,
             "socket_timeout": MONGODB_SOCKET_TIMEOUT,
@@ -165,7 +203,7 @@ def rabbitmq_health():
     start = time.time()
     with try_method(rabbitmq_report) as (info, exception):
         total_seconds = time.time() - start
-        health_item = {"status": "available" if info else "unavailable", "total_seconds": total_seconds}
+        health_item = {"status": STATUS_AVAILABLE if info else STATUS_UNAVAILABLE, "total_seconds": total_seconds}
         if exception:
             health_item.update({"exception": str(exception)})
         return health_item
@@ -176,12 +214,17 @@ def health():
         "cdb_public": api_health(request_public),
         "cdb_lb": api_health(request_lb),
         "cdb_search": api_health(request_search),
+        "liqpay": liqpay_health(request_liqpay),
         "autoclient": autoclient_health(request_autoclient),
         "mongodb": mongodb_health(),
         "rabbitmq": rabbitmq_health(),
     }
     health_statuses = [health_item["status"] for health_item in health_data.values()]
-    health_overall = "available" if all([status == "available" for status in health_statuses]) else "unavailable"
+    health_overall = (
+        STATUS_AVAILABLE
+        if all(status in SUCCESS_HEALTH_STATUSES for status in health_statuses)
+        else STATUS_UNAVAILABLE
+    )
     return dict(status=health_overall, **health_data)
 
 

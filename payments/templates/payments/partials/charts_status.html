@@ -27,6 +27,10 @@
                             <span class="badge badge-pill badge-success z-depth-0">
                                 <i class="fas fa-check mr-1"></i> {{ data[field]['status'] }}
                             </span>
+                            {% elif 'status' in data[field] and data[field]['status']=='disabled' %}
+                            <span class="badge badge-pill badge-secondary z-depth-0">
+                                <i class="fas fa-minus mr-1"></i> {{ data[field]['status'] }}
+                            </span>
                             {% elif 'status' in data[field] %}
                             <span class="badge badge-pill badge-danger z-depth-0">
                                 <i class="fas fa-times mr-1"></i> {{ data[field]['status'] }}

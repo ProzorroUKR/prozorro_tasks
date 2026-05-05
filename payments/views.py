@@ -38,6 +38,7 @@ from payments.context import (
 )
 from payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    DESC_PROCESSING_CHOICES_DICT,
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     complaint_status_description,
     complaint_reject_description,
@@ -114,6 +115,7 @@ def payment_list():
             limit=limit
         ),
         total=total,
+        processing_status_choices=DESC_PROCESSING_CHOICES_DICT,
         **search_kwargs,
         **report_kwargs
     )
@@ -149,6 +151,7 @@ def payment_stats():
             counts=counts,
             min_date=min_date,
             max_date=max_date,
+            processing_status_choices=DESC_PROCESSING_CHOICES_DICT,
             **search_kwargs,
             **report_kwargs
         )
