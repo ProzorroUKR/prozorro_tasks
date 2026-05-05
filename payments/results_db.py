@@ -387,23 +387,15 @@ def query_payment_search(
     if payment_source is not None:
         filters.append({"payment.source": payment_source})
     if processing_status in DESC_PROCESSING_CHOICES_DICT:
-        if processing_status == DEFAULT_MESSAGE_STATUS:
-            # "default" means there are no message ids from known non-default statuses.
-            all_status_ids = {
-                message_id
-                for message_ids in PAYMENTS_MESSAGE_IDS.values()
-                for message_id in message_ids
-            }
-            filters.append({"messages.message_id": {"$nin": list(all_status_ids)}})
-        elif processing_status in PAYMENTS_MESSAGE_IDS:
-            status_ids = set(PAYMENTS_MESSAGE_IDS[processing_status])
-            higher_priority_ids = []
-            for message_id in MESSAGE_ID_PRIORITY:
-                if message_id in status_ids:
-                    break
-                higher_priority_ids.append(message_id)
-            if higher_priority_ids:
-                filters.append({"messages.message_id": {"$nin": higher_priority_ids}})
+        status_ids = set(PAYMENTS_MESSAGE_IDS.get(processing_status, ()))
+        higher_priority_ids = []
+        for message_id in MESSAGE_ID_PRIORITY:
+            if message_id in status_ids:
+                break
+            higher_priority_ids.append(message_id)
+        if higher_priority_ids:
+            filters.append({"messages.message_id": {"$nin": higher_priority_ids}})
+        if status_ids:
             filters.append({"messages.message_id": {"$in": list(status_ids)}})
     if payment_date_from is not None and payment_date_to is not None:
         filters.append({
