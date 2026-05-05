@@ -446,12 +446,15 @@ class HealthCheckResource(Resource):
     def get(self):
         data = health()
         save_health_data(data)
-        if self.parser_query_healthcheck.parse_args().get("historical"):
+        historical_requested = self.parser_query_healthcheck.parse_args().get("historical")
+        if historical_requested:
             historical_list = get_health_data()
             data["historical"] = [{
                 "data": item["data"],
                 "timestamp": int(item["createdAt"].timestamp() * 1000)
             } for item in historical_list]
-        if data["status"] != "available":
+        # Historical data is used by UI charts and should be returned even when
+        # one of dependencies is unavailable.
+        if data["status"] != "available" and not historical_requested:
             return data, 500
         return data
