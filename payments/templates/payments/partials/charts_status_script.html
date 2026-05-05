@@ -59,6 +59,10 @@
             return data['data'][source]['status'] === STATUS_AVAILABLE;
         }
 
+        function hasSourceData(data, source) {
+            return Boolean(data && data['data'] && data['data'][source]);
+        }
+
         function labelColorCallback(tooltipItem, chart) {
             var data = chart.config.data;
             var dataset = data.datasets[tooltipItem.datasetIndex];
@@ -85,6 +89,9 @@
 
             for (var i = 0; i < historical.length; i++) {
                 var current_historical = historical[i];
+                if (!hasSourceData(current_historical, source)) {
+                    continue;
+                }
                 if (new Date(current_historical.timestamp) > startDate) {
                     if (isAvailablePoint(current_historical, source)) {
                         data_available.push(createTotalTimePoint(current_historical, source));
@@ -181,9 +188,12 @@
             for (var i = 0; i < historical.length; i++) {
                 var current_historical = historical[i];
                 var prev_historical = historical[i - 1];
+                if (!hasSourceData(current_historical, source)) {
+                    continue;
+                }
                 if (current_historical.timestamp > startDate.getTime()) {
                     var is_current_available = isAvailablePoint(current_historical, source);
-                    if (i > 0) {
+                    if (i > 0 && hasSourceData(prev_historical, source)) {
                         var is_prev_available = isAvailablePoint(prev_historical, source);
                         if (is_current_available !== is_prev_available) {
                             data_available.push(createUnavailablePoint(prev_historical, source));
