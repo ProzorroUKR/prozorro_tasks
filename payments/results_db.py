@@ -11,7 +11,6 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 from environment_settings import TIMEZONE
 from app.logging import log_exc
 from payments.data import (
-    DEFAULT_MESSAGE_STATUS,
     DESC_PROCESSING_CHOICES_DICT,
     MESSAGE_ID_PRIORITY,
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
