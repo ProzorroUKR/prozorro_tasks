@@ -5,6 +5,16 @@
         return arr.slice(n, arr.length).concat(arr.slice(0, n));
     }
 
+    function formatAmountUah(value) {
+        var n = Number(value);
+        if (isNaN(n)) {
+            return String(value);
+        }
+        return (
+            n.toLocaleString('uk-UA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '\u202f₴'
+        );
+    }
+
     initStatsHorizontalChart($("#sourceChart"), {
         data: sourceData,
         colors: colors
@@ -13,6 +23,18 @@
     initStatsHorizontalChart($("#typeChart"), {
         data: typeData,
         colors: rotate(colors, 2)
+    });
+
+    initStatsHorizontalChart($("#topComplainantsChart"), {
+        data: topComplainantsData,
+        colors: rotate(colors, 1),
+        rowHeight: 38,
+        reverseCategories: true
+    });
+
+    initStatsDoughnutChart($("#typeShareChart"), {
+        data: typeData,
+        colors: rotate(colors, 1)
     });
 
     initStatsTimeBoundariesLineChart($("#dateOperChart"), {
@@ -29,9 +51,83 @@
         colors: '#33b5e5'
     });
 
+    initStatsCumulativeLineChart($("#dateOperCumulativeChart"), {
+        data: dateOperData,
+        color: '#2BBBAD'
+    });
+
+    initStatsWeekdayChart($("#dateOperWeekdayChart"), {
+        data: dateOperData,
+        colors: rotate(colors, 3)
+    });
+
+    initStatsDualDateLineChart($("#operVsResolutionChart"), {
+        operData: dateOperData,
+        resolutionData: dateResolutionData
+    });
+
+    initStatsMovingAverageChart($("#dateOperMovingAverageChart"), {
+        data: dateOperData,
+        windowSize: 7,
+        color: '#4285F4'
+    });
+
+    initStatsParetoChart($("#sourceParetoChart"), {
+        data: sourceData
+    });
+
+    initStatsTimeBoundariesLineChart($("#dateOperAmountChart"), {
+        data: amountDateOperData,
+        start: dateOperStart,
+        end: dateOperEnd,
+        colors: '#AA66CC',
+        formatAxisTick: formatAmountUah,
+        formatTooltipValue: formatAmountUah
+    });
+
+    initStatsTimeBoundariesLineChart($("#dateResolutionAmountChart"), {
+        data: amountDateResolutionData,
+        start: dateOperStart,
+        end: dateOperEnd,
+        colors: '#FB3',
+        formatAxisTick: formatAmountUah,
+        formatTooltipValue: formatAmountUah
+    });
+
+    initStatsDualDateLineChart($("#operVsResolutionAmountChart"), {
+        operData: amountDateOperData,
+        resolutionData: amountDateResolutionData,
+        formatTooltipValue: formatAmountUah,
+        formatAxisTick: formatAmountUah
+    });
+
+    initStatsCumulativeLineChart($("#dateOperAmountCumulativeChart"), {
+        data: amountDateOperData,
+        color: '#9933CC',
+        formatTooltipValue: formatAmountUah,
+        formatAxisTick: formatAmountUah
+    });
+
+    initStatsMoneyHorizontalChart($("#typeAmountChart"), {
+        data: amountTypeData,
+        colors: rotate(colors, 2)
+    });
+
+    initStatsDoughnutChart($("#typeAmountShareChart"), {
+        data: amountTypeData,
+        colors: rotate(colors, 1),
+        valueIsMoney: true
+    });
+
+    initStatsMoneyHorizontalChart($("#sourceAmountChart"), {
+        data: amountSourceData,
+        colors: colors
+    });
+
     function initStatsHorizontalChart($elem, options) {
-        $elem.css("min-height", Object.keys(options.data).length * 30 + 35);
-        $elem.css("height", Object.keys(options.data).length * 30 + 35);
+        var rowH = options.rowHeight != null ? options.rowHeight : 30;
+        $elem.css("min-height", Object.keys(options.data).length * rowH + 35);
+        $elem.css("height", Object.keys(options.data).length * rowH + 35);
         return new Chart($elem, {
             type: 'horizontalBar',
             data: {
@@ -54,21 +150,29 @@
                     bodySpacing: 1,
                     yPadding: 2,
                 },
-                scales: {
-                    xAxes: [{
-                        ticks: {
-                            beginAtZero: true,
-                            stepSize: 1,
-                            callback: function(value) {
-                                if (Object.values(options.data).indexOf(value) !== -1) {
-                                    return value;
-                                }
-                            }
-                        }
-                    }]
-                }
+                scales: buildHorizontalBarScales(options)
             }
         });
+    }
+
+    function buildHorizontalBarScales(options) {
+        var scales = {
+            xAxes: [{
+                ticks: {
+                    beginAtZero: true,
+                    stepSize: 1,
+                    callback: function(value) {
+                        if (Object.values(options.data).indexOf(value) !== -1) {
+                            return value;
+                        }
+                    }
+                }
+            }]
+        };
+        if (options.reverseCategories) {
+            scales.yAxes = [{ticks: {reverse: true}}];
+        }
+        return scales;
     }
 
     function initStatsTimeBoundariesLineChart($elem, options) {
@@ -91,6 +195,27 @@
             } else {
                 data[date] = options.data[date_str];
             }
+        }
+
+        var tooltipCallbacks = {
+            title: function (tooltipItems) {
+                var keys = Object.keys(data);
+                var index = tooltipItems[0].index;
+                var date = new Date(keys[index]);
+                return dateFormat(date);
+            }
+        };
+        if (options.formatTooltipValue) {
+            tooltipCallbacks.label = function (tooltipItem) {
+                return options.formatTooltipValue(tooltipItem.yLabel);
+            };
+        }
+
+        var yAxisTicks = {beginAtZero: true};
+        if (options.formatAxisTick) {
+            yAxisTicks.callback = function (value) {
+                return options.formatAxisTick(value);
+            };
         }
 
         return new Chart($elem, {
@@ -121,24 +246,435 @@
                     titleMarginBottom: 1,
                     bodySpacing: 1,
                     yPadding: 2,
-                    callbacks: {
-                        title: function (tooltipItems) {
-                            var keys = Object.keys(data);
-                            var index = tooltipItems[0].index;
-                            var date = new Date(keys[index]);
-                            return dateFormat(date);
-                        },
-                    }
+                    callbacks: tooltipCallbacks
                 },
                 scales: {
                     xAxes: [{
                         type: 'time'
 					}],
                     yAxes: [{
+                        ticks: yAxisTicks
+                    }],
+                }
+            }
+        });
+    }
+
+    function initStatsMoneyHorizontalChart($elem, options) {
+        $elem.css("min-height", Object.keys(options.data).length * 30 + 35);
+        $elem.css("height", Object.keys(options.data).length * 30 + 35);
+        return new Chart($elem, {
+            type: 'horizontalBar',
+            data: {
+                labels: Object.keys(options.data),
+                datasets: [{
+                    data: Object.values(options.data),
+                    backgroundColor: options.colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                tooltips: {
+                    enabled: true,
+                    intersect: false,
+                    titleMarginBottom: 1,
+                    bodySpacing: 1,
+                    yPadding: 2,
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            var raw = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                            return formatAmountUah(raw);
+                        }
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function (value) {
+                                return formatAmountUah(value);
+                            }
+                        }
+                    }]
+                }
+            }
+        });
+    }
+
+    function getSortedDateEntries(data) {
+        return Object.keys(data || {})
+            .filter(function (date) {
+                return !isNaN(new Date(date).getTime());
+            })
+            .sort()
+            .map(function (date) {
+                return {
+                    date: date,
+                    value: Number(data[date]) || 0
+                };
+            });
+    }
+
+    function initStatsDoughnutChart($elem, options) {
+        $elem.css("min-height", 240);
+        $elem.css("height", 240);
+
+        return new Chart($elem, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(options.data),
+                datasets: [{
+                    data: Object.values(options.data),
+                    backgroundColor: options.colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    position: 'right'
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            var dataset = data.datasets[tooltipItem.datasetIndex];
+                            var total = dataset.data.reduce(function (sum, value) {
+                                return sum + value;
+                            }, 0);
+                            var current = dataset.data[tooltipItem.index];
+                            var percentage = total ? (current * 100 / total).toFixed(1) : 0;
+                            var valueText = options.valueIsMoney
+                                ? formatAmountUah(current)
+                                : current;
+                            return data.labels[tooltipItem.index] + ': ' + valueText + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function initStatsCumulativeLineChart($elem, options) {
+        var entries = getSortedDateEntries(options.data);
+        var cumulative = 0;
+        var labels = [];
+        var values = [];
+
+        entries.forEach(function (entry) {
+            cumulative += entry.value;
+            labels.push(entry.date);
+            values.push(cumulative);
+        });
+
+        $elem.css("min-height", 180);
+        $elem.css("height", 180);
+
+        var yAxisTicksCumul = {beginAtZero: true};
+        if (options.formatAxisTick) {
+            yAxisTicksCumul.callback = function (value) {
+                return options.formatAxisTick(value);
+            };
+        }
+
+        var tooltipCallbacksCumul = {};
+        if (options.formatTooltipValue) {
+            tooltipCallbacksCumul.label = function (tooltipItem) {
+                return options.formatTooltipValue(tooltipItem.yLabel);
+            };
+        }
+
+        return new Chart($elem, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: 'rgba(43, 187, 173, 0.2)',
+                    borderColor: options.color,
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    lineTension: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                tooltips: {
+                    callbacks: tooltipCallbacksCumul
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time'
+                    }],
+                    yAxes: [{
+                        ticks: yAxisTicksCumul
+                    }]
+                }
+            }
+        });
+    }
+
+    function initStatsWeekdayChart($elem, options) {
+        var weekdays = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+        var weekdayValues = [0, 0, 0, 0, 0, 0, 0];
+        var entries = getSortedDateEntries(options.data);
+
+        entries.forEach(function (entry) {
+            var day = new Date(entry.date).getDay();
+            weekdayValues[day] += entry.value;
+        });
+
+        $elem.css("min-height", 170);
+        $elem.css("height", 170);
+
+        return new Chart($elem, {
+            type: 'bar',
+            data: {
+                labels: weekdays,
+                datasets: [{
+                    data: weekdayValues,
+                    backgroundColor: options.colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                scales: {
+                    yAxes: [{
                         ticks: {
                             beginAtZero: true
                         }
+                    }]
+                }
+            }
+        });
+    }
+
+    function getUnifiedSortedDates(firstData, secondData) {
+        var keys = Object.keys(firstData || {}).concat(Object.keys(secondData || {}));
+        var unique = Array.from(new Set(keys));
+        return unique
+            .filter(function (date) {
+                return !isNaN(new Date(date).getTime());
+            })
+            .sort();
+    }
+
+    function initStatsDualDateLineChart($elem, options) {
+        var dates = getUnifiedSortedDates(options.operData, options.resolutionData);
+        var operValues = dates.map(function (date) {
+            return Number(options.operData[date]) || 0;
+        });
+        var resolutionValues = dates.map(function (date) {
+            return Number(options.resolutionData[date]) || 0;
+        });
+
+        $elem.css("min-height", 190);
+        $elem.css("height", 190);
+
+        var yAxisTicksDual = {beginAtZero: true};
+        if (options.formatAxisTick) {
+            yAxisTicksDual.callback = function (value) {
+                return options.formatAxisTick(value);
+            };
+        }
+
+        var chartOptsDual = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                xAxes: [{
+                    type: 'time'
+                }],
+                yAxes: [{
+                    ticks: yAxisTicksDual
+                }]
+            }
+        };
+        if (options.formatTooltipValue) {
+            chartOptsDual.tooltips = {
+                callbacks: {
+                    label: function (tooltipItem, data) {
+                        var ds = data.datasets[tooltipItem.datasetIndex];
+                        var label = ds.label ? ds.label + ': ' : '';
+                        return label + options.formatTooltipValue(tooltipItem.yLabel);
+                    }
+                }
+            };
+        }
+
+        return new Chart($elem, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Дата операції',
+                        data: operValues,
+                        borderColor: '#33b5e5',
+                        backgroundColor: 'rgba(51, 181, 229, 0.12)',
+                        fill: false,
+                        lineTension: 0,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Дата завершення',
+                        data: resolutionValues,
+                        borderColor: '#ff3547',
+                        backgroundColor: 'rgba(255, 53, 71, 0.12)',
+                        fill: false,
+                        lineTension: 0,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: chartOptsDual
+        });
+    }
+
+    function initStatsMovingAverageChart($elem, options) {
+        var entries = getSortedDateEntries(options.data);
+        var labels = entries.map(function (entry) {
+            return entry.date;
+        });
+        var rawValues = entries.map(function (entry) {
+            return entry.value;
+        });
+        var averagedValues = [];
+
+        for (var i = 0; i < rawValues.length; i++) {
+            var start = Math.max(0, i - options.windowSize + 1);
+            var slice = rawValues.slice(start, i + 1);
+            var sum = slice.reduce(function (acc, value) {
+                return acc + value;
+            }, 0);
+            averagedValues.push((sum / slice.length).toFixed(2));
+        }
+
+        $elem.css("min-height", 190);
+        $elem.css("height", 190);
+
+        return new Chart($elem, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: options.windowSize + '-day moving average',
+                    data: averagedValues,
+                    borderColor: options.color,
+                    backgroundColor: 'rgba(66, 133, 244, 0.18)',
+                    lineTension: 0.2,
+                    borderWidth: 2,
+                    pointRadius: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time'
                     }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+    }
+
+    function initStatsParetoChart($elem, options) {
+        var entries = Object.keys(options.data || {}).map(function (key) {
+            return {
+                label: key,
+                value: Number(options.data[key]) || 0
+            };
+        }).sort(function (a, b) {
+            return b.value - a.value;
+        });
+
+        var total = entries.reduce(function (sum, entry) {
+            return sum + entry.value;
+        }, 0);
+        var labels = [];
+        var values = [];
+        var cumulativePercent = [];
+        var running = 0;
+
+        entries.forEach(function (entry) {
+            running += entry.value;
+            labels.push(entry.label);
+            values.push(entry.value);
+            cumulativePercent.push(total ? (running * 100 / total).toFixed(1) : 0);
+        });
+
+        $elem.css("min-height", Math.max(entries.length * 24 + 80, 220));
+        $elem.css("height", Math.max(entries.length * 24 + 80, 220));
+
+        return new Chart($elem, {
+            type: 'horizontalBar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'horizontalBar',
+                        label: 'Кількість',
+                        data: values,
+                        backgroundColor: '#33b5e5',
+                        xAxisID: 'x-axis-count'
+                    },
+                    {
+                        type: 'line',
+                        label: 'Накопичена частка, %',
+                        data: cumulativePercent,
+                        borderColor: '#ff3547',
+                        backgroundColor: 'rgba(255, 53, 71, 0.12)',
+                        fill: false,
+                        pointRadius: 2,
+                        lineTension: 0,
+                        xAxisID: 'x-axis-percent'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    xAxes: [
+                        {
+                            id: 'x-axis-count',
+                            position: 'bottom',
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        },
+                        {
+                            id: 'x-axis-percent',
+                            position: 'top',
+                            ticks: {
+                                beginAtZero: true,
+                                max: 100,
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    ]
                 }
             }
         });

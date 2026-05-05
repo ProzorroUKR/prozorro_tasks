@@ -24,7 +24,7 @@
 </div>
 <div>
     <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
-        Метод операції
+        Контрагент
     </div>
     <div class="chart-payments-wrapper">
         <canvas id="sourceChart"></canvas>
@@ -38,12 +38,139 @@
         <canvas id="typeChart"></canvas>
     </div>
 </div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Топ 10: найменування скаржника
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="topComplainantsChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Частка типів операцій (%)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="typeShareChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Кумулятивна динаміка операцій
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperCumulativeChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Розподіл операцій по днях тижня
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperWeekdayChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Порівняння: дата операції vs дата завершення
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="operVsResolutionChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        7-денне ковзне середнє (дата операції)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperMovingAverageChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Pareto контрагентів (накопичена частка)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="sourceParetoChart"></canvas>
+    </div>
+</div>
+
+<table class="table table-bordered table-striped table-payments mt-3">
+    <tr class="thead-dark">
+        <th class="text-center p-2">
+            Суми платежів
+            <small class="d-block m-0">(грн: SUM_E, якщо відсутнє — SUM)</small>
+        </th>
+    </tr>
+</table>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Сума по днях (дата операції)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperAmountChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Сума по днях (дата завершення обробки)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateResolutionAmountChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Порівняння сум: операція vs завершення
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="operVsResolutionAmountChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Кумулятивна сума (дата операції)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="dateOperAmountCumulativeChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Сума по типах операцій
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="typeAmountChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Частка суми по типах (%)
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="typeAmountShareChart"></canvas>
+    </div>
+</div>
+<div>
+    <div class="btn btn-sm btn-block btn-payment-light btn-payment m-0 z-depth-0">
+        Сума по контрагентах
+    </div>
+    <div class="chart-payments-wrapper">
+        <canvas id="sourceAmountChart"></canvas>
+    </div>
+</div>
 
 <script type="text/javascript">
     var sourceData = {{ counts.source | safe or {} }};
+    var topComplainantsData = {{ (counts.top_complainants or {}) | tojson }};
     var typeData = {{ counts.type | safe or {} }};
     var dateOperData = {{ counts.date_oper | safe or {} }};
     var dateResolutionData = {{ counts.date_resolution | safe or {} }};
+    {% set amounts = counts.amounts or {} %}
+    var amountDateOperData = {{ amounts.date_oper | default({}) | tojson }};
+    var amountDateResolutionData = {{ amounts.date_resolution | default({}) | tojson }};
+    var amountTypeData = {{ amounts.type | default({}) | tojson }};
+    var amountSourceData = {{ amounts.source | default({}) | tojson }};
     var dateOperStart = "{{ request.args.get('date_oper_from', min_date) }}";
     var dateOperEnd = "{{ request.args.get('date_oper_to', max_date) }}";
 </script>

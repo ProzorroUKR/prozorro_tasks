@@ -84,7 +84,7 @@
 
 </div>
 
-{% if counts.source or counts.type or counts.date_oper %}
+{% if counts.source or counts.type or counts.date_oper or counts.top_complainants or (counts.amounts and (counts.amounts.date_oper or counts.amounts.type or counts.amounts.source)) %}
 <div id="statBlock" class="d-inline-block w-100 mb-3">
     {% include 'autoclient_payments/partials/charts_stats.html' %}
 </div>

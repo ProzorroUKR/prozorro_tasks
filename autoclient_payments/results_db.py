@@ -151,6 +151,79 @@ def pipeline_payments_counts_date(field, date_wrapper=lambda x: x):
     ]
 
 
+def payment_amount_sum_expr():
+    """Sum in national currency (UAH): prefer SUM_E, fallback to SUM."""
+    return {
+        "$convert": {
+            "input": {"$ifNull": ["$payment.SUM_E", {"$ifNull": ["$payment.SUM", "0"]}]},
+            "to": "double",
+            "onError": 0.0,
+            "onNull": 0.0,
+        }
+    }
+
+
+def pipeline_payments_sum_group(field, key=None):
+    amount = payment_amount_sum_expr()
+    if not key:
+        key = {"$ifNull": ["$_id", "null"]}
+    return [
+        {"$group": {"_id": field, "total": {"$sum": amount}}},
+        {
+            "$group": {
+                "_id": None,
+                "counts": {"$push": {"k": key, "v": "$total"}},
+            }
+        },
+        {"$replaceRoot": {"newRoot": {"$arrayToObject": "$counts"}}},
+    ]
+
+
+def pipeline_payments_sum_date(field, date_wrapper=lambda x: x):
+    amount = payment_amount_sum_expr()
+    return [
+        {"$group": {"_id": date_wrapper(field), "total": {"$sum": amount}}},
+        {"$match": {"_id": {"$ne": None}}},
+        {"$sort": {"_id": ASCENDING}},
+        {
+            "$group": {
+                "_id": None,
+                "counts": {"$push": {"k": "$_id", "v": "$total"}},
+            }
+        },
+        {"$replaceRoot": {"newRoot": {"$arrayToObject": "$counts"}}},
+    ]
+
+
+COMPLAINANT_LEGAL_NAME_FIELD = "$author.identifier.legalName"
+COMPLAINANT_NAME_MISSING_LABEL = "(немає даних)"
+
+
+def pipeline_payments_top_counts(field_path, limit_n, missing_bucket_label=None):
+    if missing_bucket_label is not None:
+        group_id = {
+            "$cond": [
+                {"$in": [{"$ifNull": [field_path, ""]}, ["", None]]},
+                missing_bucket_label,
+                field_path,
+            ]
+        }
+    else:
+        group_id = field_path
+    return [
+        {"$group": {"_id": group_id, "count": {"$sum": 1}}},
+        {"$sort": {"count": DESCENDING}},
+        {"$limit": limit_n},
+        {
+            "$group": {
+                "_id": None,
+                "counts": {"$push": {"k": {"$toString": "$_id"}, "v": "$count"}},
+            }
+        },
+        {"$replaceRoot": {"newRoot": {"$arrayToObject": "$counts"}}},
+    ]
+
+
 def pipeline_payments_counts_total():
     return [
         {
@@ -263,6 +336,38 @@ def get_payment_stats(filters=None, page=None, limit=None, **kwargs):
                 "counts_date_resolution": pipeline_payments_counts_date(
                     "$resolution.date", lambda x: query_date_split(x)
                 ),
+                "amounts_date_oper": pipeline_payments_sum_date("$dateOper", lambda x: query_date_split(x)),
+                "amounts_date_resolution": pipeline_payments_sum_date(
+                    "$resolution.date", lambda x: query_date_split(x)
+                ),
+                "amounts_type": pipeline_payments_sum_group(
+                    "$payment.TRANTYPE",
+                    {
+                        "$switch": {
+                            "branches": [
+                                {"case": {"$eq": ["$_id", val]}, "then": label}
+                                for val, label in TransactionType.as_dict().items()
+                            ],
+                            "default": {"$ifNull": ["$_id", "null"]},
+                        }
+                    },
+                ),
+                "amounts_source": pipeline_payments_sum_group(
+                    {
+                        "$switch": {
+                            "branches": [
+                                {"case": {"$in": ["$payment.AUT_CNTR_ACC", accounts]}, "then": counterparty}
+                                for counterparty, accounts in COUNTERPARTIES.items()
+                            ],
+                            "default": OTHER_COUNTERPARTIES,
+                        },
+                    }
+                ),
+                "top_complainants": pipeline_payments_top_counts(
+                    COMPLAINANT_LEGAL_NAME_FIELD,
+                    10,
+                    missing_bucket_label=COMPLAINANT_NAME_MISSING_LABEL,
+                ),
             }
         },
         {
@@ -273,6 +378,13 @@ def get_payment_stats(filters=None, page=None, limit=None, **kwargs):
                     "source": project_payments_results_counts("$counts_source"),
                     "date_oper": project_payments_results_counts("$counts_date_oper"),
                     "date_resolution": project_payments_results_counts("$counts_date_resolution"),
+                    "top_complainants": project_payments_results_counts("$top_complainants"),
+                    "amounts": {
+                        "date_oper": project_payments_results_counts("$amounts_date_oper"),
+                        "date_resolution": project_payments_results_counts("$amounts_date_resolution"),
+                        "type": project_payments_results_counts("$amounts_type"),
+                        "source": project_payments_results_counts("$amounts_source"),
+                    },
                 },
             }
         },
