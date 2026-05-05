@@ -18,6 +18,7 @@ from environment_settings import (
     CONNECT_TIMEOUT,
     READ_TIMEOUT,
 )
+from liqpay_int.utils import generate_liqpay_status_params, liqpay_request
 from autoclient_payments.results_db import get_statuses_list, save_status
 from autoclient_payments.utils import request_cdb_head_spore, request_cdb_complaint_search, request_pb_autoclient_head
 
@@ -73,6 +74,11 @@ def request_lb():
 
 def request_autoclient():
     return request_pb_autoclient_head(timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+
+
+def request_liqpay():
+    params = generate_liqpay_status_params({"order_id": ""})
+    return liqpay_request(params, sandbox=False, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
 
 
 @contextmanager
@@ -133,6 +139,28 @@ def autoclient_health(request_method):
         return health_item
 
 
+def liqpay_health(request_method):
+    start = time.time()
+    with try_method(request_method) as (response, exception):
+        total_seconds = time.time() - start
+        health_item = {
+            "status": liqpay_health_status(response),
+            "connect_timeout": CONNECT_TIMEOUT,
+            "read_timeout": READ_TIMEOUT,
+            "total_seconds": total_seconds,
+        }
+        if response:
+            health_item.update(
+                {
+                    "url": getattr(response, "url", None),
+                    "status_code": response_status_code(response),
+                }
+            )
+        if exception:
+            health_item.update({"exception": str(exception)})
+        return health_item
+
+
 def mongodb_health():
     start = time.time()
     with try_method(mongodb_info) as (info, exception):
@@ -176,6 +204,7 @@ def health():
         "cdb_public": api_health(request_public),
         "cdb_lb": api_health(request_lb),
         "cdb_search": api_health(request_search),
+        "liqpay": liqpay_health(request_liqpay),
         "autoclient": autoclient_health(request_autoclient),
         "mongodb": mongodb_health(),
         "rabbitmq": rabbitmq_health(),
