@@ -501,7 +501,7 @@ def save_status(data):
     collection = get_mongodb_status_collection()
     try:
         insert_data = {
-            "_id": data_to_uid(data),
+            "_id": data_to_uid(data, keys=None),
             "data": data.copy(),
             "createdAt": datetime.utcnow(),
         }
