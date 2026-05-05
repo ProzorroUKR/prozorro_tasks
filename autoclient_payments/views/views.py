@@ -38,6 +38,7 @@ from autoclient_payments.views.context import (
 )
 from autoclient_payments.data import (
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
+    DESC_PROCESSING_DICT,
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
     complaint_status_description,
     complaint_reject_description,
@@ -162,6 +163,7 @@ def payment_stats():
             max_date=max_date,
             counterparties_choices=list(COUNTERPARTIES.keys()) + [OTHER_COUNTERPARTIES],
             type_choices=TransactionType.as_dict(),
+            processing_status_choices=DESC_PROCESSING_DICT,
             **search_kwargs,
             **report_kwargs,
         )

@@ -15,8 +15,10 @@ from pymongo.errors import PyMongoError, OperationFailure, DuplicateKeyError
 from environment_settings import TIMEZONE
 from app.logging import log_exc
 from autoclient_payments.data import (
+    MESSAGE_ID_PRIORITY,
     PAYMENTS_FAILED_MESSAGE_ID_LIST,
     PAYMENTS_NOT_FAILED_MESSAGE_ID_LIST,
+    PAYMENTS_MESSAGE_IDS,
     OTHER_COUNTERPARTIES,
 )
 from autoclient_payments.utils import filter_payment_data, PB_DATA_DT_FORMAT
@@ -368,7 +370,13 @@ def get_payment_item_by_params(params, message_ids=None):
 
 
 def query_payment_search(
-    search=None, payment_type=None, payment_source=None, payment_date_from=None, payment_date_to=None, **kwargs
+    search=None,
+    payment_type=None,
+    payment_source=None,
+    processing_status=None,
+    payment_date_from=None,
+    payment_date_to=None,
+    **kwargs
 ):
     filters = []
     if search is not None:
@@ -380,6 +388,16 @@ def query_payment_search(
             filters.append({"payment.AUT_CNTR_ACC": {"$nin": list(chain(*COUNTERPARTIES.values()))}})
         else:
             filters.append({"payment.AUT_CNTR_ACC": {"$in": COUNTERPARTIES[payment_source]}})
+    if processing_status in PAYMENTS_MESSAGE_IDS:
+        status_ids = set(PAYMENTS_MESSAGE_IDS[processing_status])
+        higher_priority_ids = []
+        for message_id in MESSAGE_ID_PRIORITY:
+            if message_id in status_ids:
+                break
+            higher_priority_ids.append(message_id)
+        if higher_priority_ids:
+            filters.append({"messages.message_id": {"$nin": higher_priority_ids}})
+        filters.append({"messages.message_id": {"$in": list(status_ids)}})
     if payment_date_from is not None and payment_date_to is not None:
         filters.append(
             {
