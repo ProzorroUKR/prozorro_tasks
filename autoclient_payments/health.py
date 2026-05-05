@@ -9,6 +9,9 @@ from contextlib import contextmanager
 from celery_worker.celery import app
 from celery_worker.locks import get_mongodb_client
 from environment_settings import (
+    PB_AUTOCLIENT_INTEGRATION_API_HOST,
+    PB_AUTOCLIENT_NAME,
+    PB_AUTOCLIENT_TOKEN,
     PUBLIC_API_HOST,
     API_HOST,
     MONGODB_SERVER_SELECTION_TIMEOUT,
@@ -118,6 +121,8 @@ def api_health(request_method):
 
 
 def autoclient_health(request_method):
+    if not PB_AUTOCLIENT_INTEGRATION_API_HOST or not PB_AUTOCLIENT_NAME or not PB_AUTOCLIENT_TOKEN:
+        return {"status": "disabled"}
     start = time.time()
     with try_method(request_method) as (response, exception):
         total_seconds = time.time() - start
