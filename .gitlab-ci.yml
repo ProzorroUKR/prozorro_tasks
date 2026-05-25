@@ -3,46 +3,25 @@ include:
     ref: master
     file: '/templates/security.yml'
 
-variables:
-  SEC_CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
-  SEC_CS_DOCKERFILE_PATH: Dockerfile
-  DEFECTDOJO_PRODUCT_TYPE: "CDB"
-
 workflow:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "master" && $BUILT_AS_BRIDGE == null
-      when: never
-    - if: $CI_COMMIT_BRANCH && $BUILT_AS_BRIDGE
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+    - if: $CI_MERGE_REQUEST_ID || $CI_MERGE_REQUEST_EVENT_TYPE
       when: never
     - if: $CI_COMMIT_BRANCH
     - if: $CI_COMMIT_TAG
     - when: never
 
 stages:
-  - build
   - test
-  - security
   - push image
+  - security
 
-build:
-  stage: build
-  image: docker:18.09.9-git
-  tags:
-    - docker
-  variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
-  script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t $IMAGE_TAG .
-    - docker push $IMAGE_TAG
-  rules:
-    - if: $CI_COMMIT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+variables:
+  SEC_CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  SEC_CS_DOCKERFILE_PATH: Dockerfile
+  DEFECTDOJO_PRODUCT_TYPE: "CDB"
 
 test:
-  stage: test
   image: python:3.8
   tags:
     - kube-dev
@@ -61,15 +40,14 @@ test:
     paths:
       - public
     expire_in: 30 days
-  rules:
-    - if: $CI_COMMIT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 docker build:
   image: docker:18.09.9-git
   tags:
     - docker
   stage: push image
+  only:
+    - tags
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - LATEST_MASTER_COMMIT=$(git log -n 1 origin/master --pretty=format:"%H")
@@ -77,5 +55,3 @@ docker build:
     - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG $EXTRA_TAGS .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     - if [ "$LATEST_MASTER_COMMIT" = "$CI_COMMIT_SHA" ]; then docker push $CI_REGISTRY_IMAGE:latest; fi
-  rules:
-    - if: $CI_COMMIT_TAG
