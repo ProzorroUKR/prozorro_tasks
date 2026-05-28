@@ -33,7 +33,7 @@ test:
   script:
     - uv run coverage run --source=. -m pytest -v
     - uv run coverage html
-    - mv htmlcov/ public/
+    - mv htmlcov/ public/\
     - uv run coverage report
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
   artifacts:
@@ -42,7 +42,7 @@ test:
     expire_in: 30 days
 
 docker build:
-  image: docker:18.09.9-git
+  image: docker:24.0.9-git
   tags:
     - docker
   stage: push image
