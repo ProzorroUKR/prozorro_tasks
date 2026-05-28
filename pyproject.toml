@@ -17,7 +17,7 @@ dependencies = [
     "pytz",
     "pyyaml",
     "python-json-logger>=2.0.2,<3",
-    "Jinja2==2.10.1",
+    "Jinja2==2.11.3",
     "MarkupSafe==1.1.1",
     "itsdangerous==1.1.0",
     "tornado>=4.2.0,<6.0.0",
@@ -41,4 +41,9 @@ dependencies = [
     "liqpay-python @ git+https://github.com/liqpay/sdk-python",
     "prozorro_crawler @ git+https://github.com/ProzorroUKR/prozorro_crawler.git@2.1.13",
     "standards @ git+https://github.com/ProzorroUKR/standards.git@1.0.38",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
 ]
