@@ -15,11 +15,14 @@ class BaseParserTestCase(BaseTestCase):
         self.assertEqual(
             response.data,
             b'<?xml version="1.0" encoding="UTF-8"?>'
-            b"<Body><Response>"
-            b"<ResultCode>80</ResultCode>"
-            b"<ResultMessage>Invalid request xml: EndTag: '&lt;/' not found, line 1,"
-            b" column 24 (&lt;string&gt;, line 1)</ResultMessage>"
-            b"</Response></Body>"
+            b'<Body><Response>'
+            b'<ResultCode>80</ResultCode>'
+            b'<ResultMessage>'
+            b'Invalid request xml: '
+            b'Premature end of data in tag test line 1, line 1, column 24 '
+            b'(&lt;string&gt;, line 1)'
+            b'</ResultMessage>'
+            b'</Response></Body>'
         )
         self.assertEqual(response.status_code, 400)
         process_transaction_mock.assert_not_called()

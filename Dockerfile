@@ -1,4 +1,4 @@
-FROM python:3.8-alpine3.20
+FROM python:3.10-alpine3.20
 
 RUN apk --no-cache add gcc build-base git libxml2-dev libxslt-dev
 
