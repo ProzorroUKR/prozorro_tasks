@@ -22,7 +22,7 @@ variables:
   DEFECTDOJO_PRODUCT_TYPE: "CDB"
 
 test:
-  image: python:3.8
+  image: python:3.13
   tags:
     - kube-dev
   before_script:
