@@ -14,8 +14,8 @@ class UnauthorizedError(HTTPException):
         "Invalid username or password"
     )
 
-    def get_headers(self, environ=None):
-        headers = super(UnauthorizedError, self).get_headers(environ=environ)
+    def get_headers(self, environ=None, scope=None):
+        headers = super(UnauthorizedError, self).get_headers(environ=environ, scope=scope)
         if self.scheme and self.realm:
             headers.append(("WWW-Authenticate", self.authenticate_header()))
         return headers

@@ -9,6 +9,9 @@ from zeep import Client
 from unittest.mock import patch, Mock
 import unittest
 import base64
+import os
+
+WSDL_PATH = os.path.join(os.path.dirname(__file__), "fixtures", "wdsl.xml")
 
 
 class RetryExc(Exception):
@@ -29,7 +32,7 @@ class HelpersTestCase(unittest.TestCase):
 
 @patch(
     "treasury.api_requests.Client",
-    lambda _, **kwargs: Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
+    lambda _, **kwargs: Client(WSDL_PATH)  # use the local copy
 )
 class RequestTestCase(unittest.TestCase):
 
@@ -129,7 +132,7 @@ class RequestTestCase(unittest.TestCase):
 
 @patch(
     "treasury.api_requests.Client",
-    lambda _, **kwargs: Client("file://./treasury/tests/fixtures/wdsl.xml")
+    lambda _, **kwargs: Client(WSDL_PATH)
 )
 class ResponseTestCase(unittest.TestCase):
 
