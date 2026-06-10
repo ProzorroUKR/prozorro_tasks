@@ -88,17 +88,14 @@ services:
   #rabbitmqctl set_policy ha-all "" '{"ha-mode":"all","ha-sync-mode":"automatic"}'
 
   tenders:
-    image: prozorro/tasks
-    build:
-      context: tasks
-      dockerfile: Dockerfile
+    build: .
     command:
       - "python"
       - "-m"
       - "crawler.main"
       - "tenders"
     environment:
-      LOCK_ENABLED: yep
+      LOCK_ENABLED: 1
       API_LIMIT: 5
       API_OPT_FIELDS: status,procurementMethodType
       MONGODB_URL: mongodb://root:example@mongo:27017
@@ -108,21 +105,19 @@ services:
       LOCK_PROCESS_NAME: tasks-crawler-tenders
     volumes:
       - .:/app
+      - /app/.venv
     depends_on:
       - mongo
 
   contracts:
-    image: prozorro/tasks
-    build:
-      context: tasks
-      dockerfile: Dockerfile
+    build: .
     command:
       - "python"
       - "-m"
       - "crawler.main"
       - "contracts"
     environment:
-      LOCK_ENABLED: yep
+      LOCK_ENABLED: 1
       API_LIMIT: 5
       API_OPT_FIELDS: status,procurementMethodType
       MONGODB_URL: mongodb://root:example@mongo:27017
@@ -132,22 +127,20 @@ services:
       LOCK_PROCESS_NAME: tasks-crawler-contracts
       API_RESOURCE: contracts
     volumes:
-      - .:/app
+      - ./:/app
+      - /app/.venv
     depends_on:
       - mongo
 
   frameworks:
-    image: prozorro/tasks
-    build:
-      context: tasks
-      dockerfile: Dockerfile
+    build: .
     command:
       - "python"
       - "-m"
       - "crawler.main"
       - "frameworks"
     environment:
-      LOCK_ENABLED: yep
+      LOCK_ENABLED: 1
       API_LIMIT: 5
       API_OPT_FIELDS: status,procurementMethodType
       MONGODB_URL: mongodb://root:example@mongo:27017
@@ -157,22 +150,20 @@ services:
       LOCK_PROCESS_NAME: tasks-crawler-frameworks
       API_RESOURCE: frameworks
     volumes:
-      - .:/app
+      - ./:/app
+      - /app/.venv
     depends_on:
       - mongo
 
   agreements:
-    image: prozorro/tasks
-    build:
-      context: tasks
-      dockerfile: Dockerfile
+    build: .
     command:
       - "python"
       - "-m"
       - "crawler.main"
       - "agreements"
     environment:
-      LOCK_ENABLED: yep
+      LOCK_ENABLED: 1
       API_LIMIT: 5
       API_OPT_FIELDS: status,procurementMethodType
       MONGODB_URL: mongodb://root:example@mongo:27017
@@ -182,7 +173,8 @@ services:
       LOCK_PROCESS_NAME: tasks-crawler-agreements
       API_RESOURCE: agreements
     volumes:
-      - .:/app
+      - ./:/app
+      - /app/.venv
     depends_on:
       - mongo
 
@@ -210,7 +202,8 @@ services:
       - EDR_API_PASSWORD=
     command: celery -A celery_worker worker -B --concurrency=20 --loglevel=info
     volumes:
-        - .:/app
+      - ./:/app
+      - /app/.venv
     depends_on:
       - mongo
       - rabbit
@@ -240,7 +233,8 @@ services:
       - LIQPAY_TAX_PERCENTAGE=2.75
     command: python runserver.py
     volumes:
-        - .:/app
+      - .:/app
+      - /app/.venv
     ports:
       - "8000:8000"
     depends_on:
