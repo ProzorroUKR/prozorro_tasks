@@ -23,3 +23,5 @@ coverage.xml
 *.log
 .git
 events.db
+payments.db
+celerybeat-schedule

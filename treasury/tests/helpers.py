@@ -2,12 +2,15 @@ from zeep import Client
 from lxml import etree
 from gzip import compress
 import base64
+import os
+
+WSDL_PATH = os.path.join(os.path.dirname(__file__), "fixtures", "wdsl.xml")
 
 
 def prepare_request(xml, message_id=1, method_name="PRTrans",
                     login="prozorrouser", password="111111",
                     should_compress=True, should_encode=True):
-    client = Client("file://./treasury/tests/fixtures/wdsl.xml")  # use the local copy
+    client = Client(WSDL_PATH)  # use the local copy
     factory = client.type_factory("ns0")
     if should_compress:
         xml = compress(xml)
