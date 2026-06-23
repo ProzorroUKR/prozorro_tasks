@@ -57,7 +57,7 @@ def save_upload_results(response_json, *args):
     uid = args_to_uid(args)
     collection = get_mongodb_collection()
     try:
-        collection.insert({
+        collection.insert_one({
             '_id': uid,
             'file_data': response_json,
             'createdAt': datetime.utcnow(),

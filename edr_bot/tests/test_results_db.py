@@ -57,7 +57,7 @@ class ResultsDBTestCase(unittest.TestCase):
             datetime_mock.utcnow.return_value = datetime.utcnow()
             result = save_upload_results(file_data, *args)
 
-        collection.insert.assert_called_once_with(
+        collection.insert_one.assert_called_once_with(
             {
                 '_id': args_to_uid(args),
                 'file_data': file_data,
@@ -69,7 +69,7 @@ class ResultsDBTestCase(unittest.TestCase):
     @patch("edr_bot.results_db.get_mongodb_collection")
     def test_save_upload_results_raise_exc(self, get_collection):
         collection = MagicMock()
-        collection.insert.side_effect = NetworkTimeout()
+        collection.insert_one.side_effect = NetworkTimeout()
         get_collection.return_value = collection
 
         file_data = {"data": 1, "meta": "hello"}
@@ -79,7 +79,7 @@ class ResultsDBTestCase(unittest.TestCase):
             datetime_mock.utcnow.return_value = datetime.utcnow()
             result = save_upload_results(file_data, *args)
 
-        collection.insert.assert_called_once_with(
+        collection.insert_one.assert_called_once_with(
             {
                 '_id': args_to_uid(args),
                 'file_data': file_data,

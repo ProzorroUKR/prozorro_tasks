@@ -8,6 +8,7 @@ from autoclient_payments.results_db import (
     get_payment_item,
     push_payment_message,
     save_payment_item,
+    save_status,
     data_to_uid,
     set_payment_params,
     set_payment_resolution,
@@ -84,6 +85,35 @@ class ResultsDBTestCase(unittest.TestCase):
         user = "test_user"
 
         result = save_payment_item(TRANSACTION_DATA, user)
+
+        self.assertEqual(result, None)
+
+    @patch("autoclient_payments.results_db.datetime")
+    @patch("autoclient_payments.results_db.get_mongodb_status_collection")
+    def test_save_status(self, get_collection, datetime):
+        collection = MagicMock()
+        get_collection.return_value = collection
+        datetime.utcnow.return_value = "fake_datetime"
+
+        result = save_status(TRANSACTION_DATA)
+
+        expected = {
+            "_id": data_to_uid(TRANSACTION_DATA, keys=None),
+            "data": TRANSACTION_DATA,
+            "createdAt": "fake_datetime",
+        }
+        collection.insert_one.assert_called_once_with(expected)
+        self.assertEqual(result, expected)
+
+    @patch("autoclient_payments.results_db.datetime")
+    @patch("autoclient_payments.results_db.get_mongodb_status_collection")
+    def test_save_status_duplicate(self, get_collection, datetime):
+        collection = MagicMock()
+        collection.insert_one.side_effect = DuplicateKeyError("error")
+        get_collection.return_value = collection
+        datetime.utcnow.return_value = "fake_datetime"
+
+        result = save_status(TRANSACTION_DATA)
 
         self.assertEqual(result, None)
 

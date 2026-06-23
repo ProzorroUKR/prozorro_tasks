@@ -1,5 +1,6 @@
 from unittest.mock import patch, MagicMock
 from datetime import datetime
+from pymongo import ReturnDocument
 from pymongo.errors import NetworkTimeout
 from fiscal_bot.utils import get_increment_id, get_daily_increment_id, get_monthly_increment_id
 import unittest
@@ -42,17 +43,17 @@ class GetIncrementTestCase(unittest.TestCase):
         task = MagicMock()
 
         collection = MagicMock()
-        collection.find_and_modify.return_value = {"count": 13}
+        collection.find_one_and_update.return_value = {"count": 13}
         get_collection.return_value = collection
 
         result = get_increment_id(task, "test_uid")
 
         self.assertEqual(result, 13)
-        collection.find_and_modify.assert_called_once_with(
-            query={'_id': "test_uid"},
-            update={"$inc": {'count': 1}},
-            new=True,
+        collection.find_one_and_update.assert_called_once_with(
+            {'_id': "test_uid"},
+            {"$inc": {'count': 1}},
             upsert=True,
+            return_document=ReturnDocument.AFTER,
         )
 
     @patch("fiscal_bot.utils.get_mongodb_collection")
@@ -64,15 +65,15 @@ class GetIncrementTestCase(unittest.TestCase):
         task.retry = RetryException
 
         collection = MagicMock()
-        collection.find_and_modify.side_effect = NetworkTimeout
+        collection.find_one_and_update.side_effect = NetworkTimeout
         get_collection.return_value = collection
 
         with self.assertRaises(RetryException):
             get_increment_id(task, "test_uid")
 
-        collection.find_and_modify.assert_called_once_with(
-            query={'_id': "test_uid"},
-            update={"$inc": {'count': 1}},
-            new=True,
+        collection.find_one_and_update.assert_called_once_with(
+            {'_id': "test_uid"},
+            {"$inc": {'count': 1}},
             upsert=True,
+            return_document=ReturnDocument.AFTER,
         )

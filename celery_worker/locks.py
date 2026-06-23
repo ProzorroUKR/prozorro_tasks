@@ -182,7 +182,7 @@ def unique_lock(task, omit=None):
 
         # task is successfully finished, add task marker to mongodb
         try:
-            collection.insert({
+            collection.insert_one({
                 '_id': task_uid,
                 'name': task.__name__,
                 'module': task.__module__,
