@@ -117,7 +117,7 @@ class LocksTestCase(unittest.TestCase):
             {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
-        get_collection.return_value.insert.assert_called_once_with(
+        get_collection.return_value.insert_one.assert_called_once_with(
             {
                 "_id": task_uid,
                 "name": test_method.__name__,
@@ -151,7 +151,7 @@ class LocksTestCase(unittest.TestCase):
             {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_not_called()
-        get_collection.return_value.insert.assert_not_called()
+        get_collection.return_value.insert_one.assert_not_called()
 
     @patch("celery_worker.locks.get_mongodb_collection")
     def test_unique_task_decorator_mongodb_get_exc(self, get_collection):
@@ -178,7 +178,7 @@ class LocksTestCase(unittest.TestCase):
             {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(1, 2, message="Hi")
-        get_collection.return_value.insert.assert_called_once_with(
+        get_collection.return_value.insert_one.assert_called_once_with(
             {
                 "_id": task_uid,
                 "name": test_method.__name__,
@@ -219,7 +219,7 @@ class LocksTestCase(unittest.TestCase):
             {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_not_called()
-        get_collection.return_value.insert.assert_not_called()
+        get_collection.return_value.insert_one.assert_not_called()
 
     @patch("celery_worker.locks.get_mongodb_collection")
     def test_unique_task_decorator_for_bind_task(self, get_collection):
@@ -252,7 +252,7 @@ class LocksTestCase(unittest.TestCase):
             {"_id": task_uid, "name": test_method.__name__, "module": test_method.__module__}
         )
         test_method_procedure.assert_called_once_with(test_method, 1, 2, message="Hi")
-        get_collection.return_value.insert.assert_called_once_with(
+        get_collection.return_value.insert_one.assert_called_once_with(
             {
                 "_id": task_uid,
                 "name": test_method.__name__,

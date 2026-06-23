@@ -475,7 +475,7 @@ def save_status(data):
             "data": data.copy(),
             "createdAt": datetime.utcnow(),
         }
-        collection.insert(insert_data)
+        collection.insert_one(insert_data)
         return insert_data
     except DuplicateKeyError:
         pass

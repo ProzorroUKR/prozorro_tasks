@@ -1,6 +1,7 @@
 import sys
 from celery_worker.locks import get_mongodb_collection
 from celery_worker.celery import app
+from pymongo import ReturnDocument
 from pymongo.errors import PyMongoError
 from celery.utils.log import get_task_logger
 from celery.signals import celeryd_init
@@ -40,11 +41,11 @@ def get_increment_id(task, uid):
     collection = get_mongodb_collection("fiscal_bot_document_increments")
 
     try:
-        result = collection.find_and_modify(
-            query={'_id': uid},
-            update={"$inc": {'count': 1}},
-            new=True,
+        result = collection.find_one_and_update(
+            {'_id': uid},
+            {"$inc": {'count': 1}},
             upsert=True,
+            return_document=ReturnDocument.AFTER,
         )
     except PyMongoError as e:
         logger.exception(e, extra={"MESSAGE_ID": "MONGODB_ACCESS_FISCAL_INCREMENT_ERROR"})

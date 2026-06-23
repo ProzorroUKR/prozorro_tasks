@@ -8,6 +8,7 @@ from payments.results_db import (
     get_payment_item,
     push_payment_message,
     save_payment_item,
+    save_status,
     data_to_uid,
     set_payment_params,
     set_payment_resolution,
@@ -111,6 +112,37 @@ class ResultsDBTestCase(unittest.TestCase):
         user = 'test_user'
 
         result = save_payment_item(data, user)
+
+        self.assertEqual(result, None)
+
+    @patch("payments.results_db.datetime")
+    @patch("payments.results_db.get_mongodb_status_collection")
+    def test_save_status(self, get_collection, datetime_mock):
+        collection = MagicMock()
+        get_collection.return_value = collection
+        datetime_mock.utcnow.return_value = "fake_datetime"
+
+        data = {"test_field": "test_value"}
+
+        result = save_status(data)
+
+        expected = {
+            "_id": data_to_uid(data, keys=None),
+            "data": data,
+            "createdAt": "fake_datetime",
+        }
+        collection.insert_one.assert_called_once_with(expected)
+        self.assertEqual(result, expected)
+
+    @patch("payments.results_db.datetime")
+    @patch("payments.results_db.get_mongodb_status_collection")
+    def test_save_status_duplicate(self, get_collection, datetime_mock):
+        collection = MagicMock()
+        collection.insert_one.side_effect = DuplicateKeyError("error")
+        get_collection.return_value = collection
+        datetime_mock.utcnow.return_value = "fake_datetime"
+
+        result = save_status({"test_field": "test_value"})
 
         self.assertEqual(result, None)
 
