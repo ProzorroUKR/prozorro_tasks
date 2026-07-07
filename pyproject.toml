@@ -39,7 +39,7 @@ dependencies = [
     "asgiref>=3.11.1,<4",
     "aio-pika>=9.6.2,<10",
     "liqpay-python @ git+https://github.com/liqpay/sdk-python",
-    "prozorro_crawler @ git+https://github.com/ProzorroUKR/prozorro_crawler.git@2.1.13",
+    "prozorro_crawler @ git+https://github.com/ProzorroUKR/prozorro_crawler.git@2.2.0",
     "standards @ git+https://github.com/ProzorroUKR/standards.git@1.0.38",
 ]
 

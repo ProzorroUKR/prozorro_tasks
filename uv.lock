@@ -853,8 +853,8 @@ wheels = [
 
 [[package]]
 name = "prozorro-crawler"
-version = "2.1.13"
-source = { git = "https://github.com/ProzorroUKR/prozorro_crawler.git?rev=2.1.13#c87d04335dc01ba2208eaf8f99ca294f7ddcf959" }
+version = "2.2.0"
+source = { git = "https://github.com/ProzorroUKR/prozorro_crawler.git?rev=2.2.0#018193bc4b997fc74ee1e5f2ae8948bd5a572cac" }
 dependencies = [
     { name = "aiohttp" },
     { name = "asyncpg" },
@@ -936,7 +936,7 @@ requires-dist = [
     { name = "liqpay-python", git = "https://github.com/liqpay/sdk-python" },
     { name = "lxml", specifier = ">=6.1.1,<7" },
     { name = "markupsafe", specifier = ">=3.0.3,<4" },
-    { name = "prozorro-crawler", git = "https://github.com/ProzorroUKR/prozorro_crawler.git?rev=2.1.13" },
+    { name = "prozorro-crawler", git = "https://github.com/ProzorroUKR/prozorro_crawler.git?rev=2.2.0" },
     { name = "pymongo", specifier = ">=4.17.0,<5" },
     { name = "python-dateutil", specifier = ">=2.9.0,<3" },
     { name = "python-json-logger", specifier = ">=2.0.2,<3" },
