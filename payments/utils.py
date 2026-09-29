@@ -87,6 +87,7 @@ RESOLUTION_MAPPING = {
             "incorrectPayment": "complainant",
             "complaintPeriodEnded": "complainant",
             "cancelledByComplainant": "complainant",
+            "tenderOrLotCancelledBeforePayment": "complainant",
         },
         date_field="date",
     ),
