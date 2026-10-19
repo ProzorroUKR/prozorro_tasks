@@ -27,6 +27,9 @@ DESC_REJECT_REASON_COMPLAINT_PERIOD_ENDED = "" \
 DESC_REJECT_REASON_INCORRECT_PAYMENT = "" \
 "Отримана сума оплати не співпадає з розрахованою для даної скарги"
 
+DESC_REJECT_REASON_TENDER_OR_LOT_CANCELLED_BEFORE_PAYMENT = "" \
+"Закупівлю/лот було відмінено до зарахування оплати"
+
 DESC_FUNDS_ALL = "Всі платежі"
 DESC_FUNDS_STATE = "Перерахунок до держбюджету"
 DESC_FUNDS_COMPLAINANT = "Повернення коштів скаржнику"

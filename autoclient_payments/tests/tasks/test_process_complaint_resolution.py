@@ -32,7 +32,7 @@ class TestHandlerCase(unittest.TestCase):
     def test_handle_resolution_mistaken(self):
         payment_data = {"test_param": "test_value"}
 
-        for reject_reason in ["incorrectPayment", "complaintPeriodEnded", "cancelledByComplainant"]:
+        for reject_reason in ["incorrectPayment", "complaintPeriodEnded", "cancelledByComplainant", "tenderOrLotCancelledBeforePayment"]:
             complaint_data = {
                 "id": uuid4().hex,
                 "status": "mistaken",
