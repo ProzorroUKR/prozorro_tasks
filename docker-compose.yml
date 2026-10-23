@@ -3,7 +3,7 @@ version: '3'
 services:
   mongo:
     hostname: mongo
-    image: 'bitnami/mongodb:latest'
+    image: 'soldevelo/mongodb:latest'
     environment:
 #      MONGODB_REPLICA_SET_MODE: primary
 #      MONGODB_REPLICA_SET_NAME: rs0
